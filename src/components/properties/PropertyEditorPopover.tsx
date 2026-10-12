@@ -12,6 +12,8 @@ import { ArrowLeft, ChevronRight, Copy, Plus, Trash2, X } from "lucide-react";
 import type { CustomFieldType } from "../../editorTypes";
 import type { VisiblePropertyDefinition } from "../../utils/propertiesConfig";
 import { PROPERTY_TYPE_LABELS } from "./propertyTypeIcons";
+import { useUniverseDraft } from "../../hooks/useUniverseDraft";
+import { useAppIsActive } from "../../hooks/useAppInteraction";
 
 export type EditableOption = { value: string; label: string; color?: string };
 type EditorPanel = "types" | "options" | "conditions" | "parent" | "yaml";
@@ -76,6 +78,7 @@ export function PropertyEditorPopover({
   onDuplicate,
   onDelete,
 }: PropertyEditorPopoverProps) {
+  const appActive = useAppIsActive();
   const [nameDraft, setNameDraft] = useState(property.label ?? property.id);
   const [descriptionDraft, setDescriptionDraft] = useState(property.description ?? "");
   const [optionsDraft, setOptionsDraft] = useState<EditableOption[]>(editableOptions);
@@ -83,6 +86,12 @@ export function PropertyEditorPopover({
     property.visibleWhen ?? {},
   );
   const [activePanel, setActivePanel] = useState<EditorPanel | null>(null);
+  useUniverseDraft(
+    open &&
+      (nameDraft !== (property.label ?? property.id) ||
+        descriptionDraft !== (property.description ?? "") ||
+        JSON.stringify(optionsDraft) !== JSON.stringify(editableOptions)),
+  );
 
   const { refs, floatingStyles } = useFloating({
     open,
@@ -107,7 +116,7 @@ export function PropertyEditorPopover({
   }, [anchorEl, refs, open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !appActive) return;
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (refs.floating.current?.contains(target)) return;
@@ -116,11 +125,12 @@ export function PropertyEditorPopover({
     };
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [anchorEl, onClose, open, refs.floating]);
+  }, [anchorEl, onClose, open, refs.floating, appActive]);
 
   if (!open) return null;
 
   const commitName = () => {
+    if (!appActive) return;
     const trimmed = nameDraft.trim();
     if (trimmed && trimmed !== (property.label ?? property.id)) {
       onRename(trimmed);
@@ -128,12 +138,14 @@ export function PropertyEditorPopover({
   };
 
   const commitDescription = () => {
+    if (!appActive) return;
     if (descriptionDraft !== (property.description ?? "")) {
       onUpdate({ description: descriptionDraft });
     }
   };
 
   const commitOptions = (nextOptions: EditableOption[] = optionsDraft) => {
+    if (!appActive) return;
     if (JSON.stringify(nextOptions) !== JSON.stringify(editableOptions)) {
       onUpdateOptions(nextOptions);
     }
@@ -196,7 +208,7 @@ export function PropertyEditorPopover({
   };
 
   return (
-    <FloatingPortal>
+    <FloatingPortal root={anchorEl?.closest<HTMLElement>(".forge-worldnotion") ?? undefined}>
       <div
         ref={refs.setFloating}
         style={floatingStyles}
@@ -227,7 +239,7 @@ export function PropertyEditorPopover({
               }
             }}
             disabled={isProtected}
-            autoFocus={!isProtected}
+            autoFocus={appActive && !isProtected}
             title={isProtected ? "Core fields cannot be renamed" : undefined}
             aria-label="Property name"
           />

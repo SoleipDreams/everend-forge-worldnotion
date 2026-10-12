@@ -19,12 +19,12 @@ describe("sanitizeAttachmentName", () => {
 
 describe("uniqueAttachmentPath", () => {
   it("places files under the attachments folder", () => {
-    expect(uniqueAttachmentPath([], "hero.png")).toBe("attachments/hero.png");
+    expect(uniqueAttachmentPath([], "hero.png")).toBe(".everend/assets/image/hero.png");
   });
 
   it("dedupes colliding names", () => {
-    const existing = ["attachments/hero.png", "attachments/hero-1.png"];
-    expect(uniqueAttachmentPath(existing, "hero.png")).toBe("attachments/hero-2.png");
+    const existing = [".everend/assets/image/hero.png", ".everend/assets/image/hero-1.png"];
+    expect(uniqueAttachmentPath(existing, "hero.png")).toBe(".everend/assets/image/hero-2.png");
   });
 
   it("honors a custom folder", () => {

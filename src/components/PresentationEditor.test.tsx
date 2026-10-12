@@ -56,7 +56,7 @@ describe("PresentationEditor", () => {
       coverPropertyId: "cover",
     });
 
-    fireEvent.click(screen.getByTitle("Pick an image from the vault"));
+    fireEvent.click(screen.getByRole("button", { name: "Pick image" }));
     fireEvent.click(screen.getByRole("option", { name: /mara\.png/i }));
     expect(onUpdateRawYaml.mock.calls[0]?.[0]).toContain("portrait: attachments/mara.png");
   });

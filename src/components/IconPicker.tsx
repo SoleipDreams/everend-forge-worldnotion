@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
 import {
   Box,
   Calendar,
@@ -230,6 +231,7 @@ const ICON_OPTIONS: Array<{ name: IconName; label: string; Icon: any }> = [
 ];
 
 export function IconPicker({ onSelect, onClose, x = 0, y = 0 }: IconPickerProps) {
+  const appActive = useAppIsActive();
   const menuRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState({ x, y });
 
@@ -264,6 +266,7 @@ export function IconPicker({ onSelect, onClose, x = 0, y = 0 }: IconPickerProps)
       }
     }
 
+    if (!appActive) return;
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
 
@@ -271,7 +274,7 @@ export function IconPicker({ onSelect, onClose, x = 0, y = 0 }: IconPickerProps)
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [onClose]);
+  }, [onClose, appActive]);
 
   return (
     <div

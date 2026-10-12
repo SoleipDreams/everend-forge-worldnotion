@@ -1,4 +1,6 @@
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useEffect, useRef } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import "../App.css";
 import { useWorldnotionUi } from "../i18n";
 
@@ -19,12 +21,15 @@ export function UnsavedChangesDialog({
   onCancel,
   isSaving = false,
 }: UnsavedChangesDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, isOpen);
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const saveRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (isOpen) saveRef.current?.focus();
-  }, [isOpen]);
+    if (isOpen && appActive) focusAppElement(saveRef.current);
+  }, [isOpen, appActive]);
 
   if (!isOpen) return null;
 
@@ -42,6 +47,8 @@ export function UnsavedChangesDialog({
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-dialog unsaved-dialog"
         role="alertdialog"
         aria-modal="true"
@@ -53,9 +60,7 @@ export function UnsavedChangesDialog({
           <h2>{ui.unsavedChanges}</h2>
         </div>
         <div className="modal-body">
-          <p>
-            {ui.unsavedChangesMessage.replace("{{fileName}}", fileName)}
-          </p>
+          <p>{ui.unsavedChangesMessage.replace("{{fileName}}", fileName)}</p>
         </div>
         <div className="modal-footer">
           <button

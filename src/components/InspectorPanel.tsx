@@ -70,7 +70,7 @@ export function InspectorPanel({
   const [moveTarget, setMoveTarget] = useState("");
   if (!index) {
     return (
-      <aside className="inspector">
+      <aside data-onboarding-target="worldnotion.inspector" className="inspector">
         <h2>{ui.inspector}</h2>
         <p className="muted">{ui.openUniverseToInspect}</p>
       </aside>
@@ -79,7 +79,7 @@ export function InspectorPanel({
 
   if (explorerSelection.length > 1) {
     return (
-      <aside className="inspector">
+      <aside data-onboarding-target="worldnotion.inspector" className="inspector">
         <h2>{ui.bulkSelection}</h2>
         <p className="muted">
           {ui.itemsSelected.replace("{{count}}", String(explorerSelection.length))}
@@ -105,7 +105,7 @@ export function InspectorPanel({
 
   if (template) {
     return (
-      <aside className="inspector">
+      <aside data-onboarding-target="worldnotion.inspector" className="inspector">
         <h2>{ui.template}</h2>
         <p className="path-line">{template.path}</p>
         <p className="muted">{ui.templateDescription}</p>
@@ -120,7 +120,7 @@ export function InspectorPanel({
 
     if (!tabHasFrontmatter && onAddFrontmatter && onChangeFrontmatter) {
       return (
-        <aside className="inspector">
+        <aside data-onboarding-target="worldnotion.inspector" className="inspector">
           <section>
             {index.propertiesConfig ? (
               <InspectorOnboarding
@@ -144,7 +144,7 @@ export function InspectorPanel({
 
   if (!entity) {
     return (
-      <aside className="inspector">
+      <aside data-onboarding-target="worldnotion.inspector" className="inspector">
         <h2>{ui.inspector}</h2>
         <p className="muted">{ui.selectNoteOrTemplate}</p>
       </aside>
@@ -158,7 +158,7 @@ export function InspectorPanel({
 
   if (!propertiesConfig) {
     return (
-      <aside className="inspector">
+      <aside data-onboarding-target="worldnotion.inspector" className="inspector">
         <section>
           <div className="inspector-setup-card">
             <div className="inspector-setup-icon">
@@ -191,7 +191,7 @@ export function InspectorPanel({
   }
 
   return (
-    <aside className="inspector">
+    <aside data-onboarding-target="worldnotion.inspector" className="inspector">
       <section>
         {activeTab?.path === entity.path && onChangeFrontmatter && onUpdateEntity ? (
           <>

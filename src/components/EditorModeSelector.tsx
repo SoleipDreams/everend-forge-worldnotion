@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { EditorMode, WritingMode } from "../editorTypes";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 
 type EditorModeSelectorProps = {
   mode: EditorMode;
@@ -21,6 +22,7 @@ export function EditorModeSelector({
   onOpenWriting,
   onOpenSource,
 }: EditorModeSelectorProps) {
+  const appActive = useAppIsActive();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -29,16 +31,16 @@ export function EditorModeSelector({
 
   const closeMenu = useCallback((restoreFocus = false) => {
     setOpen(false);
-    if (restoreFocus) window.requestAnimationFrame(() => triggerRef.current?.focus());
+    if (restoreFocus) window.requestAnimationFrame(() => focusAppElement(triggerRef.current));
   }, []);
 
   const focusOption = useCallback((index: number) => {
     const normalized = (index + optionRefs.current.length) % optionRefs.current.length;
-    optionRefs.current[normalized]?.focus();
+    focusAppElement(optionRefs.current[normalized]);
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !appActive) return;
     const dismiss = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) closeMenu();
     };
@@ -54,7 +56,7 @@ export function EditorModeSelector({
       document.removeEventListener("mousedown", dismiss);
       document.removeEventListener("keydown", dismissWithKeyboard);
     };
-  }, [closeMenu, open]);
+  }, [closeMenu, open, appActive]);
 
   return (
     <div ref={rootRef} className="mode-toggle" aria-label="Editor mode">

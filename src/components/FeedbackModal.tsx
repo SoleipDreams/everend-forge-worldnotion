@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, MessageSquareText, X } from "lucide-react";
 import { feedbackUrl } from "../feedback";
+import { useAppIsActive } from "../hooks/useAppInteraction";
 
 type FeedbackModalProps = {
   screen: string;
@@ -9,21 +10,27 @@ type FeedbackModalProps = {
 };
 
 export function FeedbackModal({ screen, onClose, onOpenExternal }: FeedbackModalProps) {
+  const appActive = useAppIsActive();
   const [frameError, setFrameError] = useState(false);
   const sourceUrl = useMemo(() => feedbackUrl(screen), [screen]);
 
   useEffect(() => {
+    if (!appActive) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [appActive, onClose]);
 
   return (
-    <div className="feedback-modal-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
+    <div
+      className="feedback-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <section
         className="feedback-modal-dialog"
         role="dialog"
@@ -33,13 +40,20 @@ export function FeedbackModal({ screen, onClose, onOpenExternal }: FeedbackModal
       >
         <header className="feedback-modal-header">
           <div className="feedback-modal-heading">
-            <span className="feedback-modal-icon" aria-hidden="true"><MessageSquareText size={18} /></span>
+            <span className="feedback-modal-icon" aria-hidden="true">
+              <MessageSquareText size={18} />
+            </span>
             <div>
               <h2 id="feedback-modal-title">Enviar feedback</h2>
               <p>Ayúdanos a mejorar esta app.</p>
             </div>
           </div>
-          <button type="button" className="feedback-modal-close" onClick={onClose} aria-label="Cerrar feedback">
+          <button
+            type="button"
+            className="feedback-modal-close"
+            onClick={onClose}
+            aria-label="Cerrar feedback"
+          >
             <X size={18} />
           </button>
         </header>
@@ -55,7 +69,11 @@ export function FeedbackModal({ screen, onClose, onOpenExternal }: FeedbackModal
             <div className="feedback-modal-frame-error" role="alert">
               <strong>No se pudo cargar el formulario.</strong>
               <span>Comprueba tu conexión o ábrelo en el navegador.</span>
-              <button type="button" className="feedback-modal-link" onClick={() => void onOpenExternal(sourceUrl)}>
+              <button
+                type="button"
+                className="feedback-modal-link"
+                onClick={() => void onOpenExternal(sourceUrl)}
+              >
                 Abrir en navegador <ExternalLink size={14} />
               </button>
             </div>
@@ -64,7 +82,11 @@ export function FeedbackModal({ screen, onClose, onOpenExternal }: FeedbackModal
 
         <footer className="feedback-modal-footer">
           <span>El envío es anónimo si no dejas un correo.</span>
-          <button type="button" className="feedback-modal-link" onClick={() => void onOpenExternal(sourceUrl)}>
+          <button
+            type="button"
+            className="feedback-modal-link"
+            onClick={() => void onOpenExternal(sourceUrl)}
+          >
             Abrir en navegador <ExternalLink size={14} />
           </button>
         </footer>

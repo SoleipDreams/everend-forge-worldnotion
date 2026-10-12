@@ -15,12 +15,30 @@ function baseSettings(): AppSettingsV4 {
 }
 
 describe("vault appearance settings", () => {
+  it("keeps the local atmosphere preference out of portable universe settings", () => {
+    const local = { ...baseSettings(), ambientBackground: false, backgroundScene: "jade" };
+    const appearance = extractVaultAppearanceSettings(local);
+    expect(serializeVaultAppearance(appearance)).not.toContain("ambientBackground");
+    expect(serializeVaultAppearance(appearance)).not.toContain("backgroundScene");
+    expect(applyVaultAppearanceSettings(local, appearance).ambientBackground).toBe(false);
+    expect(applyVaultAppearanceSettings(local, appearance).backgroundScene).toBe("jade");
+  });
   it("returns undefined when the universe has no settings file yet", () => {
     const findings: ValidationFinding[] = [];
     expect(
       parseVaultAppearanceSettings([{ relativePath: "Notes.md", content: "" }], findings),
     ).toBeUndefined();
     expect(findings).toEqual([]);
+  });
+
+  it("keeps the ecosystem display preference out of portable universe settings", () => {
+    const local = baseSettings();
+    local.explorer.ecosystemView = "list";
+    const appearance = extractVaultAppearanceSettings(local);
+
+    expect(appearance.explorer).not.toHaveProperty("ecosystemView");
+    expect(serializeVaultAppearance(appearance)).not.toContain("ecosystemView");
+    expect(applyVaultAppearanceSettings(local, appearance).explorer.ecosystemView).toBe("list");
   });
 
   it("round-trips a universe's appearance through serialize/parse", () => {

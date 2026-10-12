@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { AppInteractionContext } from "../hooks/useAppInteraction";
+import { SettingsFrame, settingsContent } from "../SettingsFrame";
+import type { SettingsHost, SettingsDraft } from "../settingsIntegration";
+import { worldnotionSettingsPages, worldnotionSettingsPage } from "../settingsCatalog";
+import { worldnotionSurfaceText } from "../i18n";
+import { SceneChoices } from "../SceneChoices";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useUniverseDraft } from "../hooks/useUniverseDraft";
 import type { KeyboardEvent } from "react";
 import {
   BookOpen,
@@ -6,18 +13,12 @@ import {
   ExternalLink,
   FileText,
   Globe2,
-  Hash,
   KeyRound,
-  Plug,
   Plus,
   RefreshCw,
-  Settings,
   Sparkles,
-  TextCursorInput,
   Trash2,
   Upload,
-  Wrench,
-  X,
 } from "lucide-react";
 import {
   AppSettingsV4,
@@ -36,8 +37,9 @@ import { applyPropertyTemplate, WORLDBUILDING_TEMPLATE } from "../utils/property
 import type { FrontmatterNormalizationItem } from "../utils/frontmatterNormalizer";
 import type { PropertyNormalizationItem } from "../utils/propertyNormalizer";
 import type { PropertyStructureMigrationPlan } from "../utils/propertyStructureMigration";
-import { THEMES, themeById } from "../themes";
+import { THEMES, normalizeThemeId, themeById, toggledThemeMode } from "../themes";
 import { normalizeAiProviderUrl } from "../utils/aiProviders";
+import { DialogProvider } from "./DialogProvider";
 import { PropertiesManager } from "./TaxonomyManager";
 import type { SuiteSettings } from "../suiteChrome";
 import {
@@ -96,6 +98,7 @@ type SettingsModalProps = {
     plan: PropertyStructureMigrationPlan,
   ) => Promise<{ applied: number; skipped: number; errors: string[] }>;
   onClose: () => void;
+  hidden?: boolean;
   onRevealUniverse?: () => void;
   onOpenUniverseNote?: () => void;
   onResetOnboarding?: () => void;
@@ -103,6 +106,7 @@ type SettingsModalProps = {
   initialSection?: SettingsSection;
   initialPropertiesMode?: "template" | "blank";
   suiteSettings?: SuiteSettings;
+  settingsHost?: SettingsHost;
 };
 
 function createStarterPropertiesConfig(mode: "template" | "blank" = "template") {
@@ -111,9 +115,11 @@ function createStarterPropertiesConfig(mode: "template" | "blank" = "template") 
 }
 
 function UniverseLanguageSettings({
+  locale,
   value,
   onChange,
 }: {
+  locale: "en" | "es";
   value?: NonNullable<UniverseProfile["localization"]>;
   onChange: (value: NonNullable<UniverseProfile["localization"]>) => void;
 }) {
@@ -131,7 +137,7 @@ function UniverseLanguageSettings({
     });
   };
 
-  return (
+  return settingsContent((
     <div className="locale-settings-fields">
       <label>
         <span>Primary language</span>
@@ -175,7 +181,7 @@ function UniverseLanguageSettings({
         ) : (
           <p>None yet.</p>
         )}
-        <select
+        <select aria-label="Additional languages"
           value=""
           onChange={(event) => {
             if (event.target.value) update(locales[0], [...locales, event.target.value]);
@@ -214,7 +220,7 @@ function UniverseLanguageSettings({
         </button>
       </div>
     </div>
-  );
+  ), locale);
 }
 
 function eventToShortcut(event: KeyboardEvent) {
@@ -462,13 +468,15 @@ type SettingsSection =
   | "ai-advisor"
   | "help";
 
-type AppearanceBehaviorTab = "appearance" | "editor" | "workspace";
 
 const primaryFontOptions = [
   ["sans", "Sans serif"],
   ["serif", "Serif editorial"],
   ["humanist", "Humanist"],
 ] as const;
+
+const integratedSettingsPages = worldnotionSettingsPages.filter(item => !["worldnotion.general","worldnotion.help"].includes(item.id));
+const legacyHostPages = [...worldnotionSettingsPages, ...["language","update","license"].map(id => ({ id: "suite."+id, owner: "suite", group: {en:"General",es:"General"}, title: id === "language" ? {en:"Suite preferences",es:"Preferencias de la Suite"} : id === "update" ? {en:"Updates",es:"Actualizaciones"} : {en:"License",es:"Licencia"}, controls: [] }))];
 
 export function SettingsModal({
   settings,
@@ -484,6 +492,7 @@ export function SettingsModal({
   onScanPropertyStructureMigration,
   onApplyPropertyStructureMigration,
   onClose,
+  hidden = false,
   onRevealUniverse,
   onOpenUniverseNote,
   onResetOnboarding,
@@ -491,20 +500,25 @@ export function SettingsModal({
   initialSection,
   initialPropertiesMode = "template",
   suiteSettings,
+  settingsHost,
 }: SettingsModalProps) {
-  const [activeSection, setActiveSection] = useState<SettingsSection>(
-    initialSection ?? (universe ? "overview" : "appearance-behavior"),
-  );
-  const [appearanceBehaviorTab, setAppearanceBehaviorTab] =
-    useState<AppearanceBehaviorTab>("appearance");
+  const [localPage, setLocalPage] = useState(() => worldnotionSettingsPage(initialSection ?? "appearance-behavior"));
+  const page = settingsHost?.page ?? localPage;
+  const section = page === "suite.language" ? "suite" : page.split(".").at(-1)!;
+  const activeSection = ["document","editor","workspace","shortcuts"].includes(section) ? "appearance-behavior" : section;
+  const appearanceBehaviorTab = section === "document" ? "appearance" : section === "editor" ? "editor" : "workspace";
   const interfaceLocale = resolveInterfaceLocale(
     suiteSettings?.localePreference ?? settings.localePreference ?? "system",
   );
+  const t = (text: string) => worldnotionSurfaceText(interfaceLocale, text);
+
+
   const interfaceCopy = interfaceLocaleCopy(interfaceLocale);
   const settingsText = worldnotionSettingsCopy(interfaceLocale);
   const editorModeText = worldnotionEditorModeCopy(interfaceLocale);
   const [conflictMessage, setConflictMessage] = useState("");
   const [profileDraft, setProfileDraft] = useState<UniverseProfile>(() => ({
+    ...universe?.profile,
     name: universe?.profile?.name ?? universe?.name,
     icon: universe?.profile?.icon ?? { type: "preset", value: "book" },
     localization: universe?.profile?.localization ?? {
@@ -517,6 +531,19 @@ export function SettingsModal({
     () => universe?.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode),
   );
   const [propertiesSaving, setPropertiesSaving] = useState(false);
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [propertiesDirty, setPropertiesDirty] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState("");
+  const profileDraftRef = useRef(profileDraft);
+  const propertiesDraftRef = useRef(propertiesDraft);
+  profileDraftRef.current = profileDraft;
+  propertiesDraftRef.current = propertiesDraft;
+  const draftUniverseRef = useRef(universe?.rootPath);
+  useUniverseDraft(profileDirty || propertiesDirty);
+  function editProfile(update: (profile: UniverseProfile) => UniverseProfile) {
+    setProfileDirty(true);
+    setProfileDraft(update);
+  }
   const [normalizationItems, setNormalizationItems] = useState<FrontmatterNormalizationItem[]>([]);
   const [selectedNormalizationPaths, setSelectedNormalizationPaths] = useState<Set<string>>(
     new Set(),
@@ -539,18 +566,31 @@ export function SettingsModal({
   const [aiProviderError, setAiProviderError] = useState("");
 
   useEffect(() => {
-    if (initialSection) setActiveSection(initialSection);
-  }, [initialSection]);
+    if (initialSection && !hidden && !settingsHost) setLocalPage(worldnotionSettingsPage(initialSection));
+  }, [initialSection, hidden, settingsHost?.open]);
+  useEffect(() => { if (!hidden && settingsHost) settingsHost.open(worldnotionSettingsPage(initialSection)); }, [hidden, initialSection, settingsHost?.open]);
+  const wasHostVisible = useRef(false);
+  useEffect(() => { if (wasHostVisible.current && !settingsHost?.visible) onClose(); wasHostVisible.current = Boolean(settingsHost?.visible); }, [settingsHost?.visible]);
 
   useEffect(() => {
     if (!universe) return;
-    setProfileDraft({
-      name: universe.profile?.name ?? universe.name,
-      icon: universe.profile?.icon ?? { type: "preset", value: "book" },
-    });
-    setPropertiesDraft(
-      universe.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode),
-    );
+    const universeChanged = draftUniverseRef.current !== universe.rootPath;
+    draftUniverseRef.current = universe.rootPath;
+    if (universeChanged || !profileDirty) {
+      setProfileDraft({
+        ...universe.profile,
+        name: universe.profile?.name ?? universe.name,
+        icon: universe.profile?.icon ?? { type: "preset", value: "book" },
+        localization: universe.profile?.localization,
+      });
+      setProfileDirty(false);
+    }
+    if (universeChanged || !propertiesDirty) {
+      setPropertiesDraft(
+        universe.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode),
+      );
+      setPropertiesDirty(false);
+    }
   }, [
     initialPropertiesMode,
     universe?.name,
@@ -559,6 +599,9 @@ export function SettingsModal({
     universe?.profile?.icon?.type,
     universe?.profile?.icon?.value,
     universe?.propertiesConfig,
+    universe?.profile?.localization,
+    profileDirty,
+    propertiesDirty,
   ]);
 
   const keybindingMap = useMemo(
@@ -739,118 +782,80 @@ export function SettingsModal({
     return parts.join(" · ");
   }
 
-  return (
-    <div className="settings-backdrop" role="dialog" aria-modal="true" aria-label="Settings">
-      <div className="settings-modal">
-        <header className="settings-header">
-          <div>
-            <p className="eyebrow">{universe ? "Universe settings" : "Application settings"}</p>
-            <h2>{universe?.name ?? "WorldNotion"}</h2>
-          </div>
-          <button type="button" onClick={onClose} title="Close settings">
-            <X size={16} />
-          </button>
-        </header>
-
-        <div className="settings-body">
-          <nav className="settings-nav">
-            {suiteSettings ? (
-              <div className="settings-nav-group">
-                <p>{settingsText.forge}</p>
-                <button
-                  className={activeSection === "suite" ? "active" : ""}
-                  onClick={() => setActiveSection("suite")}
-                  type="button"
-                >
-                  <Settings size={14} />
-                  {settingsText.suite}
-                </button>
-                <button
-                  className={activeSection === "update" ? "active" : ""}
-                  onClick={() => setActiveSection("update")}
-                  type="button"
-                >
-                  <RefreshCw size={14} />
-                  {settingsText.update}
-                </button>
-                <button
-                  className={activeSection === "license" ? "active" : ""}
-                  onClick={() => setActiveSection("license")}
-                  type="button"
-                >
-                  <KeyRound size={14} />
-                  Licencia
-                </button>
-              </div>
-            ) : null}
-            {universe ? (
-              <div className="settings-nav-group">
-                <p>{settingsText.universe}</p>
-                <button
-                  className={activeSection === "overview" ? "active" : ""}
-                  onClick={() => setActiveSection("overview")}
-                  type="button"
-                >
-                  <Settings size={14} />
-                  {settingsText.overview}
-                </button>
-                <button
-                  className={activeSection === "properties" ? "active" : ""}
-                  onClick={() => setActiveSection("properties")}
-                  type="button"
-                >
-                  <Hash size={14} />
-                  {settingsText.tags}
-                </button>
-                <button
-                  className={activeSection === "utils" ? "active" : ""}
-                  onClick={() => setActiveSection("utils")}
-                  type="button"
-                >
-                  <Wrench size={14} />
-                  {settingsText.utils}
-                </button>
-              </div>
-            ) : null}
-
-            <div className="settings-nav-group app-settings-group">
-              <p>{settingsText.application}</p>
-              <button
-                className={activeSection === "appearance-behavior" ? "active" : ""}
-                onClick={() => setActiveSection("appearance-behavior")}
-                type="button"
-              >
-                <TextCursorInput size={14} />
-                Appearance & Behavior
-              </button>
-              <button
-                className={activeSection === "plugins" ? "active" : ""}
-                onClick={() => setActiveSection("plugins")}
-                type="button"
-              >
-                <Plug size={14} />
-                {settingsText.plugins}
-              </button>
-              <button
-                className={activeSection === "ai-advisor" ? "active" : ""}
-                onClick={() => setActiveSection("ai-advisor")}
-                type="button"
-              >
-                <Sparkles size={14} />
-                {settingsText.advisor}
-              </button>
-              <button
-                className={activeSection === "help" ? "active" : ""}
-                onClick={() => setActiveSection("help")}
-                type="button"
-              >
-                <BookOpen size={14} />
-                Help & Docs
-              </button>
-            </div>
-          </nav>
-
-          <section className="settings-section">
+  const discardDrafts = () => {
+    setProfileDraft({ ...universe?.profile, name: universe?.profile?.name ?? universe?.name, icon: universe?.profile?.icon ?? {type:"preset",value:"book"} });
+    setPropertiesDraft(universe?.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode));
+    setProfileDirty(false); setPropertiesDirty(false); setDraftSaveError("");
+  };
+  const saveDrafts = async () => {
+    setDraftSaveError("");
+    if (profileDirty) {
+      if (!onSaveUniverseProfile) throw new Error(interfaceLocale === "es" ? "No se puede guardar el perfil." : "Profile saving is unavailable.");
+      const snapshot = profileDraftRef.current; setProfileSaving(true);
+      try { await onSaveUniverseProfile(snapshot); setProfileDirty(JSON.stringify(profileDraftRef.current) !== JSON.stringify(snapshot)); }
+      finally { setProfileSaving(false); }
+    }
+    if (propertiesDirty) {
+      const save = universe?.hasEverendWorkspace ? onSavePropertiesConfig : onInitializePropertiesWorkspace;
+      if (!save) throw new Error(interfaceLocale === "es" ? "No se pueden guardar las propiedades." : "Property saving is unavailable.");
+      const snapshot = propertiesDraftRef.current; setPropertiesSaving(true);
+      try { await save(snapshot); setPropertiesDirty(JSON.stringify(propertiesDraftRef.current) !== JSON.stringify(snapshot)); }
+      finally { setPropertiesSaving(false); }
+    }
+  };
+  const draft: SettingsDraft = { dirty: profileDirty || propertiesDirty, busy: profileSaving || propertiesSaving, save: saveDrafts, discard: discardDrafts };
+  return <AppInteractionContext.Provider value={settingsHost ? settingsHost.visible && page.startsWith("worldnotion.") : !hidden}><SettingsFrame title={interfaceLocale === "es" ? "Ajustes de WorldNotion" : "WorldNotion settings"} locale={interfaceLocale} pages={settingsHost ? integratedSettingsPages : suiteSettings ? legacyHostPages : worldnotionSettingsPages} page={page} onPage={setLocalPage} visible={!hidden} onClose={onClose} host={settingsHost} hasUniverse={Boolean(universe)} draft={draft} helpPage="worldnotion.help" onHelp={() => {}} contentClassName="worldnotion-settings-content">
+{section === "general" ? <div className="settings-grid">{!suiteSettings && <label><span>{interfaceLocale === "es" ? "Fuente de interfaz" : "Interface typeface"}</span><select value={settings.interfaceFont ?? "sans"} onChange={event => onChange({...settings, interfaceFont: event.target.value as NonNullable<AppSettingsV4["interfaceFont"]>})}><option value="sans">Sans serif</option><option value="serif">Serif</option><option value="humanist">Humanist</option></select></label>}
+                    {!suiteSettings ? (
+                      <label>
+                        <span>{interfaceCopy.interfaceLanguage}</span>
+                        <select
+                          value={settings.localePreference ?? "system"}
+                          onChange={(event) =>
+                            onChange({
+                              ...settings,
+                              localePreference: event.target.value as "system" | "en" | "es",
+                            })
+                          }
+                        >
+                          <option value="system">{interfaceCopy.system}</option>
+                          <option value="en">English</option>
+                          <option value="es">Español</option>
+                        </select>
+                      </label>
+                    ) : null}
+                    <label>
+                      <span>{settingsText.activeStyle}</span>
+                      {suiteSettings ? (
+                        <input
+                          value={themeById(normalizeThemeId(suiteSettings.style)).label}
+                          readOnly
+                        />
+                      ) : (
+                        <select
+                          value={settings.theme}
+                          onChange={(event) =>
+                            onChange({ ...settings, theme: normalizeThemeId(event.target.value) })
+                          }
+                        >
+                          {THEMES.map((theme) => (
+                            <option key={theme.id} value={theme.id}>
+                              {theme.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </label>
+<label><span>{interfaceLocale === "es" ? "Modo del tema" : "Theme mode"}</span><button type="button" onClick={() => onChange({...settings, theme: toggledThemeMode(settings.theme)})}>{interfaceLocale === "es" ? "Cambiar claro / oscuro" : "Toggle light / dark"}</button></label>
+                    <label className="settings-checkbox">
+                      <span>{interfaceLocale === "es" ? "Fondo difuminado" : "Soft background"}</span>
+                      <input type="checkbox" checked={suiteSettings?.ambientBackground ?? settings.ambientBackground !== false}
+                        onChange={event => suiteSettings?.onAmbientBackgroundChange
+                          ? suiteSettings.onAmbientBackgroundChange(event.target.checked)
+                          : onChange({ ...settings, ambientBackground: event.target.checked })} />
+                    </label>
+                    <SceneChoices locale={interfaceLocale} scene={suiteSettings?.backgroundScene ?? settings.backgroundScene} onScene={backgroundScene => suiteSettings?.onBackgroundSceneChange ? suiteSettings.onBackgroundSceneChange(backgroundScene) : onChange({ ...settings, backgroundScene })} />
+</div> : null}
             {activeSection === "suite" && suiteSettings ? (
               <div className="settings-panel">
                 <div className="settings-page-title">
@@ -1044,15 +1049,16 @@ export function SettingsModal({
                       <input
                         value={profileDraft.name ?? ""}
                         onChange={(event) =>
-                          setProfileDraft((current) => ({ ...current, name: event.target.value }))
+                          editProfile((current) => ({ ...current, name: event.target.value }))
                         }
                         placeholder={universe.name}
                       />
                     </label>
                     <UniverseLanguageSettings
+                      locale={interfaceLocale}
                       value={profileDraft.localization}
                       onChange={(localization) =>
-                        setProfileDraft((current) => ({ ...current, localization }))
+                        editProfile((current) => ({ ...current, localization }))
                       }
                     />
                     <div className="icon-preset-row">
@@ -1072,7 +1078,7 @@ export function SettingsModal({
                               : ""
                           }
                           onClick={() =>
-                            setProfileDraft((current) => ({
+                            editProfile((current) => ({
                               ...current,
                               icon: { type: "preset", value: value as string },
                             }))
@@ -1085,13 +1091,13 @@ export function SettingsModal({
                       <label className="image-upload-button" title="Use PNG or JPG">
                         <Upload size={16} />
                         <input
-                          type="file"
+                          type="file" aria-label="Universe icon"
                           accept="image/png,image/jpeg"
                           onChange={async (event) => {
                             const file = event.target.files?.[0];
                             if (!file) return;
                             const value = await readImageFile(file);
-                            setProfileDraft((current) => ({
+                            editProfile((current) => ({
                               ...current,
                               icon: { type: "image", value },
                             }));
@@ -1099,21 +1105,8 @@ export function SettingsModal({
                         />
                       </label>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!onSaveUniverseProfile) return;
-                        setProfileSaving(true);
-                        try {
-                          await onSaveUniverseProfile(profileDraft);
-                        } finally {
-                          setProfileSaving(false);
-                        }
-                      }}
-                      disabled={profileSaving}
-                    >
-                      Save customization
-                    </button>
+
+                    {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
                   </div>
                 </div>
 
@@ -1184,54 +1177,8 @@ export function SettingsModal({
 
             {activeSection === "appearance-behavior" ? (
               <div className="appearance-behavior-section">
-                <div className="appearance-behavior-tabs">
-                  <button
-                    type="button"
-                    className={appearanceBehaviorTab === "appearance" ? "active" : ""}
-                    onClick={() => setAppearanceBehaviorTab("appearance")}
-                  >
-                    Appearance
-                  </button>
-                  <button
-                    type="button"
-                    className={appearanceBehaviorTab === "editor" ? "active" : ""}
-                    onClick={() => setAppearanceBehaviorTab("editor")}
-                  >
-                    Editor
-                  </button>
-                  <button
-                    type="button"
-                    className={appearanceBehaviorTab === "workspace" ? "active" : ""}
-                    onClick={() => setAppearanceBehaviorTab("workspace")}
-                  >
-                    Workspace
-                  </button>
-                </div>
-
                 {appearanceBehaviorTab === "appearance" ? (
                   <div className="settings-grid">
-                    {!suiteSettings ? (
-                      <label>
-                        <span>{interfaceCopy.interfaceLanguage}</span>
-                        <select
-                          value={settings.localePreference ?? "system"}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              localePreference: event.target.value as "system" | "en" | "es",
-                            })
-                          }
-                        >
-                          <option value="system">{interfaceCopy.system}</option>
-                          <option value="en">English</option>
-                          <option value="es">Español</option>
-                        </select>
-                      </label>
-                    ) : null}
-                    <label>
-                      <span>{settingsText.activeStyle}</span>
-                      <input value={themeById(settings.theme).label} readOnly />
-                    </label>
                     <h3
                       style={{
                         gridColumn: "1 / -1",
@@ -1241,7 +1188,7 @@ export function SettingsModal({
                         color: "var(--wn-muted)",
                       }}
                     >
-                      Page Style
+                      {t("Page Style")}
                     </h3>
                     <label>
                       <span>{settingsText.pageStyle}</span>
@@ -1288,7 +1235,7 @@ export function SettingsModal({
                         color: "var(--wn-muted)",
                       }}
                     >
-                      Typography
+                      {t("Typography")}
                     </h3>
                     <label>
                       <span>{settingsText.writeFont}</span>
@@ -1462,11 +1409,12 @@ export function SettingsModal({
                           }
                         />
                       </label>
-                      {settings.editor.documentHeaderEnabled && (
-                        <label>
-                          <span>{settingsText.showProjectName}</span>
+                      {(
+                        <label data-setting-id="worldnotion.editor.showProjectName">
+                          <span>{settingsText.showProjectName}{!settings.editor.documentHeaderEnabled && <small style={{display:"block"}}>{interfaceLocale === "es" ? "Activa el encabezado del documento para usar este ajuste." : "Enable the document header to use this setting."}</small>}</span>
                           <input
                             type="checkbox"
+                            disabled={!settings.editor.documentHeaderEnabled}
                             checked={settings.editor.showProjectNameInHeader}
                             onChange={(event) =>
                               updateEditor({ showProjectNameInHeader: event.target.checked })
@@ -1520,20 +1468,7 @@ export function SettingsModal({
                   </div>
                 ) : null}
 
-                {appearanceBehaviorTab === "workspace" ? (
-                  <div>
-                    <div className="settings-grid">
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "0 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Dock & Tabs
-                      </h3>
+                {section === "workspace" ? <><div className="settings-grid">
                       <label>
                         <span>Dock tab size</span>
                         <input
@@ -1595,47 +1530,7 @@ export function SettingsModal({
                         />
                       </label>
 
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "16px 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Keyboard Shortcuts
-                      </h3>
-                    </div>
-                    <div className="settings-inline">
-                      <p className="muted">Focus a shortcut field and press the desired keys.</p>
-                      <button
-                        type="button"
-                        onClick={() => onChange({ ...settings, keybindings: DEFAULT_KEYBINDINGS })}
-                      >
-                        Reset defaults
-                      </button>
-                    </div>
-                    {conflictMessage ? (
-                      <div className="error-banner settings-error">{conflictMessage}</div>
-                    ) : null}
-                    <div className="shortcut-list">
-                      {EDITOR_COMMANDS.map((command) => (
-                        <label key={command.id} className="shortcut-row">
-                          <span>{command.label}</span>
-                          <input
-                            value={keybindingMap.get(command.id) ?? ""}
-                            onChange={(event) => updateShortcut(command.id, event.target.value)}
-                            onKeyDown={(event) => {
-                              event.preventDefault();
-                              updateShortcut(command.id, eventToShortcut(event));
-                            }}
-                            placeholder="Unassigned"
-                          />
-                        </label>
-                      ))}
-                    </div>
-
+</div>
                     <div className="settings-grid">
                       <h3
                         style={{
@@ -1712,31 +1607,54 @@ export function SettingsModal({
                           }
                         />
                       </label>
+                    </div></> : null}
+                {section === "shortcuts" ? <>
+                    <div className="settings-inline">
+                      <p className="muted">Focus a shortcut field and press the desired keys.</p>
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...settings, keybindings: DEFAULT_KEYBINDINGS })}
+                      >
+                        Reset defaults
+                      </button>
                     </div>
-                  </div>
-                ) : null}
+                    {conflictMessage ? (
+                      <div className="error-banner settings-error">{conflictMessage}</div>
+                    ) : null}
+                    <div className="shortcut-list">
+                      {EDITOR_COMMANDS.map((command) => (
+                        <label key={command.id} className="shortcut-row">
+                          <span>{command.label}</span>
+                          <input
+                            value={keybindingMap.get(command.id) ?? ""}
+                            onChange={(event) => updateShortcut(command.id, event.target.value)}
+                            onKeyDown={(event) => {
+                              event.preventDefault();
+                              updateShortcut(command.id, eventToShortcut(event));
+                            }}
+                            placeholder="Unassigned"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+</> : null}
+
               </div>
             ) : null}
 
-            {activeSection === "properties" && universe ? (
-              <div className="settings-panel">
-                <PropertiesManager config={propertiesDraft} onChange={setPropertiesDraft} />
+            {universe ? (
+              <div className="settings-panel" hidden={activeSection !== "properties"}>
+                <DialogProvider><PropertiesManager locale={interfaceLocale}
+                  config={propertiesDraft}
+                  onChange={(config) => {
+                    setPropertiesDirty(true);
+                    setPropertiesDraft(config);
+                  }}
+                /></DialogProvider>
                 <div className="settings-actions">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!onSavePropertiesConfig) return;
-                      setPropertiesSaving(true);
-                      try {
-                        await onSavePropertiesConfig(propertiesDraft);
-                      } finally {
-                        setPropertiesSaving(false);
-                      }
-                    }}
-                    disabled={propertiesSaving}
-                  >
-                    {propertiesSaving ? "Saving..." : "Save properties"}
-                  </button>
+
+                  {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
                 </div>
               </div>
             ) : null}
@@ -2055,7 +1973,7 @@ export function SettingsModal({
                     Manage WorldNotion editor plugins and preview planned Everend runtime adapters.
                   </p>
                 </div>
-                <label className="plugin-search">
+                <label className="plugin-search" data-setting-id="worldnotion.plugins.plugin-search">
                   <span>Filter plugins</span>
                   <input
                     value={pluginQuery}
@@ -2099,10 +2017,10 @@ export function SettingsModal({
                                 ? "Core"
                                 : "Optional";
                           return (
-                            <article key={plugin.id} className={`plugin-card ${plugin.status}`}>
+                            <article key={plugin.id} data-setting-id={"worldnotion.plugins."+plugin.id} className={`plugin-card ${plugin.status}`}>
                               <div className="plugin-card-main">
                                 <div className="plugin-card-title">
-                                  <strong>{plugin.name}</strong>
+                                  <strong>{t(plugin.name)}</strong>
                                   <span className={`plugin-badge ${plugin.status}`}>{badge}</span>
                                   <span
                                     className={`plugin-badge ${enabled ? "enabled" : "disabled"}`}
@@ -2110,7 +2028,7 @@ export function SettingsModal({
                                     {enabled ? "Enabled" : "Disabled"}
                                   </span>
                                 </div>
-                                <p>{plugin.description}</p>
+                                <p>{t(plugin.description)}</p>
                                 {plugin.status === "planned" ? (
                                   <small>
                                     Documentation only for now. Engine adapters are not installed or
@@ -2163,7 +2081,7 @@ export function SettingsModal({
                     provider. It does not store passwords, cookies, API keys, or chat content.
                   </p>
                 </div>
-                <div className="ai-provider-config-list">
+                <div className="ai-provider-config-list" data-setting-id="worldnotion.ai-advisor.providers">
                   {settings.aiAdvisor.providers.map((provider) => (
                     <article key={provider.id} className="ai-provider-config-card">
                       <div className="ai-provider-config-fields">
@@ -2253,9 +2171,6 @@ export function SettingsModal({
                 </div>
               </div>
             ) : null}
-          </section>
-        </div>
-      </div>
-    </div>
-  );
+
+</SettingsFrame></AppInteractionContext.Provider>;
 }

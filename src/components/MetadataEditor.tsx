@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { focusAppElement } from "../hooks/useAppInteraction";
 import { useWorldnotionUi } from "../i18n";
 import {
   AlertCircle,
@@ -306,7 +307,7 @@ export function MetadataEditor({
   const closePropertyEditor = () => {
     const anchorEl = propertyEditor?.anchorEl;
     setPropertyEditor(null);
-    window.requestAnimationFrame(() => anchorEl?.focus());
+    window.requestAnimationFrame(() => focusAppElement(anchorEl));
   };
 
   const parentIdOf = (propertyId: string): string => {
@@ -931,9 +932,7 @@ export function MetadataEditor({
               type="button"
               onClick={() => setShowHiddenProperties((current) => !current)}
               title={
-                showHiddenProperties
-                  ? ui.hideConditionalProperties
-                  : ui.showConditionalProperties
+                showHiddenProperties ? ui.hideConditionalProperties : ui.showConditionalProperties
               }
               aria-pressed={showHiddenProperties}
             >
@@ -956,15 +955,14 @@ export function MetadataEditor({
                 <AlertCircle size={16} />
                 <span>{ui.schemaIssues.replace("{{count}}", String(orphanedFields.length))}</span>
               </div>
-              <p className="field-hint">
-                {ui.metadataSchemaMismatch}
-              </p>
+              <p className="field-hint">{ui.metadataSchemaMismatch}</p>
 
               {/* Extra fields */}
               {extraFields.length > 0 && (
                 <div className="metadata-issue-group">
                   <h4 className="metadata-issue-group-title metadata-issue-extra">
-                    <AlertCircle size={14} /> {ui.extraFields.replace("{{count}}", String(extraFields.length))}
+                    <AlertCircle size={14} />{" "}
+                    {ui.extraFields.replace("{{count}}", String(extraFields.length))}
                   </h4>
                   <p className="field-hint">{ui.fieldsNotInSchema}</p>
                   {extraFields.map((field) => (
@@ -1010,7 +1008,7 @@ export function MetadataEditor({
                             title={ui.removeFromNote}
                           >
                             <Trash2 size={13} />
-                          {ui.delete}
+                            {ui.delete}
                           </button>
                         )}
                       </div>
@@ -1024,7 +1022,8 @@ export function MetadataEditor({
                 <div className="metadata-issue-group">
                   <div className="metadata-issue-header">
                     <h4 className="metadata-issue-group-title metadata-issue-missing">
-                      <AlertCircle size={14} /> {ui.missingFields.replace("{{count}}", String(missingFields.length))}
+                      <AlertCircle size={14} />{" "}
+                      {ui.missingFields.replace("{{count}}", String(missingFields.length))}
                     </h4>
                     <button
                       type="button"
@@ -1036,9 +1035,7 @@ export function MetadataEditor({
                       {ui.addAll}
                     </button>
                   </div>
-                  <p className="field-hint">
-                    {ui.missingFieldsHint}
-                  </p>
+                  <p className="field-hint">{ui.missingFieldsHint}</p>
                   {missingFields.map((field) => (
                     <div
                       key={field.fieldName}
@@ -1075,9 +1072,7 @@ export function MetadataEditor({
               <div className="metadata-section-divider">
                 <span>{ui.unconfiguredProperties}</span>
               </div>
-              <p className="field-hint">
-                {ui.unconfiguredPropertiesHint}
-              </p>
+              <p className="field-hint">{ui.unconfiguredPropertiesHint}</p>
               {unconfiguredProperties.map((property) => (
                 <div key={property.key} className="metadata-unconfigured-item">
                   <div>

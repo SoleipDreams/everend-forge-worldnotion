@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_EDITOR_SETTINGS,
@@ -12,6 +12,7 @@ import { DEFAULT_AI_ADVISOR_SETTINGS } from "../utils/aiProviders";
 import { createDefaultTaxonomyConfig } from "../domain";
 import { SettingsModal } from "./SettingsModal";
 import { DialogProvider } from "./DialogProvider";
+import { UniverseDraftContext, UniverseDraftRegistry } from "../hooks/useUniverseDraft";
 
 function appSettings(overrides: Partial<AppSettingsV4> = {}): AppSettingsV4 {
   return {
@@ -30,6 +31,129 @@ function appSettings(overrides: Partial<AppSettingsV4> = {}): AppSettingsV4 {
 }
 
 describe("SettingsModal", () => {
+  it("selects Everend Forge from standalone appearance settings", () => {
+    const onChange = vi.fn();
+    const settings = appSettings();
+    render(
+      <SettingsModal
+        settings={settings}
+        onChange={onChange}
+        onClose={vi.fn()}
+        initialSection="appearance-behavior"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Language and appearance" }));
+    expect(screen.getByRole("option", { name: "Everend Forge Light" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Everend Forge Dark" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Active style"), { target: { value: "forge-mono-dark" } });
+    expect(onChange).toHaveBeenCalledWith({ ...settings, theme: "forge-mono-dark" });
+  });
+
+  it("keeps manual customization drafts guarded while settings are hidden", () => {
+    const drafts = new UniverseDraftRegistry();
+    const view = (hidden: boolean) => (
+      <UniverseDraftContext.Provider value={drafts}>
+        <SettingsModal
+          hidden={hidden}
+          settings={appSettings()}
+          universe={{
+            name: "Demo",
+            rootPath: "D:/Demo",
+            fileCount: 0,
+            entityCount: 0,
+            templateCount: 0,
+            hasEverendWorkspace: true,
+          }}
+          onChange={vi.fn()}
+          onClose={vi.fn()}
+          initialSection="overview"
+        />
+      </UniverseDraftContext.Provider>
+    );
+    const rendered = render(view(false));
+    fireEvent.change(screen.getByLabelText("Universe name"), { target: { value: "Pending name" } });
+    rendered.rerender(view(true));
+    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+    expect(drafts.hasDrafts()).toBe(true);
+    rendered.rerender(view(false));
+    expect(screen.getByLabelText("Universe name")).toHaveValue("Pending name");
+    expect(drafts.hasDrafts()).toBe(true);
+  });
+
+  it("retains a guarded customization draft when saving fails", async () => {
+    const drafts = new UniverseDraftRegistry();
+    render(
+      <UniverseDraftContext.Provider value={drafts}>
+        <SettingsModal
+          settings={appSettings()}
+          universe={{
+            name: "Demo",
+            rootPath: "D:/Demo",
+            fileCount: 0,
+            entityCount: 0,
+            templateCount: 0,
+            hasEverendWorkspace: true,
+          }}
+          onChange={vi.fn()}
+          onClose={vi.fn()}
+          onSaveUniverseProfile={vi.fn().mockRejectedValue(new Error("Write failed"))}
+          initialSection="overview"
+        />
+      </UniverseDraftContext.Provider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("Universe name"), { target: { value: "New name" } });
+    expect(drafts.hasDrafts()).toBe(true);
+    await act(async () =>
+      fireEvent.click(screen.getByRole("button", { name: "Save" })),
+    );
+    expect(screen.getByRole("alert").textContent).toContain("Write failed");
+    expect(screen.getByLabelText("Universe name")).toHaveValue("New name");
+    expect(drafts.hasDrafts()).toBe(true);
+  });
+
+  it("keeps later customization edits dirty when an earlier save finishes", async () => {
+    const drafts = new UniverseDraftRegistry();
+    let finishSave!: () => void;
+    const save = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    const universe = {
+      name: "Demo",
+      rootPath: "D:/Demo",
+      fileCount: 0,
+      entityCount: 0,
+      templateCount: 0,
+      hasEverendWorkspace: true,
+    };
+    const view = (name: string) => (
+      <UniverseDraftContext.Provider value={drafts}>
+        <SettingsModal
+          settings={appSettings()}
+          universe={{ ...universe, profile: { name } }}
+          onChange={vi.fn()}
+          onClose={vi.fn()}
+          onSaveUniverseProfile={save}
+          initialSection="overview"
+        />
+      </UniverseDraftContext.Provider>
+    );
+    const rendered = render(view("Demo"));
+    fireEvent.change(screen.getByLabelText("Universe name"), { target: { value: "Saved name" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByLabelText("Universe name"), { target: { value: "Later edit" } });
+    await act(async () => {
+      rendered.rerender(view("Saved name"));
+      finishSave();
+    });
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ name: "Saved name" }));
+    expect(screen.getByLabelText("Universe name")).toHaveValue("Later edit");
+    expect(drafts.hasDrafts()).toBe(true);
+  });
+
   it("offers all three default modes without a duplicate structure setting", () => {
     const onChange = vi.fn();
     const settings = appSettings();

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 
 export interface FontSelectorProps {
   currentFont?: string;
@@ -8,6 +9,7 @@ export interface FontSelectorProps {
 }
 
 export function FontSelector({ currentFont, onSelectFont, availableFonts }: FontSelectorProps) {
+  const appActive = useAppIsActive();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -22,18 +24,18 @@ export function FontSelector({ currentFont, onSelectFont, availableFonts }: Font
       }
     }
 
-    if (isOpen) {
+    if (isOpen && appActive) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen]);
+  }, [isOpen, appActive]);
 
   // Focus input when opening
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen && appActive && inputRef.current) {
+      focusAppElement(inputRef.current);
     }
-  }, [isOpen]);
+  }, [isOpen, appActive]);
 
   const filteredFonts = availableFonts.filter((font) =>
     font.toLowerCase().includes(searchQuery.toLowerCase()),

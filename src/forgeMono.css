@@ -1,0 +1,264 @@
+/* Everend Forge interface palette. The saved theme IDs retain compatibility. */
+.forge-worldnotion[data-theme="forge-mono-light"] {
+  color-scheme: light;
+  --wn-bg: #f5ecd9;
+  --wn-panel: #fff8e9;
+  --wn-panel-2: #eadfc7;
+  --wn-card: #fff8e9;
+  --wn-border: #c7b594;
+  --wn-text: #282317;
+  --wn-muted: #655b48;
+  --wn-faint: #776952;
+  --wn-accent: #87531e;
+  --wn-accent-soft: #ead8b1;
+  --wn-accent-contrast: #fff8e9;
+  --wn-blue: #365c87;
+  --wn-danger: #a23939;
+  --wn-warning: #87531e;
+  --wn-success: #376348;
+  --wn-editor-bg: #fff8e9;
+  --wn-editor-text: #282317;
+  --wn-graph-thread: #87531e;
+  --wn-graph-node: #365c87;
+  --wn-graph-tag: #87531e;
+  --wn-graph-unresolved: #a23939;
+}
+
+.forge-worldnotion[data-theme="forge-mono-dark"] {
+  color-scheme: dark;
+  --wn-bg: #0a0b10;
+  --wn-panel: #12141b;
+  --wn-panel-2: #1a1d27;
+  --wn-card: #12141b;
+  --wn-border: #30333f;
+  --wn-text: #efe9dd;
+  --wn-muted: #a8a296;
+  --wn-faint: #8c877e;
+  --wn-accent: #f2c46d;
+  --wn-accent-soft: #282219;
+  --wn-accent-contrast: #201609;
+  --wn-blue: #7fb0ff;
+  --wn-danger: #f09c91;
+  --wn-warning: #f2c46d;
+  --wn-success: #91c4a2;
+  --wn-editor-bg: #12141b;
+  --wn-editor-text: #efe9dd;
+  --wn-graph-thread: #f2c46d;
+  --wn-graph-node: #7fb0ff;
+  --wn-graph-tag: #f2c46d;
+  --wn-graph-unresolved: #f09c91;
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] {
+  --wn-background: var(--wn-bg);
+  --wn-text-secondary: var(--wn-muted);
+  --wn-text-muted: var(--wn-muted);
+  --wn-panel-hover: var(--wn-panel-2);
+  --wn-surface-muted: var(--wn-panel-2);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] :is(button, .btn):hover:not(:disabled) {
+  border-color: var(--wn-accent);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .dock-group[data-active-group="true"] {
+  border-color: color-mix(in srgb, var(--wn-accent) 40%, var(--wn-border));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] :is(.tree-button, .template-button).active {
+  border-color: transparent;
+  background: var(--wn-accent-soft);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] :is(.dock-tab-document, .dock-tab-panel).active {
+  color: var(--wn-blue);
+  background: color-mix(in srgb, var(--wn-blue) 7%, var(--wn-panel));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(
+    .sidebar-section-title,
+    .ecosystem-result-summary,
+    .document-header-meta,
+    .save-status,
+    .onboarding-guide-eyebrow,
+    .recent-universe-kind,
+    .settings-nav-group-title,
+    .inspector-section-label
+  ) {
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .home-shell {
+  background:
+    radial-gradient(
+      ellipse at 70% 10%,
+      color-mix(in srgb, var(--wn-blue) 6%, transparent),
+      transparent 55%
+    ),
+    var(--wn-bg);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .home-topbar {
+  background: transparent;
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .home-actions .primary-action {
+  color: var(--wn-accent-contrast);
+  background: var(--wn-accent);
+  border-color: var(--wn-accent);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(.recent-universe-card, .universe-basics-card, .ecosystem-gallery-card) {
+  background: linear-gradient(180deg, var(--wn-panel), var(--wn-bg));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(.recent-universe-card, .ecosystem-gallery-card):hover {
+  border-color: color-mix(in srgb, var(--wn-accent) 45%, var(--wn-border));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .ecosystem-gallery-meta {
+  color: var(--wn-faint);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] :is(.onboarding-guide, .brand-loading) {
+  color: var(--wn-text);
+  background: var(--wn-panel);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .brand-loading {
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--wn-accent) 10%, transparent),
+      transparent 38%
+    ),
+    var(--wn-bg);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .brand-loading::before,
+.forge-worldnotion[data-theme^="forge-mono-"] .brand-loading::after,
+.forge-worldnotion[data-theme^="forge-mono-"] .brand-loading-orbit {
+  border-color: color-mix(in srgb, var(--wn-accent) 16%, transparent);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(.brand-loading-content > p, .brand-loading-status) {
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .brand-loading-orbit::after,
+.forge-worldnotion[data-theme^="forge-mono-"] :is(.brand-loading-pulse, .brand-loading-mark-glow) {
+  background: var(--wn-accent);
+}
+
+.forge-worldnotion[data-theme="forge-mono-dark"] .forge-logo-on-light {
+  display: none;
+}
+.forge-worldnotion[data-theme="forge-mono-dark"] .forge-logo-on-dark {
+  display: block;
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(
+    .property-editor-popover button.danger,
+    .image-field-action-danger,
+    .image-remove-button,
+    .btn-danger,
+    .confirm-dialog-danger
+  ) {
+  color: var(--wn-danger);
+  border-color: color-mix(in srgb, var(--wn-danger) 45%, var(--wn-border));
+  background: color-mix(in srgb, var(--wn-danger) 8%, var(--wn-panel));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(.property-editor-popover button.danger, .image-field-action-danger, .btn-danger):hover:not(
+    :disabled
+  ) {
+  border-color: var(--wn-danger);
+  background: color-mix(in srgb, var(--wn-danger) 14%, var(--wn-panel));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(
+    .modal-button-destructive,
+    .modal-button-destructive:hover,
+    .format-panel-chip.danger,
+    .feedback-modal-frame-error
+  ) {
+  color: var(--wn-danger);
+  background: color-mix(in srgb, var(--wn-danger) 8%, var(--wn-panel));
+  border-color: color-mix(in srgb, var(--wn-danger) 45%, var(--wn-border));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .format-panel-chip.danger:hover {
+  background: color-mix(in srgb, var(--wn-danger) 14%, var(--wn-panel));
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .feedback-modal-frame-wrap {
+  background: var(--wn-bg);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .feedback-modal-frame-error span {
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(
+    .modal-button-confirm,
+    .accept-button,
+    .btn-primary,
+    .btn-small.btn-primary,
+    .btn-group-item.active,
+    .property-tree-conditional,
+    .clear-filters-button:hover
+  ) {
+  color: var(--wn-accent-contrast);
+  background: var(--wn-accent);
+  border-color: var(--wn-accent);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  :is(.btn-primary, .btn-small.btn-primary):hover:not(:disabled) {
+  color: var(--wn-accent-contrast);
+  background: var(--wn-accent);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .toast-message {
+  color: var(--wn-text);
+  background: var(--wn-panel);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .toast-message.toast-success {
+  color: var(--wn-success);
+  background: color-mix(in srgb, var(--wn-success) 8%, var(--wn-panel));
+  border-color: var(--wn-success);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .toast-message.toast-warning {
+  color: var(--wn-warning);
+  background: color-mix(in srgb, var(--wn-warning) 8%, var(--wn-panel));
+  border-color: var(--wn-warning);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"] .toast-message.toast-error {
+  color: var(--wn-danger);
+  background: color-mix(in srgb, var(--wn-danger) 8%, var(--wn-panel));
+  border-color: var(--wn-danger);
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  .cm-panel.cm-search
+  :is(button[name="next"], button[name="replace"], button[name="replaceAll"]) {
+  color: var(--wn-text) !important;
+  background: var(--wn-panel-2) !important;
+}
+
+.forge-worldnotion[data-theme^="forge-mono-"]
+  .cm-panel.cm-search
+  input[type="checkbox"]:checked::after {
+  color: var(--wn-panel) !important;
+}

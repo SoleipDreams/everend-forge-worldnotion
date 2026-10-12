@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MessageDialog } from "./MessageDialog";
 import { InputDialog } from "./InputDialog";
+import { useNotify } from "../notifications";
 
 export interface ConfirmDialogOptions {
   title?: string;
@@ -77,7 +78,8 @@ type PromptState = {
   resolve: (value: string | null) => void;
 };
 
-export function DialogProvider({ children }: { children: ReactNode }) {
+export function DialogProvider({ children, notifyAlerts = false }: { children: ReactNode; notifyAlerts?: boolean }) {
+  const notify = useNotify();
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [alertState, setAlertState] = useState<AlertState | null>(null);
   const [promptState, setPromptState] = useState<PromptState | null>(null);
@@ -89,10 +91,14 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const alertDialog = useCallback<AlertDialogFn>((message, options) => {
+    if (notifyAlerts) {
+      notify({ message, title: options?.title, kind: /required|unique|cannot|could not|failed/i.test(message) ? "warning" : "info" });
+      return Promise.resolve();
+    }
     return new Promise((resolve) => {
       setAlertState({ message, options, resolve });
     });
-  }, []);
+  }, [notify, notifyAlerts]);
 
   const promptDialog = useCallback<PromptDialogFn>((title, placeholder, defaultValue) => {
     return new Promise((resolve) => {

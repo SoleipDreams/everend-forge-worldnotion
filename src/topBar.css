@@ -1,0 +1,195 @@
+/* Standalone chrome contract; also applies when hosted by the Suite. */
+.forge-worldnotion {
+  width: calc(100% / var(--wn-ui-zoom, 1));
+}
+
+.forge-worldnotion[data-suite-embedded="false"] {
+  height: calc(100dvh / var(--wn-ui-zoom, 1));
+  min-height: 0;
+}
+
+.forge-worldnotion[data-suite-embedded="true"] {
+  height: calc(100% / var(--wn-ui-zoom, 1));
+}
+
+.forge-worldnotion .app-shell.dock-app-shell {
+  grid-template-rows: 48px minmax(0, 1fr);
+  height: 100%;
+}
+
+.forge-worldnotion .home-shell {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: 48px minmax(0, 1fr);
+  overflow: auto;
+}
+
+.forge-worldnotion :is(.dock-top-bar, .home-topbar) {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  margin: 8px 8px 0;
+  padding: 4px 6px;
+  border: 1px solid var(--ef-border);
+  border-radius: 10px;
+  background: var(--ef-panel);
+  box-shadow: none;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.forge-worldnotion[data-window-chrome] .dock-top-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.forge-worldnotion .dock-workspace {
+  padding: 8px;
+}
+
+.forge-worldnotion
+  :is(.dock-top-left, .dock-top-right, .home-topbar-leading, .home-topbar-actions) {
+  height: 30px;
+  align-items: center;
+  gap: 6px;
+}
+
+.forge-worldnotion .home-topbar-leading {
+  flex: 1 1 auto;
+}
+
+.forge-worldnotion :is(.home-topbar-actions, .wn-window-title-controls) {
+  flex: 0 0 auto;
+}
+
+.forge-worldnotion
+  :is(.dock-top-bar, .home-topbar)
+  :is(.dock-icon-button, .forge-corner-button, .wn-window-title-controls button),
+.forge-worldnotion .home-topbar-actions > button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.forge-worldnotion .forge-corner-menu {
+  flex-basis: 30px;
+  width: 30px;
+  height: 30px;
+}
+
+.forge-worldnotion .forge-corner-menu .forge-corner-button {
+  border: 1px solid var(--ef-border);
+  border-radius: 6px;
+  padding: 4px;
+  background: var(--ef-panel-soft);
+}
+
+.forge-worldnotion .forge-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.forge-worldnotion .home-topbar .app-brand-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.forge-worldnotion .home-topbar .brand {
+  height: 30px;
+  align-items: center;
+  overflow: hidden;
+}
+
+.forge-worldnotion .home-topbar .brand h1 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.forge-worldnotion :is(.dock-universe-button, .dock-layout-select, .dock-panel-menu-toggle) {
+  box-sizing: border-box;
+  height: 30px;
+  min-height: 30px;
+}
+
+.forge-worldnotion[data-window-chrome] .dock-universe-button {
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.forge-worldnotion .dock-universe-copy {
+  display: flex;
+  align-items: center;
+}
+
+.forge-worldnotion .wn-window-title-controls {
+  height: 30px;
+}
+
+.forge-worldnotion .wn-loading-topbar {
+  inset: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .forge-worldnotion[data-window-chrome] .dock-layout-select {
+    width: 30px;
+    min-width: 30px;
+  }
+
+  .forge-worldnotion[data-window-chrome] .dock-panel-menu-toggle {
+    width: 30px;
+    min-width: 30px;
+  }
+}
+
+/* Keep standalone window controls in their own corner capsule, like the Suite. */
+.forge-worldnotion[data-window-chrome="true"] {
+  --wn-window-controls-width: 108px;
+  --wn-window-controls-reserve: 116px;
+}
+
+.forge-worldnotion[data-window-chrome="true"]
+  :is(.dock-top-bar, .home-topbar:not(.wn-loading-topbar)) {
+  width: calc(100% - 16px - var(--wn-window-controls-reserve));
+  padding-right: 6px;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .wn-loading-topbar {
+  left: 8px;
+  right: 124px;
+  width: auto;
+  margin: 8px 0 0;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .wn-window-title-controls {
+  position: fixed;
+  z-index: 10010;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: var(--wn-window-controls-width);
+  height: 40px;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--ef-border, var(--wn-border));
+  border-radius: 10px;
+  background: var(--ef-panel, var(--wn-panel));
+}
+
+.forge-worldnotion[data-window-chrome="true"]
+  .wn-window-title-controls > button {
+  flex: 0 0 30px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border-radius: 4px;
+  background: transparent;
+}

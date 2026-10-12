@@ -1,0 +1,19 @@
+@keyframes wn-surface-enter {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.dock-tab { animation: wn-surface-enter 160ms ease-out; }
+.dock-app-shell :is([role="menu"], .context-menu),
+.settings-backdrop > *, .dialog-backdrop > * {
+  animation: wn-surface-enter 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dock-tab, .dock-icon-button, .settings-nav button {
+  transition: background-color 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-tab, .dock-app-shell :is([role="menu"], .context-menu),
+  .settings-backdrop > *, .dialog-backdrop > * { animation: none; }
+  .dock-tab, .dock-icon-button, .settings-nav button { transition: none; }
+}

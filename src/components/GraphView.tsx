@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
 import { List, Search, X } from "lucide-react";
 import type { Simulation, SimulationLinkDatum } from "d3-force";
@@ -57,6 +58,9 @@ export function GraphView({
   onRevealNode,
   onNodeHover,
 }: GraphViewProps) {
+  const appActive = useAppIsActive();
+  const appActiveRef = useRef(appActive);
+  appActiveRef.current = appActive;
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simulationRef = useRef<Simulation<D3Node, D3Link> | null>(null);
@@ -113,6 +117,7 @@ export function GraphView({
   }, [connectedNodeIds, hoveredNodeId]);
 
   useEffect(() => {
+    if (!appActive) return;
     if (width && height) return;
     const container = containerRef.current;
     if (!container) return;
@@ -129,7 +134,7 @@ export function GraphView({
     const observer = new ResizeObserver(updateSize);
     observer.observe(observedContainer);
     return () => observer.disconnect();
-  }, [width, height]);
+  }, [width, height, appActive]);
 
   useEffect(() => {
     if (!graphData.nodes.length) {
@@ -195,6 +200,7 @@ export function GraphView({
       });
 
     simulationRef.current = simulation;
+    if (!appActiveRef.current) simulation.stop();
     return () => {
       simulation.stop();
       if (simulationRef.current === simulation) simulationRef.current = null;
@@ -216,6 +222,15 @@ export function GraphView({
   }, [resetSignal]);
 
   useEffect(() => {
+    const simulation = simulationRef.current;
+    if (!appActive) simulation?.stop();
+    else {
+      if (simulation && simulation.alpha() > simulation.alphaMin()) simulation.restart();
+      renderGraph();
+    }
+  }, [appActive]);
+
+  useEffect(() => {
     renderGraph();
   }, [
     activeNodeId,
@@ -229,7 +244,17 @@ export function GraphView({
   ]);
 
   useEffect(() => {
-    if (!contextMenu) return;
+    if (!appActive) return;
+    const owner = containerRef.current?.closest(".forge-worldnotion");
+    if (!owner) return;
+    // Theme changes redraw settled graphs without restarting their layout.
+    const observer = new MutationObserver(() => renderGraph());
+    observer.observe(owner, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, [activeNodeId, connectedNodeIds, settings, appActive]);
+
+  useEffect(() => {
+    if (!contextMenu || !appActive) return;
     function closeMenu(event: Event) {
       if (contextMenuRef.current?.contains(event.target as Node)) return;
       setContextMenu(null);
@@ -240,7 +265,7 @@ export function GraphView({
       document.removeEventListener("mousedown", closeMenu);
       document.removeEventListener("keydown", closeMenu);
     };
-  }, [contextMenu]);
+  }, [contextMenu, appActive]);
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -418,10 +443,14 @@ export function GraphView({
   }, []);
 
   function renderGraph() {
+    if (!appActiveRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const context = canvas.getContext("2d");
     if (!context) return;
+    const owner = containerRef.current?.closest(".forge-worldnotion") ?? document.documentElement;
+    const palette = getComputedStyle(owner);
+    const forgeThread = palette.getPropertyValue("--wn-graph-thread").trim();
 
     // Always start from the bitmap's native coordinate system. This prevents
     // stale transforms or drawing state from leaving a ghost frame after zoom.
@@ -432,7 +461,7 @@ export function GraphView({
     context.setLineDash([]);
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle =
-      getComputedStyle(document.documentElement).getPropertyValue("--wn-editor-bg").trim() ||
+      palette.getPropertyValue("--wn-editor-bg").trim() ||
       "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -448,7 +477,7 @@ export function GraphView({
       const targetNode = linkEndpoint(link.target);
       if (!sourceNode || !targetNode) return;
       const isFocused = !hasFocus || focusIds.has(sourceNode.id) || focusIds.has(targetNode.id);
-      const linkColor = getLinkColor(link.type);
+      const linkColor = forgeThread || getLinkColor(link.type);
       context.strokeStyle = isFocused ? linkColor : `${linkColor}35`;
       context.globalAlpha = isFocused ? 0.9 : 0.22;
       context.lineWidth = settings.linkThickness / transform.k;
@@ -472,16 +501,20 @@ export function GraphView({
       const isDimmed = hasFocus && !isConnected;
       const radius = nodeRadius(node);
       context.globalAlpha = isDimmed ? 0.25 : 1;
-      context.fillStyle = node.color ?? "#7c8a96";
+      // Keep type and custom group colors meaningful in every interface theme.
+      context.fillStyle =
+        node.color || palette.getPropertyValue("--wn-graph-node").trim() || "#7c8a96";
       context.beginPath();
       context.arc(node.x, node.y, radius, 0, Math.PI * 2);
       context.fill();
 
       if (isHovered || isActive || isHighlighted) {
         context.strokeStyle = isActive
-          ? getComputedStyle(document.documentElement).getPropertyValue("--wn-accent").trim() ||
+          ? palette.getPropertyValue("--wn-accent").trim() ||
             "#3f7f64"
-          : "#ffffff";
+          : forgeThread
+            ? palette.getPropertyValue("--wn-text").trim()
+            : "#ffffff";
         context.lineWidth = (isActive ? 3 : 2) / transform.k;
         context.stroke();
       }
@@ -514,9 +547,11 @@ export function GraphView({
     dimmed: boolean,
   ) {
     const fontSize = Math.max(10 / scale, 11);
+    const owner = containerRef.current?.closest(".forge-worldnotion") ?? document.documentElement;
+    const palette = getComputedStyle(owner);
     context.font = `${fontSize}px Inter, system-ui, sans-serif`;
     context.fillStyle =
-      getComputedStyle(document.documentElement).getPropertyValue("--wn-text").trim() || "#111827";
+      palette.getPropertyValue("--wn-text").trim() || "#111827";
     context.globalAlpha = dimmed ? 0.35 : 0.88;
     context.textAlign = "center";
     context.textBaseline = "top";

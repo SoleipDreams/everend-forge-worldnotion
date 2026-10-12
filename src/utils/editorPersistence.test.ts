@@ -19,6 +19,15 @@ function tab(overrides: Partial<OpenTab> = {}): OpenTab {
 }
 
 describe("editor persistence helpers", () => {
+  it("keeps edits made during a save dirty while recording the written snapshot", () => {
+    const next = markTabSaved(tab({ rawMarkdown: "New edit" }), 42, "Written snapshot");
+    expect(next).toMatchObject({
+      rawMarkdown: "New edit",
+      savedMarkdown: "Written snapshot",
+      dirty: true,
+      modifiedMs: 42,
+    });
+  });
   it("builds Tauri save_file payloads from writable tabs", () => {
     expect(saveFilePayloadForTab(tab())).toEqual({
       path: "C:/Vault/Notes/Ada.md",

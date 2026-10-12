@@ -1,4 +1,5 @@
 import YAML from "yaml";
+import { isReservedVisualDocumentPath, VISUAL_DOCUMENT_KEY } from "../visualDocuments/marker";
 import type {
   CustomFieldDefinition,
   CustomFieldType,
@@ -71,7 +72,7 @@ export const SYSTEM_FRONTMATTER_KEYS = new Set(["folder"]);
 // These remain core index data, but relationship wiring is not a document
 // property users should configure. It must stay out of the normal and hidden
 // inspector views alike.
-export const NON_INSPECTOR_PROPERTY_IDS = new Set(["folder", "tags", "parentId", "childrenIds"]);
+export const NON_INSPECTOR_PROPERTY_IDS = new Set(["folder", "tags", "parentId", "childrenIds", VISUAL_DOCUMENT_KEY]);
 const BASE_INSPECTOR_PROPERTY_IDS = new Set(["id", "name", "type", "status", "aliases"]);
 
 // System property comment for folder field
@@ -274,6 +275,7 @@ export function listUnconfiguredProperties(
     const visit = (record: Record<string, unknown>, parentPath: string[] = []) => {
       Object.entries(record).forEach(([key, value]) => {
         const path = [...parentPath, key];
+        if (isReservedVisualDocumentPath(path)) return;
         const joined = path.join(".");
         if (!configuredPaths.has(joined)) {
           if (parentPath.length === 0 && BASE_FRONTMATTER_KEYS.includes(key)) return;
@@ -290,7 +292,7 @@ export function listUnconfiguredProperties(
   }
   const knownIds = knownPropertyIds(config);
   return Object.entries(frontmatterData)
-    .filter(([key]) => !knownIds.has(key))
+    .filter(([key]) => !knownIds.has(key) && !isReservedVisualDocumentPath(key))
     .map(([key, value]) => ({
       key,
       value,
@@ -1400,6 +1402,9 @@ export function updateFrontmatterProperties(
     path: getPropertyStoragePath(config, key),
     value,
   }));
+  if (pathUpdates.some(({ path }) => isReservedVisualDocumentPath(path))) {
+    throw new Error("forgeView is reserved for visual documents and cannot be edited as a property.");
+  }
   const currentKeys = Object.keys(parseFrontmatterRaw(frontmatterRaw));
   const topLevelKeys = uniqueInOrder([
     ...currentKeys,
@@ -1459,6 +1464,9 @@ export function getFrontmatterPropertyValues(
  * @returns Reordered frontmatter string with folder comment preserved/added
  */
 export function reorderFrontmatter(frontmatterRaw: string, expectedOrder: string[]): string {
+  if (Object.prototype.hasOwnProperty.call(parseFrontmatterRaw(frontmatterRaw), VISUAL_DOCUMENT_KEY)) {
+    return updateFrontmatterDocument(frontmatterRaw, [], expectedOrder);
+  }
   const data = parseFrontmatterRaw(frontmatterRaw);
   const reordered: Record<string, unknown> = {};
 

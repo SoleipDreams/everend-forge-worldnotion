@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
 import {
   ChevronRight,
   CornerLeftUp,
@@ -23,6 +24,8 @@ export type ContextMenuAction =
   | "openInNewTab"
   | "preview"
   | "newBlankPage"
+  | "newTimeline"
+  | "newRelationshipTree"
   | "newPageFromTemplate"
   | "newFolder"
   | "rename"
@@ -84,6 +87,7 @@ export function ContextMenu({
   onAction,
   onClose,
 }: ContextMenuProps) {
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const menuRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState({ x, y });
@@ -122,6 +126,7 @@ export function ContextMenu({
       }
     }
 
+    if (!appActive) return;
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
 
@@ -129,7 +134,7 @@ export function ContextMenu({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [onClose]);
+  }, [onClose, appActive]);
 
   function run(action: ContextMenuAction, templateType?: string) {
     onAction(action, targetPath, targetKind, templateType);
@@ -166,6 +171,8 @@ export function ContextMenu({
         <FileText size={16} />
         <span>{ui.newBlankPage}</span>
       </button>
+      <button type="button" onClick={() => run("newTimeline")} className="context-menu-item"><FilePlus size={16} /><span>Timeline</span></button>
+      <button type="button" onClick={() => run("newRelationshipTree")} className="context-menu-item"><FilePlus size={16} /><span>Relation tree</span></button>
 
       {templates.length > 0 ? (
         <>

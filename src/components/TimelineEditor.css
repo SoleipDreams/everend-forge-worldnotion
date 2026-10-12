@@ -1,0 +1,396 @@
+.forge-worldnotion .timeline-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ef-text, var(--wn-text));
+  background: var(--ef-bg, var(--wn-bg));
+  font: 13px var(--ef-ui-font, ui-sans-serif, system-ui, sans-serif);
+  container-type: inline-size;
+  container-name: wn-timeline;
+}
+.forge-worldnotion .timeline-editor :is(button, input, select, textarea) {
+  font: inherit;
+}
+.forge-worldnotion .timeline-editor button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--ef-border, var(--wn-border));
+  border-radius: var(--ef-radius-control, 6px);
+  color: inherit;
+  background: var(--ef-panel, var(--wn-panel));
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+.forge-worldnotion .timeline-editor button:hover:not(:disabled) {
+  background: var(--ef-panel-soft, var(--wn-panel-2));
+  border-color: var(--ef-accent, var(--wn-accent));
+}
+.forge-worldnotion .timeline-editor button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.forge-worldnotion .timeline-editor :is(button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ef-accent, var(--wn-accent));
+  outline-offset: 2px;
+}
+.forge-worldnotion .timeline-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ef-border, var(--wn-border));
+  background: var(--ef-panel, var(--wn-panel));
+}
+.forge-worldnotion .timeline-toolbar-group {
+  display: flex;
+  gap: 4px;
+}
+.forge-worldnotion .timeline-toolbar .timeline-calendar-button {
+  margin-left: auto;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forge-worldnotion .timeline-editor :is(input:not([type="checkbox"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ef-border, var(--wn-border));
+  border-radius: 6px;
+  background: var(--ef-panel, var(--wn-panel));
+  color: var(--ef-text, var(--wn-text));
+}
+.forge-worldnotion .timeline-editor textarea {
+  resize: vertical;
+}
+.forge-worldnotion .timeline-toolbar select {
+  max-width: 185px;
+}
+.forge-worldnotion .timeline-editor-workspace {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.forge-worldnotion .timeline-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background-image: radial-gradient(var(--ef-border, var(--wn-border)) 0.65px, transparent 0.65px);
+  background-size: 20px 20px;
+}
+.forge-worldnotion .timeline-canvas > svg {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.forge-worldnotion .timeline-canvas > svg:active {
+  cursor: grabbing;
+}
+.forge-worldnotion .timeline-canvas-background {
+  fill: transparent;
+}
+.forge-worldnotion .timeline-axis {
+  stroke: var(--ef-muted, var(--wn-muted));
+  stroke-width: 1.5;
+}
+.forge-worldnotion .timeline-axis-tick {
+  stroke: var(--ef-border, var(--wn-border));
+  stroke-width: 1;
+}
+.forge-worldnotion .timeline-tick-label {
+  fill: var(--ef-muted, var(--wn-muted));
+  font-size: 11px;
+}
+.forge-worldnotion .timeline-item {
+  cursor: grab;
+  color: var(--timeline-item-color);
+}
+.forge-worldnotion .timeline-item circle {
+  fill: var(--timeline-item-color);
+}
+.forge-worldnotion .timeline-event-stem {
+  stroke: var(--timeline-item-color);
+  stroke-width: 1.5;
+}
+.forge-worldnotion .timeline-item-card {
+  fill: var(--ef-panel, var(--wn-panel));
+  stroke: var(--timeline-item-color);
+  stroke-width: 1.5;
+}
+.forge-worldnotion .timeline-item.selected :is(.timeline-item-card, .timeline-period-bar) {
+  stroke-width: 3;
+}
+.forge-worldnotion .timeline-item-title {
+  fill: var(--ef-text, var(--wn-text));
+  font-size: 12px;
+  font-weight: 600;
+}
+.forge-worldnotion .timeline-item-date {
+  fill: var(--ef-muted, var(--wn-muted));
+  font-size: 11px;
+}
+.forge-worldnotion .timeline-period-bar {
+  fill: color-mix(in srgb, var(--timeline-item-color) 18%, var(--ef-panel, var(--wn-panel)));
+  stroke: var(--timeline-item-color);
+  stroke-width: 1.5;
+}
+.forge-worldnotion .timeline-period-label {
+  fill: var(--ef-panel, var(--wn-panel));
+  fill-opacity: 0.94;
+  pointer-events: none;
+}
+.forge-worldnotion .timeline-period-handle {
+  fill: var(--timeline-item-color);
+  cursor: ew-resize;
+}
+.forge-worldnotion .timeline-canvas-help {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  max-width: calc(100% - 24px);
+  padding: 5px 9px;
+  color: var(--ef-muted, var(--wn-muted));
+  background: var(--ef-panel, var(--wn-panel));
+  border: 1px solid var(--ef-border, var(--wn-border));
+  border-radius: 6px;
+  font-size: 11px;
+  pointer-events: none;
+}
+.forge-worldnotion .timeline-empty {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  width: min(320px, calc(100% - 40px));
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--ef-muted, var(--wn-muted));
+}
+.forge-worldnotion .timeline-empty h3 {
+  margin: 10px 0 6px;
+  color: var(--ef-text, var(--wn-text));
+  font-size: 18px;
+}
+.forge-worldnotion .timeline-empty p {
+  line-height: 1.5;
+}
+.forge-worldnotion .timeline-inspector {
+  flex: 0 0 292px;
+  width: 292px;
+  max-width: 45%;
+  padding: 14px;
+  min-height: 0;
+  overflow: auto;
+  border-left: 1px solid var(--ef-border, var(--wn-border));
+  background: var(--ef-panel, var(--wn-panel));
+}
+.forge-worldnotion .timeline-inspector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.forge-worldnotion .timeline-inspector-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.forge-worldnotion .timeline-inspector-heading button {
+  font-size: 18px;
+  padding: 0;
+  width: 28px;
+}
+.forge-worldnotion .timeline-inspector label {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+  font-size: 12px;
+  color: var(--ef-muted, var(--wn-muted));
+}
+.forge-worldnotion .timeline-inspector fieldset {
+  min-width: 0;
+  margin: 14px 0;
+  padding: 10px;
+  border: 1px solid var(--ef-border, var(--wn-border));
+  border-radius: 8px;
+}
+.forge-worldnotion .timeline-inspector legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.forge-worldnotion .timeline-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 8px;
+}
+.forge-worldnotion .timeline-date-fields small {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.4;
+  color: var(--ef-muted, var(--wn-muted));
+}
+.forge-worldnotion .timeline-calendar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px 24px;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.forge-worldnotion .timeline-calendar-row button {
+  padding: 0;
+}
+.forge-worldnotion .timeline-calendar-entry {
+  margin: 8px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ef-border, var(--wn-border));
+}
+.forge-worldnotion .timeline-editor .timeline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.forge-worldnotion .timeline-checkbox input {
+  accent-color: var(--ef-accent, var(--wn-accent));
+}
+.forge-worldnotion .timeline-hint {
+  color: var(--ef-muted, var(--wn-muted));
+  font-size: 12px;
+  line-height: 1.5;
+}
+.forge-worldnotion .timeline-error {
+  color: var(--wn-danger, #b34343);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.forge-worldnotion .timeline-moon-phases {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.forge-worldnotion .timeline-moon-phases span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.forge-worldnotion .timeline-nudge {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+.forge-worldnotion .timeline-delete {
+  margin-top: 14px;
+  color: var(--wn-danger, #b34343);
+}
+.forge-worldnotion .timeline-panel-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.forge-worldnotion .timeline-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ef-border, var(--wn-border));
+  background: var(--ef-panel-soft, var(--wn-panel-2));
+}
+.forge-worldnotion .timeline-filters > label {
+  display: grid;
+  gap: 4px;
+}
+.forge-worldnotion .timeline-filter-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.forge-worldnotion .timeline-save-view {
+  display: flex;
+  gap: 6px;
+}
+.forge-worldnotion .timeline-save-view input {
+  max-width: 130px;
+}
+.forge-worldnotion .timeline-invalid {
+  padding: 20px;
+}
+.forge-worldnotion .timeline-pending-drafts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 6px 12px;
+  background: var(--ef-panel-soft, var(--wn-panel-2));
+  border-bottom: 1px solid var(--ef-border, var(--wn-border));
+  font-size: 12px;
+}
+.forge-worldnotion .timeline-pending-drafts > span {
+  display: flex;
+  gap: 3px;
+}
+.forge-worldnotion .timeline-pending-drafts button {
+  min-height: 26px;
+  font-size: 11px;
+}
+@container wn-timeline (max-width: 650px) {
+  .forge-worldnotion .timeline-editor-workspace {
+    flex-direction: column;
+  }
+  .forge-worldnotion .timeline-canvas {
+    flex: 1 1 180px;
+    min-height: 160px;
+  }
+  .forge-worldnotion .timeline-inspector {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: none;
+    max-height: 42%;
+    box-sizing: border-box;
+    padding: 10px;
+    border-left: 0;
+    border-top: 1px solid var(--ef-border, var(--wn-border));
+  }
+  .forge-worldnotion .timeline-toolbar {
+    gap: 5px;
+    padding: 6px;
+  }
+  .forge-worldnotion .timeline-toolbar .timeline-calendar-button {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  .forge-worldnotion .timeline-toolbar select {
+    max-width: 100%;
+  }
+  .forge-worldnotion .timeline-filters {
+    min-width: 0;
+    max-height: 28%;
+    overflow: auto;
+    padding: 8px;
+  }
+  .forge-worldnotion .timeline-save-view {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forge-worldnotion .timeline-editor * {
+    transition: none !important;
+  }
+}

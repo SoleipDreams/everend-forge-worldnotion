@@ -35,6 +35,7 @@ export function createOpenTabFromFile(
   requestedMode: DefaultEditorMode | EditorMode,
   sourceView?: SourceViewMode,
   retainedWritingMode: WritingMode = "processed",
+  visualMode?: OpenTab["visualMode"],
 ): OpenTab {
   const opensAsStructuredSource = isJsonPath(file.relativePath) || isXmlPath(file.relativePath);
   const mode = requestedMode === "source" ? "source" : "write";
@@ -49,6 +50,7 @@ export function createOpenTabFromFile(
     modifiedMs: file.modifiedMs,
     dirty: false,
     mode: opensAsStructuredSource ? "source" : mode,
+    visualMode,
     writingMode,
     sourceView: sourceView ?? defaultSourceView(file.relativePath),
     isTemplate: file.relativePath.startsWith(".everend/templates/"),
@@ -90,6 +92,7 @@ export function serializeWorkspaceSession(
       path: tab.path,
       title: tab.title,
       mode: tab.mode,
+      visualMode: tab.visualMode,
       writingMode: tab.writingMode,
       sourceView: tab.sourceView,
       modifiedMs: tab.modifiedMs,

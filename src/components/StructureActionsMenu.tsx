@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
+import { useUniverseDraft } from "../hooks/useUniverseDraft";
 import {
   ArrowUpRight,
   Bold,
@@ -111,6 +113,7 @@ export function StructureActionsMenu({
   onOpenUrl,
   resolveWikilink,
 }: StructureActionsMenuProps) {
+  const appActive = useAppIsActive();
   const rootRef = useRef<HTMLDivElement>(null);
   const [target, setTarget] = useState(element.target ?? "");
   const [alias, setAlias] = useState(element.alias ?? "");
@@ -152,6 +155,7 @@ export function StructureActionsMenu({
         imageWidth !== (element.imagePresentation?.width ?? 100) ||
         imageAlign !== (element.imagePresentation?.align ?? "center")));
 
+  useUniverseDraft(hasFieldEdits);
   const commitAndDismiss = () => {
     if (hasFieldEdits) {
       const markdown = buildMarkdown();
@@ -162,6 +166,7 @@ export function StructureActionsMenu({
 
   // Outside click commits pending field edits (Notion-style), Escape cancels.
   useEffect(() => {
+    if (!appActive) return;
     const handlePointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) commitAndDismiss();
     };
@@ -233,7 +238,7 @@ export function StructureActionsMenu({
           <label>
             <span>Destination</span>
             <input
-              autoFocus
+              autoFocus={appActive}
               value={target}
               onChange={(event) => setTarget(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && commitAndDismiss()}
@@ -257,7 +262,7 @@ export function StructureActionsMenu({
           <label>
             <span>URL</span>
             <input
-              autoFocus
+              autoFocus={appActive}
               value={url}
               onChange={(event) => setUrl(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && commitAndDismiss()}

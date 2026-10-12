@@ -1,4 +1,5 @@
 import type { VaultFile } from "../domain";
+import { hasVisualDocumentMarker } from "../visualDocuments/marker";
 import type { PropertiesConfig, PropertyDefinition } from "../editorTypes";
 import { joinMarkdown, slugify, splitMarkdown } from "./markdownFrontmatter";
 import { isHiddenMetadata } from "./treeBuilder";
@@ -69,6 +70,7 @@ export function planPropertyNormalization({
 }: PropertyNormalizationPlanInput): PropertyNormalizationItem[] {
   return files
     .filter((file) => file.relativePath.endsWith(".md"))
+    .filter((file) => !hasVisualDocumentMarker(file.content))
     .filter((file) => !isHiddenMetadata(file.relativePath))
     .flatMap((file): PropertyNormalizationItem[] => {
       const { frontmatterRaw, bodyMarkdown } = splitMarkdown(file.content);

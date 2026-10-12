@@ -24,8 +24,8 @@ describe("ContextMenu folder notes", () => {
   it("offers editing and deleting when the folder note exists", () => {
     const { onAction } = renderFolderMenu(true);
 
-    expect(screen.getByText("Edit Folder Note")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Delete Folder Note" }));
+    expect(screen.getByText("Edit folder note")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Delete folder note" }));
 
     expect(onAction).toHaveBeenCalledWith(
       "deleteFolderDescription",
@@ -38,14 +38,14 @@ describe("ContextMenu folder notes", () => {
   it("offers creation without a destructive action when no folder note exists", () => {
     renderFolderMenu(false);
 
-    expect(screen.getByText("Create Folder Note")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Delete Folder Note" })).toBeNull();
+    expect(screen.getByText("Create folder note")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete folder note" })).toBeNull();
   });
 
   it("labels folder deletion as an empty-folder-only operation", () => {
     renderFolderMenu(false);
 
-    expect(screen.getByRole("button", { name: "Delete Empty Folder" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete empty folder" })).toBeTruthy();
   });
 });
 

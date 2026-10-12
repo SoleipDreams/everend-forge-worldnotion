@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { AppSettingsV4, DocumentTabGroup, OpenTab } from "../editorTypes";
 import { serializeWorkspaceSession } from "../utils/tabUtils";
@@ -18,6 +18,7 @@ interface UseWorkspaceStateParams {
   selectedPath: string | undefined;
   sessions: AppSettingsV4["sessions"];
   setSettings: Dispatch<SetStateAction<AppSettingsV4>>;
+  onTabsChange?: (tabs: OpenTab[], previous: OpenTab[]) => void;
 }
 
 /**
@@ -34,19 +35,25 @@ export function useWorkspaceState({
   selectedPath,
   sessions,
   setSettings,
+  onTabsChange,
 }: UseWorkspaceStateParams) {
-  const [tabs, setTabs] = useState<OpenTab[]>([]);
+  const [tabs, setTabsState] = useState<OpenTab[]>([]);
   const [documentTabGroups, setDocumentTabGroups] = useState<DocumentTabGroup[]>([]);
   const [activeTabPath, setActiveTabPath] = useState<string>();
   const [workspaceLayout, setWorkspaceLayout] = useState(() => createDefaultWorkspaceLayout());
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const tabsRef = useRef<OpenTab[]>([]);
+  const onTabsChangeRef = useRef(onTabsChange);
+  onTabsChangeRef.current = onTabsChange;
+  // Save barriers need the latest edit even before React commits another render.
+  const setTabs = useCallback<Dispatch<SetStateAction<OpenTab[]>>>((update) => {
+    const next = typeof update === "function" ? update(tabsRef.current) : update;
+    onTabsChangeRef.current?.(next, tabsRef.current);
+    tabsRef.current = next;
+    setTabsState(next);
+  }, []);
   const sessionsRef = useRef(sessions);
   const legacyExpandedPathsLoadedRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    tabsRef.current = tabs;
-  }, [tabs]);
 
   // Se sincroniza antes que el efecto de restauración para que este lea la
   // sesión del render actual sin declarar `sessions` como dependencia (lo que

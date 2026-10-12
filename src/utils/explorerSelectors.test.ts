@@ -183,13 +183,10 @@ describe("explorer selectors", () => {
     expect(
       selectVisibleTree(withImages, "", false, undefined, true, true).map((item) => item.path),
     ).toEqual(["World"]);
-    expect(selectImageTree(withImages, "").map((item) => item.path)).toEqual([
-      ".everend",
-      ".everend/assets",
-      ".everend/assets/image",
-      "Art",
-      "Art/maps",
-    ]);
+    const imageTree = selectImageTree(withImages, "");
+    expect(imageTree.map((item) => item.path)).toEqual([".everend", "Art"]);
+    expect(imageTree[0].children?.[0]).toMatchObject({ path: ".everend/assets", children: [expect.objectContaining({ path: ".everend/assets/image" })] });
+    expect(imageTree[1].children?.[0]).toMatchObject({ path: "Art/maps" });
     expect(selectImageTree(withImages, "hero").map((item) => item.path)).toEqual([
       ".everend/assets/image/hero.png",
     ]);

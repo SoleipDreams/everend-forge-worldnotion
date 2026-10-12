@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { autoUpdate, flip, offset, shift, size, useFloating } from "@floating-ui/react";
 import Fuse, { type IFuseOptions } from "fuse.js";
 import { Plus } from "lucide-react";
+import { focusAppElement, useAppIsActive } from "../../hooks/useAppInteraction";
 
 export type PickerItem = {
   id: string;
@@ -68,6 +69,7 @@ export function PickerPopover({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const appActive = useAppIsActive();
   const { refs, floatingStyles } = useFloating({
     open,
     placement: "bottom-start",
@@ -90,12 +92,17 @@ export function PickerPopover({
   }, [anchorRef, refs, open]);
 
   useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setActiveIndex(0);
-    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
-    return () => window.cancelAnimationFrame(frame);
+    if (open) {
+      setQuery("");
+      setActiveIndex(0);
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !appActive) return;
+    const frame = window.requestAnimationFrame(() => focusAppElement(inputRef.current));
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, appActive]);
 
   const fuse = useMemo(() => new Fuse(items, FUSE_OPTIONS), [items]);
 
@@ -116,7 +123,7 @@ export function PickerPopover({
   }, [totalRows]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !appActive) return;
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (refs.floating.current?.contains(target)) return;
@@ -125,7 +132,7 @@ export function PickerPopover({
     };
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [anchorRef, onClose, open, refs.floating]);
+  }, [anchorRef, onClose, open, refs.floating, appActive]);
 
   useEffect(() => {
     const activeElement = listRef.current?.querySelector('[data-active="true"]');

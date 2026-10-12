@@ -1,4 +1,5 @@
 import type { PropertiesConfig } from "../editorTypes";
+import { hasVisualDocumentMarker } from "../visualDocuments/marker";
 import type { VaultFile } from "../domain";
 import { joinMarkdown, splitMarkdown } from "./markdownFrontmatter";
 import {
@@ -85,6 +86,7 @@ export function planPropertyStructureMigration(
 
   const items = files
     .filter((file) => file.relativePath.endsWith(".md"))
+    .filter((file) => !hasVisualDocumentMarker(file.content))
     .map((file): PropertyStructureMigrationItem | undefined => {
       const parts = splitMarkdown(file.content);
       if (!parts.frontmatterRaw) return undefined;
@@ -207,6 +209,7 @@ export function planPropertyPathMigration(
 
   const items = files
     .filter((file) => file.relativePath.endsWith(".md"))
+    .filter((file) => !hasVisualDocumentMarker(file.content))
     .map((file): PropertyStructureMigrationItem | undefined => {
       const parts = splitMarkdown(file.content);
       if (!parts.frontmatterRaw) return undefined;

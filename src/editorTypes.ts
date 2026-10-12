@@ -4,6 +4,8 @@ export type DefaultEditorMode = WritingMode | "source";
 export type SourceViewMode = "raw" | "json" | "xml";
 export type EditorPageStyle = "theme" | "white" | "warm-paper" | "system" | "custom";
 export type ThemeId =
+  | "forge-mono-light"
+  | "forge-mono-dark"
   | "worldnotion-light"
   | "worldnotion-dark"
   | "github"
@@ -178,6 +180,7 @@ export type OpenTab = {
   title: string;
   dirty: boolean;
   mode: EditorMode;
+  visualMode?: "visual" | "markdown";
   /** Last Writing presentation used by this tab, retained while Source is active. */
   writingMode: WritingMode;
   sourceView?: SourceViewMode;
@@ -190,7 +193,7 @@ export type OpenTab = {
 
 export type PersistedOpenTab = Pick<
   OpenTab,
-  "path" | "title" | "mode" | "sourceView" | "modifiedMs" | "isTemplate"
+  "path" | "title" | "mode" | "sourceView" | "modifiedMs" | "isTemplate" | "visualMode"
 > & { writingMode?: WritingMode };
 
 export type DocumentTabGroup = {
@@ -223,6 +226,7 @@ export type DockGroupNode = {
   id: string;
   tabs: DockTabRef[];
   activeTabId?: string;
+  role?: "documents" | "panels";
 };
 
 export type DockSplitNode = {
@@ -237,7 +241,8 @@ export type DockSplitNode = {
 export type DockNode = DockGroupNode | DockSplitNode;
 
 export type WorkspaceLayoutV1 = {
-  version: 1;
+  /** Version 1 is migrated on read to explicit document panes. */
+  version: 1 | 2;
   root: DockNode;
   activeGroupId: string;
 };
@@ -267,6 +272,7 @@ export type WorkspaceSession = {
   fileAccessStats?: FileAccessStats[];
   /** Per-user local presentation selection; never written into the vault. */
   variantSelections?: Record<string, string>;
+  visualDocumentSessions?: Record<string, import("./visualDocuments/types").VisualDocumentSession>;
 };
 
 export type ExplorerFavorite = {
@@ -276,6 +282,8 @@ export type ExplorerFavorite = {
 };
 
 export type ExplorerSection = "allFiles" | "favorites" | "ecosystem" | "images";
+
+export type EcosystemView = "list" | "gallery";
 
 export type RecentUniverseProfile = {
   name?: string;
@@ -289,6 +297,8 @@ export type ExplorerSettings = {
   favorites: ExplorerFavorite[];
   recentFiles: string[];
   activeSection: ExplorerSection;
+  /** Local display preference; never written into Markdown or universe settings. */
+  ecosystemView: EcosystemView;
   confirmDragMove: boolean;
   showHiddenEverend: boolean;
   /** Keeps folder descriptions embedded on their folders instead of listing them as note children. */
@@ -328,6 +338,10 @@ export type GraphSettings = {
 };
 
 export type AppSettingsV4 = {
+  /** Machine-local frame preference; excluded from vault appearance profiles. */
+  interfaceFont?: "sans" | "serif" | "humanist";
+  ambientBackground?: boolean;
+  backgroundScene?: string;
   /** Interface language only; universe/content language remains in the vault profile. */
   localePreference?: import("./i18n").LocalePreference;
   theme: ThemeId;
@@ -603,6 +617,7 @@ export const DEFAULT_EXPLORER_SETTINGS: ExplorerSettings = {
   favorites: [],
   recentFiles: [],
   activeSection: "allFiles",
+  ecosystemView: "gallery",
   confirmDragMove: false,
   showHiddenEverend: false,
   folderNotesEnabled: true,

@@ -1,0 +1,188 @@
+.forge-worldnotion[data-window-chrome="true"] .dock-top-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  user-select: none;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .home-topbar {
+  position: relative;
+  z-index: 70;
+  flex-wrap: nowrap;
+  user-select: none;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .home-topbar-actions,
+.forge-worldnotion[data-window-chrome="true"] .dock-top-right > *,
+.forge-worldnotion[data-window-chrome="true"] .dock-top-left > :not(.dock-universe-button) {
+  flex-shrink: 0;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .dock-universe-button {
+  min-width: 0;
+  flex: 0 1 320px;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .home-topbar .brand {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.forge-worldnotion[data-window-chrome="true"] .home-topbar .brand p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.forge-worldnotion .wn-window-title-controls {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+  height: 100%;
+}
+
+.forge-worldnotion .wn-window-title-controls button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ef-radius-control, 4px);
+}
+
+.forge-worldnotion .wn-window-title-controls button:hover {
+  background: var(--wn-accent-soft);
+  border-color: var(--wn-border);
+  color: var(--wn-text);
+}
+
+.forge-worldnotion .wn-window-title-controls .wn-window-close:hover {
+  background: #c42b1c;
+  border-color: #c42b1c;
+  color: white;
+}
+
+.forge-worldnotion .wn-desktop-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+.forge-worldnotion .wn-home-menu-trigger.active {
+  background: var(--wn-accent-soft);
+}
+
+.forge-worldnotion .wn-home-menu-popover,
+.forge-worldnotion .wn-desktop-menu-submenu {
+  position: absolute;
+  z-index: 120;
+  display: grid;
+  min-width: 220px;
+  padding: 5px;
+  border: 1px solid var(--wn-border);
+  border-radius: var(--ef-radius-panel, 9px);
+  background: var(--wn-panel);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 28%);
+}
+
+.forge-worldnotion .wn-home-menu-popover {
+  top: calc(100% + 7px);
+  left: 0;
+}
+
+.forge-worldnotion .wn-desktop-menu-group {
+  position: relative;
+}
+
+.forge-worldnotion .wn-desktop-menu-submenu {
+  top: -5px;
+  left: calc(100% + 5px);
+  min-width: 270px;
+  max-height: min(72vh, 640px);
+  overflow: auto;
+}
+
+.forge-worldnotion .wn-home-menu-popover button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 28px;
+  gap: 20px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--ef-radius-control, 5px);
+  background: transparent;
+  color: var(--wn-text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.forge-worldnotion .wn-home-menu-popover button:hover,
+.forge-worldnotion .wn-home-menu-popover button:focus-visible,
+.forge-worldnotion .wn-home-menu-popover button.active {
+  background: var(--wn-accent-soft);
+  border-color: var(--wn-border);
+}
+
+.forge-worldnotion .wn-home-menu-popover .wn-home-menu-item {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.forge-worldnotion .wn-desktop-menu-submenu kbd {
+  color: var(--wn-muted);
+  font: inherit;
+  font-size: 10px;
+}
+
+.forge-worldnotion .wn-desktop-menu-separator {
+  height: 1px;
+  margin: 4px 5px;
+  background: var(--wn-border);
+}
+
+.forge-worldnotion .wn-loading-topbar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 10001;
+  border-bottom: 1px solid var(--wn-border);
+}
+
+@media (max-width: 900px) {
+  .forge-worldnotion[data-window-chrome="true"] .dock-top-bar {
+    gap: 8px;
+  }
+
+  .forge-worldnotion[data-window-chrome="true"] .dock-top-left,
+  .forge-worldnotion[data-window-chrome="true"] .dock-top-right {
+    gap: 4px;
+  }
+
+  .forge-worldnotion[data-window-chrome="true"] .dock-top-right .save-status {
+    max-width: 70px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .forge-worldnotion[data-window-chrome="true"] .dock-layout-select {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+  }
+
+  .forge-worldnotion[data-window-chrome="true"] .dock-layout-select > span,
+  .forge-worldnotion[data-window-chrome="true"] .dock-panel-menu-toggle > span,
+  .forge-worldnotion[data-window-chrome="true"] .dock-panel-menu-toggle > small {
+    display: none;
+  }
+
+  .forge-worldnotion[data-window-chrome="true"] .dock-panel-menu-toggle {
+    width: 28px;
+    min-width: 28px;
+    padding: 0;
+  }
+}

@@ -16,6 +16,7 @@ import { buildTree } from "./utils/treeBuilder";
 import { parsePropertiesConfig, parseTemplates, parseUniverseProfile } from "./utils/vaultMetadata";
 import { parseVaultAppearanceSettings } from "./utils/vaultAppearanceSettings";
 import { indexMarkdownEntities } from "./utils/entityIndex";
+import { readVisualDocument, type IndexedVisualDocument } from "./visualDocuments/markdown";
 import { detectUniverses } from "./utils/universeDetection";
 import {
   STARTER_TAXONOMY,
@@ -154,6 +155,8 @@ export type VaultIndex = {
   universes: Universe[];
   tree: VaultTreeNode[];
   entities: Entity[];
+  /** Authored visual documents are not canonical characters or entities. */
+  visualDocuments?: IndexedVisualDocument[];
   findings: ValidationFinding[];
   readErrors: VaultReadError[];
   typeCounts: Record<string, number>;
@@ -261,6 +264,16 @@ export function indexVault(
   const propertiesConfig = parsePropertiesConfig(readResult.files, findings);
   const vaultAppearanceSettings = parseVaultAppearanceSettings(readResult.files, findings);
   const entityIndex = indexMarkdownEntities(markdownFiles, propertiesConfig);
+  const visualDocuments = markdownFiles.flatMap((file): IndexedVisualDocument[] => {
+    const result = readVisualDocument(file.content);
+    if (result.status === "none") return [];
+    return [{
+      path: file.relativePath,
+      kind: result.status === "supported" ? result.document.kind : undefined,
+      name: result.status === "supported" && result.name ? result.name : file.relativePath.split("/").pop()?.replace(/\.md$/i, "") ?? file.relativePath,
+      result,
+    }];
+  });
   findings.push(...entityIndex.findings);
 
   readResult.errors.forEach((error) =>
@@ -291,6 +304,7 @@ export function indexVault(
       options.folderNotesEnabled,
     ),
     entities: entityIndex.entities,
+    visualDocuments,
     findings,
     readErrors: readResult.errors,
     typeCounts: entityIndex.typeCounts,

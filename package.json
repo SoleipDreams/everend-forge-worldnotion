@@ -13,6 +13,9 @@
     "lint": "eslint src",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
+    "tauri:debug": "pwsh -NoProfile -File scripts/tauri-debug.ps1",
+    "pw": "playwright-cli -s=worldnotion",
+    "pw:attach": "playwright-cli -s=worldnotion attach --cdp=http://127.0.0.1:9224",
     "tauri": "tauri",
     "tauri:dev": "tauri dev"
   },
@@ -47,6 +50,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/cli": "0.1.22",
     "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

@@ -1,39 +1,24 @@
-import { useState } from "react";
-import { Hash } from "lucide-react";
 import type { PropertiesConfig } from "../editorTypes";
 import { TagHierarchyEditor } from "./TagHierarchyEditor";
 import "../App.css";
 
 type PropertiesManagerProps = {
+  locale?: "en" | "es";
   config: PropertiesConfig;
   onChange: (config: PropertiesConfig) => void;
 };
 
-export function PropertiesManager({ config, onChange }: PropertiesManagerProps) {
-  const [showTagSettings, setShowTagSettings] = useState(true);
+export function PropertiesManager({ config, onChange, locale = "es" }: PropertiesManagerProps) {
+  const es = locale === "es";
 
   return (
     <div className="ecosystem-manager">
-      <div className="ecosystem-tabs">
-        <button
-          className="ecosystem-tab active"
-          onClick={() => setShowTagSettings((current) => !current)}
-          type="button"
-          aria-expanded={showTagSettings}
-        >
-          <Hash size={18} />
-          <div className="tab-info">
-            <span className="tab-title">Etiquetas</span>
-            <span className="tab-subtitle">{config.tags.rootNodes.length} categorías</span>
-          </div>
-        </button>
-      </div>
-
+      <h3>{es ? "Etiquetas" : "Tags"}</h3>
       <div className="ecosystem-content">
         <div className="ecosystem-panel">
-          {showTagSettings ? (
+          {(
             <div className="panel-settings">
-              <label className="setting-toggle">
+              <label className="setting-toggle" data-setting-id="worldnotion.properties.customTags">
                 <input
                   type="checkbox"
                   checked={config.tags.allowCustomTags}
@@ -45,13 +30,13 @@ export function PropertiesManager({ config, onChange }: PropertiesManagerProps) 
                   }
                 />
                 <div className="setting-info">
-                  <span className="setting-label">Permitir etiquetas personalizadas</span>
+                  <span className="setting-label">{es ? "Permitir etiquetas personalizadas" : "Allow custom tags"}</span>
                   <span className="setting-description">
-                    Acepta etiquetas que no estén en la jerarquía
+                    {es ? "Acepta etiquetas que no estén en la jerarquía" : "Accept tags outside the hierarchy"}
                   </span>
                 </div>
               </label>
-              <label className="setting-toggle">
+              <label className="setting-toggle" data-setting-id="worldnotion.properties.slash">
                 <input
                   type="checkbox"
                   checked={config.tags.autoDetectSlashNotation}
@@ -63,15 +48,15 @@ export function PropertiesManager({ config, onChange }: PropertiesManagerProps) 
                   }
                 />
                 <div className="setting-info">
-                  <span className="setting-label">Auto-detectar notación de barras</span>
+                  <span className="setting-label">{es ? "Auto-detectar notación de barras" : "Detect slash notation"}</span>
                   <span className="setting-description">
-                    Reconoce automáticamente la estructura jerárquica
+                    {es ? "Reconoce automáticamente la estructura jerárquica" : "Recognize the hierarchy automatically"}
                   </span>
                 </div>
               </label>
             </div>
-          ) : null}
-          <TagHierarchyEditor
+          )}
+          <TagHierarchyEditor locale={locale}
             nodes={config.tags.rootNodes}
             onChange={(rootNodes) =>
               onChange({

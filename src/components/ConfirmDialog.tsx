@@ -1,4 +1,6 @@
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useEffect, useRef } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import "../App.css";
 import { useWorldnotionUi } from "../i18n";
 
@@ -27,12 +29,15 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, isOpen);
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (isOpen) confirmRef.current?.focus();
-  }, [isOpen]);
+    if (isOpen && appActive) focusAppElement(confirmRef.current);
+  }, [isOpen, appActive]);
 
   if (!isOpen) return null;
 
@@ -46,6 +51,8 @@ export function ConfirmDialog({
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-dialog"
         role="alertdialog"
         aria-modal="true"

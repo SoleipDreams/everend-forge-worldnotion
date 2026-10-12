@@ -1,4 +1,5 @@
 import type { PropertiesConfig, PropertyDefinition } from "../editorTypes";
+import { isReservedVisualDocumentPath } from "../visualDocuments/marker";
 
 export type PropertyPathEntry = {
   definition: PropertyDefinition;
@@ -28,6 +29,7 @@ export function listPropertyPathEntries(config?: PropertiesConfig): PropertyPath
   ) {
     definitions.forEach((definition) => {
       const path = [...parentPath, definition.id];
+      if (isReservedVisualDocumentPath(path)) return;
       entries.push({ definition, path, parent });
       if (definition.children?.length) visit(definition.children, path, definition);
     });

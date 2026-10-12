@@ -1,4 +1,5 @@
 import type { PropertiesConfig } from "../editorTypes";
+import { isReservedVisualDocumentPath } from "../visualDocuments/marker";
 import { getPropertyStoragePath, getValueAtPath, hasValueAtPath } from "./propertyPaths";
 import { updateFrontmatterProperties } from "./propertiesConfig";
 
@@ -70,7 +71,10 @@ export function resolveVariantFrontmatter(
   delete base.variants;
   if (selected === BASE_VARIANT_ID) return base;
   const overrides = readNoteVariants(frontmatter)[selected]?.overrides;
-  return overrides ? merge(base, overrides) : base;
+  if (!overrides) return base;
+  const safeOverrides = { ...overrides };
+  delete safeOverrides.forgeView;
+  return merge(base, safeOverrides);
 }
 
 function slug(value: string) {
@@ -172,7 +176,7 @@ export function setVariantOverride(
   propertyId: string,
   value: unknown | undefined,
 ): NoteVariants {
-  if (variantId === BASE_VARIANT_ID || ["id", "type", "variants"].includes(propertyId)) {
+  if (variantId === BASE_VARIANT_ID || ["id", "type", "variants"].includes(propertyId) || isReservedVisualDocumentPath(getPropertyStoragePath(config, propertyId))) {
     throw new Error("This property cannot be overridden by a variant.");
   }
   const variants = readNoteVariants(frontmatter);

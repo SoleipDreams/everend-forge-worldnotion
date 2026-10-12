@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import Fuse, { type IFuseOptions } from "fuse.js";
 import {
   FileText,
@@ -109,6 +110,7 @@ export function CommandPalette({
   onSelectHeader,
   onSelectTag,
 }: CommandPaletteProps) {
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -276,17 +278,24 @@ export function CommandPalette({
     setSelectedIndex(0);
   }, [results]);
 
-  // Focus input when opened
+  // A new palette session resets its query; hiding the app preserves it.
   useEffect(() => {
     if (isOpen) {
-      // Use setTimeout to ensure focus happens after render
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
       setQuery("");
       setSelectedIndex(0);
     }
   }, [isOpen]);
+
+  // Focus input when opened or the owning app becomes visible again.
+  useEffect(() => {
+    if (isOpen && appActive) {
+      // Use setTimeout to ensure focus happens after render
+      const timer = setTimeout(() => {
+        focusAppElement(inputRef.current);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, appActive]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -365,7 +374,6 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             className="command-palette-input"
-            autoFocus
             placeholder={
               activeMode === "files"
                 ? ui.searchFiles
@@ -380,7 +388,11 @@ export function CommandPalette({
             onKeyDown={handleKeyDown}
           />
           {query && (
-            <button className="clear-button" onClick={() => setQuery("")} aria-label={ui.clearSearch}>
+            <button
+              className="clear-button"
+              onClick={() => setQuery("")}
+              aria-label={ui.clearSearch}
+            >
               <X size={16} />
             </button>
           )}
@@ -452,9 +464,7 @@ export function CommandPalette({
             <div className="no-results">
               {ui.noResults}
               {activeMode === "files" && query && (
-                <div className="no-results-hint">
-                  {ui.searchHint}
-                </div>
+                <div className="no-results-hint">{ui.searchHint}</div>
               )}
             </div>
           ) : (
@@ -532,9 +542,7 @@ export function CommandPalette({
             {activeMode === "tags" && <span>🏷️ {ui.tags}</span>}
             {activeMode === "commands" && <span>⌘ {ui.commands}</span>}
           </div>
-          <div className="palette-hints">
-            {ui.navigateSelectClose}
-          </div>
+          <div className="palette-hints">{ui.navigateSelectClose}</div>
         </div>
       </div>
     </div>

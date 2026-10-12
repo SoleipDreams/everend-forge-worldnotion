@@ -1,0 +1,293 @@
+.forge-worldnotion .ef-visual-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 260px;
+  min-width: 0;
+  color: var(--ef-text);
+  background: var(--ef-bg);
+  container-type: inline-size;
+}
+.forge-worldnotion .ef-visual-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--ef-border);
+  background: var(--ef-panel);
+}
+.forge-worldnotion .ef-visual-toolbar button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.forge-worldnotion .ef-visual-toolbar button[aria-pressed="true"] {
+  background: var(--ef-accent-soft);
+  color: var(--ef-accent);
+}
+.forge-worldnotion .ef-visual-toolbar select {
+  max-width: 150px;
+  min-width: 0;
+  height: 30px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.forge-worldnotion .ef-visual-zoom {
+  font-size: 11px;
+  min-width: 32px;
+  text-align: center;
+}
+.forge-worldnotion .ef-visual-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+.forge-worldnotion .ef-visual-canvas {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 200px;
+  touch-action: none;
+  background-color: var(--ef-bg);
+  background-image: radial-gradient(var(--ef-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.forge-worldnotion .ef-visual-canvas.tool-pan {
+  cursor: grab;
+}
+.forge-worldnotion .ef-visual-canvas.tool-draw,
+.forge-worldnotion .ef-visual-canvas.tool-note,
+.forge-worldnotion .ef-visual-canvas.tool-text {
+  cursor: crosshair;
+}
+.forge-worldnotion .ef-visual-inspector {
+  width: 220px;
+  flex: 0 0 220px;
+  padding: 14px;
+  overflow: auto;
+  border-left: 1px solid var(--ef-border);
+  background: var(--ef-panel);
+}
+.forge-worldnotion .ef-visual-inspector h3 {
+  font-size: 14px;
+  margin: 0 0 14px;
+}
+.forge-worldnotion .ef-visual-inspector label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.forge-worldnotion .ef-visual-inspector input,
+.forge-worldnotion .ef-visual-inspector select,
+.forge-worldnotion .ef-visual-inspector textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.forge-worldnotion .ef-visual-inspector textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.forge-worldnotion .ef-visual-inspector button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.forge-worldnotion .ef-visual-inspector .ef-visual-check {
+  flex-direction: row;
+  align-items: center;
+}
+.forge-worldnotion .ef-visual-check input {
+  width: auto;
+}
+.forge-worldnotion .ef-visual-inspector details {
+  border-top: 1px solid var(--ef-border);
+  padding-top: 10px;
+  margin-top: 12px;
+}
+.forge-worldnotion .ef-visual-inspector summary {
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.forge-worldnotion .ef-visual-hint {
+  font-size: 11px;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+.forge-worldnotion .ef-visual-diagnostic {
+  font-size: 12px;
+  padding: 8px;
+  color: var(--warning-color, #b47b30);
+}
+.forge-worldnotion .ef-visual-empty {
+  position: absolute;
+  left: 20px;
+  top: 24px;
+  max-width: 280px;
+  font-size: 13px;
+  opacity: 0.65;
+  pointer-events: none;
+}
+.forge-worldnotion .ef-tree-person-card {
+  fill: var(--ef-panel);
+  stroke: var(--ef-border);
+  stroke-width: 1.5;
+}
+.forge-worldnotion .ef-tree-person.selected .ef-tree-person-card,
+.forge-worldnotion .ef-tree-note.selected,
+.forge-worldnotion .ef-tree-group.selected {
+  stroke: var(--ef-accent);
+  stroke-width: 2.5;
+}
+.forge-worldnotion .ef-tree-avatar {
+  fill: var(--ef-panel-soft);
+}
+.forge-worldnotion .ef-tree-initial {
+  font-size: 28px;
+  fill: var(--ef-text);
+}
+.forge-worldnotion .ef-tree-person-name {
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  max-height: 48px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .ef-tree-port {
+  fill: var(--ef-panel);
+  stroke: var(--ef-accent);
+  stroke-width: 1.5;
+  cursor: crosshair;
+}
+.forge-worldnotion .ef-tree-port:hover {
+  fill: var(--ef-accent);
+  r: 8px;
+}
+.forge-worldnotion .ef-tree-edge line {
+  stroke: var(--ef-muted);
+  stroke-width: 2;
+}
+.forge-worldnotion .ef-tree-edge.selected line {
+  stroke: var(--ef-accent);
+}
+.forge-worldnotion .ef-tree-edge .ef-tree-edge-hit,
+.forge-worldnotion .ef-tree-edge.selected .ef-tree-edge-hit {
+  stroke: transparent;
+  stroke-width: 16;
+  cursor: pointer;
+}
+.forge-worldnotion .ef-tree-edge-label {
+  font-size: 11px;
+  fill: var(--ef-muted);
+  paint-order: stroke;
+  stroke: var(--ef-bg);
+  stroke-width: 4;
+}
+.forge-worldnotion .labels-hover .ef-tree-edge-label {
+  opacity: 0;
+}
+.forge-worldnotion .labels-hover .ef-tree-edge:hover .ef-tree-edge-label,
+.forge-worldnotion .labels-hover .ef-tree-edge.selected .ef-tree-edge-label {
+  opacity: 1;
+}
+.forge-worldnotion .ef-tree-junction {
+  fill: var(--ef-accent);
+}
+.forge-worldnotion .ef-tree-connection-preview {
+  stroke: var(--ef-accent);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  pointer-events: none;
+}
+.forge-worldnotion .ef-tree-group {
+  fill: color-mix(in srgb, var(--ef-accent) 5%, transparent);
+  stroke: var(--ef-border);
+  stroke-dasharray: 5 4;
+}
+.forge-worldnotion .ef-tree-group + text {
+  fill: var(--ef-muted);
+  font-size: 12px;
+}
+.forge-worldnotion .ef-tree-note {
+  fill: #e7d898;
+  stroke: #bfac67;
+}
+.forge-worldnotion .ef-tree-note-text {
+  color: var(--ef-text);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .ef-tree-note + foreignObject .ef-tree-note-text {
+  color: #35302a;
+}
+.forge-worldnotion .ef-tree-deceased {
+  stroke: var(--ef-muted);
+  stroke-width: 3;
+}
+.forge-worldnotion .ef-tree-warning {
+  fill: var(--warning-color, #b47b30);
+  font-size: 12px;
+}
+.forge-worldnotion .ef-tree-linked {
+  fill: var(--ef-muted);
+  font-size: 12px;
+}
+.forge-worldnotion .ef-visual-custom-type {
+  display: grid;
+  grid-template-columns: 1fr 38px;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+@container (max-width:650px) {
+  .forge-worldnotion .ef-visual-body {
+    flex-direction: column;
+  }
+  .forge-worldnotion .ef-visual-canvas {
+    flex: 1 1 240px;
+  }
+  .forge-worldnotion .ef-visual-inspector {
+    width: auto;
+    flex: 0 0 auto;
+    max-height: 180px;
+    border-left: 0;
+    border-top: 1px solid var(--ef-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .forge-worldnotion .ef-visual-inspector h3 {
+    width: 100%;
+    margin: 0;
+  }
+  .forge-worldnotion .ef-visual-inspector label {
+    width: 160px;
+  }
+  .forge-worldnotion .ef-visual-inspector details {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forge-worldnotion .ef-visual-editor * {
+    transition: none !important;
+  }
+}

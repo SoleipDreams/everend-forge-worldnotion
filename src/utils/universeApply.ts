@@ -76,8 +76,14 @@ export function planUniverseWorkspaceState(
     pathChange,
   } = input;
 
-  const activePathAfterChange = pathAfterOptionalChange(activeTabPath, pathChange);
-  const selectedPathAfterChange = pathAfterOptionalChange(selectedPath, pathChange);
+  // Relative paths are meaningful only inside their owning universe.
+  const sameUniverse = currentRootPath === readRootPath;
+  const activePathAfterChange = sameUniverse
+    ? pathAfterOptionalChange(activeTabPath, pathChange)
+    : undefined;
+  const selectedPathAfterChange = sameUniverse
+    ? pathAfterOptionalChange(selectedPath, pathChange)
+    : undefined;
 
   const liveTabs =
     currentRootPath === readRootPath && tabs.length
@@ -94,9 +100,17 @@ export function planUniverseWorkspaceState(
                   path: nextTabPath,
                   title: fileTitle(nextTabPath),
                   absolutePath: file.absolutePath,
-                  modifiedMs: file.modifiedMs,
+                  // Unsaved content still belongs to its original disk base.
+                  // A refresh must not silently acknowledge an external edit.
+                  modifiedMs: tab.modifiedMs,
                 }
-              : createOpenTabFromFile(file, tab.mode, tab.sourceView, tab.writingMode);
+              : createOpenTabFromFile(
+                  file,
+                  tab.mode,
+                  tab.sourceView,
+                  tab.writingMode,
+                  tab.visualMode,
+                );
           })
           .filter((tab): tab is OpenTab => Boolean(tab))
       : [];
@@ -114,6 +128,7 @@ export function planUniverseWorkspaceState(
                   tab.mode,
                   tab.sourceView,
                   tab.writingMode ?? "processed",
+                  tab.visualMode,
                 )
               : undefined;
           })

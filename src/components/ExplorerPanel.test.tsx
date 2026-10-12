@@ -38,6 +38,7 @@ function renderPanel(
       favoritePaths={new Set()}
       favoriteItems={[]}
       ecosystemGroups={new Map()}
+      ecosystemView="list"
       ecosystemEntityColors={new Map()}
       entityTagColors={new Map()}
       folderNotesEnabled={false}
@@ -207,6 +208,51 @@ describe("ExplorerPanel virtualization", () => {
     expect(screen.queryByRole("button", { name: "Mara" })).toBeNull();
     expect(screen.getByRole("button", { name: "Iron Keep" })).toBeInTheDocument();
     expect(screen.getByText("draft")).toBeInTheDocument();
+  });
+
+  it("opens the same note from a gallery card without presentation images", () => {
+    const mara = makeEntity();
+    const onSelectPath = vi.fn();
+    const { container } = renderPanel([], "", {
+      activeSection: "ecosystem",
+      ecosystemView: "gallery",
+      index: makeVaultIndex({ entities: [mara] }),
+      ecosystemGroups: new Map([["character", [mara]]]),
+      onSelectPath,
+    });
+
+    expect(container.querySelector(".ecosystem-gallery-placeholder")).toHaveTextContent("M");
+    expect(container.querySelector(".ecosystem-gallery-card img")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Mara" }));
+    expect(onSelectPath).toHaveBeenCalledWith(mara.path);
+  });
+
+  it("requests a persisted view change and reflects the controlled selection", () => {
+    const onEcosystemViewChange = vi.fn();
+    const { unmount } = renderPanel([], "", {
+      activeSection: "ecosystem",
+      ecosystemView: "gallery",
+      onEcosystemViewChange,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "List view" }));
+    expect(onEcosystemViewChange).toHaveBeenCalledWith("list");
+    expect(screen.getByRole("button", { name: "Gallery view" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // The app owns the preference, including persistence across reopening.
+    unmount();
+    renderPanel([], "", {
+      activeSection: "ecosystem",
+      ecosystemView: "list",
+      onEcosystemViewChange,
+    });
+    expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("adds an item to the bulk selection with Ctrl-click", () => {

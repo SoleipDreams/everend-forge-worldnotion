@@ -1,3 +1,4 @@
+import { useWorldnotionSurfaceText } from "../i18n";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, ExternalLink, Link2, AlertTriangle } from "lucide-react";
 import type { Entity, VaultIndex } from "../domain";
@@ -26,13 +27,14 @@ function contextForLink(entity: Entity, target: string) {
 }
 
 export function LinksPanel({ entity, index, onOpenEntity }: LinksPanelProps) {
+  const t = useWorldnotionSurfaceText();
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!entity || !index) {
     return (
       <div className="backlinks-panel relationship-panel">
-        <h4 className="backlinks-header">Links</h4>
-        <p className="muted text-sm">Open a note to see outgoing links.</p>
+        <h4 className="backlinks-header">{t("Links")}</h4>
+        <p className="muted text-sm">{t("Open a note to see outgoing links.")}</p>
       </div>
     );
   }
@@ -53,8 +55,8 @@ export function LinksPanel({ entity, index, onOpenEntity }: LinksPanelProps) {
   if (!links.length) {
     return (
       <div className="backlinks-panel relationship-panel">
-        <h4 className="backlinks-header">Links</h4>
-        <p className="muted text-sm">No outgoing links from this note.</p>
+        <h4 className="backlinks-header">{t("Links")}</h4>
+        <p className="muted text-sm">{t("No outgoing links from this note.")}</p>
       </div>
     );
   }
@@ -68,7 +70,7 @@ export function LinksPanel({ entity, index, onOpenEntity }: LinksPanelProps) {
           <ChevronRight className="icon-inline" size={16} />
         )}
         <h4 className="inline">
-          Links <span className="muted">({links.length})</span>
+          {t("Links")} <span className="muted">({links.length})</span>
         </h4>
       </button>
 

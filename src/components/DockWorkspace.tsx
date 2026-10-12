@@ -1,3 +1,4 @@
+import { useWorldnotionSurfaceText } from "../i18n";
 import {
   useCallback,
   useEffect,
@@ -10,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronRight, FileEdit, Plus, X } from "lucide-react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
+import { useSurfaceMotion } from "../hooks/useSurfaceMotion";
 import type {
   DockGroupNode,
   DockNode,
@@ -108,6 +111,7 @@ export function DockWorkspace({
 }: DockWorkspaceProps) {
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const dragController = useDockDragController({
+    layout,
     workspaceRef,
     onMoveTab,
   });
@@ -177,6 +181,7 @@ function DockSplitter({
   split: DockSplitNode;
   onResizeSplit: DockWorkspaceProps["onResizeSplit"];
 }) {
+  const t = useWorldnotionSurfaceText();
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     const splitterElement = event.currentTarget;
     const splitElement = splitterElement.parentElement;
@@ -235,7 +240,7 @@ function DockSplitter({
           }
         }
       }}
-      title="Drag to resize"
+      title={t("Drag to resize")}
     />
   );
 }
@@ -263,6 +268,7 @@ function DockGroup({
   onPointerDragStart,
 }: DockGroupProps) {
   const activeTab = group.tabs.find((tab) => tab.id === group.activeTabId) ?? group.tabs[0];
+  const contentRef = useSurfaceMotion<HTMLDivElement>(activeTab?.id);
   const isDragOver = dragState?.active && dragState.target?.groupId === group.id;
 
   return (
@@ -286,7 +292,7 @@ function DockGroup({
         folderDescriptionPaths={folderDescriptionPaths}
         documentTabGroups={documentTabGroups}
       />
-      <div className="dock-group-content">
+      <div ref={contentRef} className="dock-group-content">
         {activeTab ? (
           renderTab(activeTab)
         ) : (
@@ -329,9 +335,10 @@ function DockTabBar({
   onOpenDocument,
   onPointerDragStart,
 }: DockTabBarProps) {
+  const t = useWorldnotionSurfaceText();
   const documentTabs = group.tabs.filter((tab) => tab.kind === "document");
   const panelTabs = group.tabs.filter((tab) => tab.kind !== "document");
-  const isWritingGroup = group.id === "dock-documents";
+  const isWritingGroup = group.role === "documents" || group.id === "dock-documents";
 
   function startDragFromEvent(
     event: PointerEvent<HTMLElement>,
@@ -394,11 +401,11 @@ function DockTabBar({
         title={tab.path ?? tab.title}
       >
         {isFolderDescription ? (
-          <FileEdit className="dock-tab-kind-icon" size={10} aria-label="Folder note" />
+          <FileEdit className="dock-tab-kind-icon" size={10} aria-label={t("Folder note")} />
         ) : null}
-        <span>{tab.title}</span>
+        <span>{tab.kind === "document" ? tab.title : t(tab.title)}</span>
         {tabIsDirty(tab) ? (
-          <strong className="dock-tab-dirty" aria-label="Unsaved changes" title="Unsaved changes">
+          <strong className="dock-tab-dirty" aria-label={t("Unsaved changes")} title={t("Unsaved changes")}>
             *
           </strong>
         ) : null}
@@ -410,7 +417,7 @@ function DockTabBar({
             event.stopPropagation();
             onCloseTab(tab);
           }}
-          title="Close tab"
+          title={t("Close tab")}
         >
           <X size={9} />
         </button>
@@ -488,7 +495,7 @@ function DockTabBar({
         event.stopPropagation();
         onGroupContextMenu(group.id, event.clientX, event.clientY);
       }}
-      title={activeTab ? `Drag ${activeTab.title}` : undefined}
+      title={activeTab ? `${t("Drag")} ${activeTab.kind === "document" ? activeTab.title : t(activeTab.title)}` : undefined}
     >
       <div className="dock-tab-strip">
         <div className="dock-document-tabs">
@@ -500,7 +507,7 @@ function DockTabBar({
             className="dock-tab-add"
             data-dock-no-drag="true"
             onClick={onOpenDocument}
-            title="Open note"
+            title={t("Open note")}
           >
             <Plus size={10} />
           </button>
@@ -570,13 +577,16 @@ function EmptyDockGroup({
 }
 
 function useDockDragController({
+  layout,
   workspaceRef,
   onMoveTab,
 }: {
+  layout: WorkspaceLayoutV1;
   workspaceRef: RefObject<HTMLDivElement | null>;
   onMoveTab: DockWorkspaceProps["onMoveTab"];
 }) {
   const [dragState, setDragState] = useState<DockDragState>();
+  const appActive = useAppIsActive();
   const latestDragState = useRef<DockDragState | undefined>(undefined);
   const isDragging = Boolean(dragState);
 
@@ -604,6 +614,11 @@ function useDockDragController({
   }, []);
 
   useEffect(() => {
+    if (!appActive) {
+      latestDragState.current = undefined;
+      if (isDragging) setDragState(undefined);
+      return;
+    }
     if (!isDragging) return;
 
     function finishDrag() {
@@ -642,6 +657,7 @@ function useDockDragController({
             ? getAllowedDockDropTarget(
                 current.item,
                 getDockDropTarget(workspaceRef.current, event.clientX, event.clientY),
+                layout,
               )
             : undefined,
         };
@@ -670,7 +686,7 @@ function useDockDragController({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isDragging, onMoveTab, workspaceRef]);
+  }, [isDragging, onMoveTab, workspaceRef, appActive, layout]);
 
   return useMemo(() => ({ dragState, startDrag }), [dragState, startDrag]);
 }
@@ -725,6 +741,7 @@ function getDropPosition(rect: DOMRect, x: number, y: number): DockDropPosition 
 function getAllowedDockDropTarget(
   item: DraggedDockTab,
   target?: DockDropTarget,
+  layout?: WorkspaceLayoutV1,
 ): DockDropTarget | undefined {
   if (!target) return undefined;
   return isDockMoveAllowedAroundDocumentAnchor({
@@ -733,7 +750,7 @@ function getAllowedDockDropTarget(
     targetGroupId: target.groupId,
     position: target.position,
     targetTabId: target.targetTabId,
-  })
+  }, layout)
     ? target
     : undefined;
 }

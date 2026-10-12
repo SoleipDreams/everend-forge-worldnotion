@@ -1,4 +1,6 @@
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useEffect, useRef } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import { X } from "lucide-react";
 import type { VaultIndex } from "../domain";
 import { useVaultImage } from "../utils/vaultImages";
@@ -14,17 +16,22 @@ type ImagePreviewDialogProps = {
 
 /** A non-editable viewer for an image selected from the vault explorer. */
 export function ImagePreviewDialog({ index, path, onClose }: ImagePreviewDialogProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useModalFocus(dialogRef, true);
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const closeRef = useRef<HTMLButtonElement>(null);
   const { url, error } = useVaultImage(index, path);
 
   useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
+    if (appActive) focusAppElement(closeRef.current);
+  }, [appActive]);
 
   return (
     <div className="modal-overlay image-preview-overlay" onClick={onClose}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-dialog image-preview-dialog"
         role="dialog"
         aria-modal="true"

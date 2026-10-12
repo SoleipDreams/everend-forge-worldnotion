@@ -4,6 +4,7 @@ import { InputDialog } from "./InputDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { TemplateDialog } from "./TemplateDialog";
 import { DialogProvider } from "./DialogProvider";
+import { WorldnotionLocaleProvider } from "../i18n";
 
 describe("accesibilidad de modales", () => {
   it("InputDialog expone role dialog y cierra con Escape", () => {
@@ -25,13 +26,13 @@ describe("accesibilidad de modales", () => {
   it("UnsavedChangesDialog enfoca Guardar, expone alertdialog y cierra con Escape", () => {
     const onCancel = vi.fn();
     render(
-      <UnsavedChangesDialog
+      <WorldnotionLocaleProvider value="es"><UnsavedChangesDialog
         isOpen
         fileName="Mara.md"
         onDiscard={vi.fn()}
         onSave={async () => {}}
         onCancel={onCancel}
-      />,
+      /></WorldnotionLocaleProvider>,
     );
 
     const dialog = screen.getByRole("alertdialog", { name: "Cambios sin guardar" });

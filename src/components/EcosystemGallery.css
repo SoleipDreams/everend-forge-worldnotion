@@ -1,0 +1,147 @@
+.forge-worldnotion .ecosystem-view-switch {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--wn-border);
+  border-radius: 9px;
+  background: var(--wn-panel-2);
+}
+
+.forge-worldnotion .ecosystem-view-switch button {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 27px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--wn-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.forge-worldnotion .ecosystem-view-switch button[aria-pressed="true"] {
+  color: var(--wn-accent);
+  background: var(--wn-panel);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+}
+
+.forge-worldnotion .ecosystem-view-switch button:hover {
+  color: var(--wn-text);
+}
+
+.forge-worldnotion .ecosystem-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(128px, 100%), 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.forge-worldnotion .ecosystem-gallery-card {
+  --entity-color: var(--wn-accent);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--wn-border);
+  border-radius: 12px;
+  color: var(--wn-text);
+  background: var(--wn-card);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.forge-worldnotion .ecosystem-gallery-card:hover {
+  border-color: color-mix(in srgb, var(--entity-color) 55%, var(--wn-border));
+  box-shadow: 0 4px 12px rgb(0 0 0 / 7%);
+  transform: translateY(-1px);
+}
+
+.forge-worldnotion .ecosystem-gallery-card.active {
+  border-color: var(--wn-accent);
+  box-shadow: 0 0 0 1px var(--wn-accent);
+}
+
+.forge-worldnotion .ecosystem-gallery-card:focus-visible,
+.forge-worldnotion .ecosystem-view-switch button:focus-visible {
+  outline: 2px solid var(--wn-accent);
+  outline-offset: 3px;
+}
+
+.forge-worldnotion .ecosystem-gallery-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  color: var(--entity-color);
+  background: color-mix(in srgb, var(--entity-color) 10%, var(--wn-panel-2));
+}
+
+.forge-worldnotion .ecosystem-gallery-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.forge-worldnotion .ecosystem-gallery-placeholder {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid color-mix(in srgb, var(--entity-color) 22%, transparent);
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  background: color-mix(in srgb, var(--wn-card) 65%, transparent);
+}
+
+.forge-worldnotion .ecosystem-gallery-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+}
+
+.forge-worldnotion .ecosystem-gallery-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-worldnotion .ecosystem-gallery-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  color: var(--wn-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.forge-worldnotion .ecosystem-gallery-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forge-worldnotion .ecosystem-gallery-card {
+    transition: none;
+  }
+
+  .forge-worldnotion .ecosystem-gallery-card:hover {
+    transform: none;
+  }
+}

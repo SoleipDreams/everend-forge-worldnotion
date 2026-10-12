@@ -1,22 +1,9 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { Toast, type ToastKind } from "./Toast";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
+import type { ToastKind } from "./Toast";
+import { useNotify, NotificationProvider } from "../notifications";
+import { NOTIFICATION_DURATION } from "../notificationStore";
 
-export const TOAST_DURATION_MS: Record<ToastKind, number> = {
-  success: 3000,
-  info: 3000,
-  warning: 4000,
-  error: 5000,
-};
-
-type ToastEntry = { message: string; kind: ToastKind };
+export const TOAST_DURATION_MS: Record<ToastKind, number> = NOTIFICATION_DURATION;
 
 export type ShowToast = (message: string, kind?: ToastKind) => void;
 
@@ -28,47 +15,25 @@ export function useToast(): { showToast: ShowToast } {
   return context;
 }
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [queue, setQueue] = useState<ToastEntry[]>([]);
-  const [active, setActive] = useState<ToastEntry>();
-
+function ToastBridge({ children }: { children: ReactNode }) {
+  const notify = useNotify();
   const showToast = useCallback<ShowToast>(
-    (message, kind = "info") => {
-      setQueue((current) => {
-        const lastQueued = current.at(-1);
-        const matchesActive = active?.message === message && active.kind === kind;
-        const matchesQueued = lastQueued?.message === message && lastQueued.kind === kind;
-        return matchesActive || matchesQueued ? current : [...current, { message, kind }];
-      });
-    },
-    [active],
+    (message, kind = "info") => notify({ message, kind }),
+    [notify],
   );
-
-  useEffect(() => {
-    if (active || queue.length === 0) return;
-    const [next, ...rest] = queue;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- serial queue promotion
-    setActive(next);
-    setQueue(rest);
-  }, [active, queue]);
-
-  useEffect(() => {
-    if (!active) return;
-    const timer = window.setTimeout(() => setActive(undefined), TOAST_DURATION_MS[active.kind]);
-    return () => window.clearTimeout(timer);
-  }, [active]);
-
-  const value = useMemo(() => ({ showToast }), [showToast]);
-
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-      <Toast
-        message={active?.message ?? ""}
-        kind={active?.kind}
-        isVisible={Boolean(active)}
-        durationMs={active ? TOAST_DURATION_MS[active.kind] : undefined}
-      />
-    </ToastContext.Provider>
+  return <ToastContext.Provider value={{ showToast }}>{children}</ToastContext.Provider>;
+}
+export function ToastProvider({
+  children,
+  integrated = false,
+}: {
+  children: ReactNode;
+  integrated?: boolean;
+}) {
+  const bridge = <ToastBridge>{children}</ToastBridge>;
+  return integrated ? (
+    bridge
+  ) : (
+    <NotificationProvider source="WorldNotion">{bridge}</NotificationProvider>
   );
 }

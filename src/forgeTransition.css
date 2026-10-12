@@ -1,0 +1,445 @@
+/* Completion of the standalone Forge presentation contract, scoped for Suite. */
+.forge-worldnotion :is(button, input, select, textarea, summary) {
+  box-sizing: border-box;
+}
+.forge-worldnotion :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ef-accent);
+  outline-offset: 2px;
+}
+.forge-worldnotion
+  :is(
+    .modal-dialog,
+    .settings-modal,
+    .property-create-dialog,
+    .template-dialog,
+    .image-preview-dialog,
+    .command-palette,
+    .quick-switcher
+  ) {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius-dialog);
+  color: var(--ef-text);
+  background: var(--ef-panel);
+  box-shadow: 0 16px 48px #0003;
+  font-family: var(--ef-ui-font);
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+.forge-worldnotion
+  :is(.modal-dialog, .settings-modal, .property-create-dialog, .template-dialog)
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 9px;
+  min-height: 34px;
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius-control);
+  background: var(--ef-panel-soft);
+  color: var(--ef-text);
+  font: inherit;
+  font-size: 13px;
+}
+.forge-worldnotion
+  :is(.modal-dialog, .settings-modal, .property-create-dialog, .template-dialog)
+  button {
+  min-height: 32px;
+  border-radius: var(--ef-radius-control);
+  font-family: var(--ef-ui-font);
+}
+.forge-worldnotion :is(.modal-header, .settings-header) {
+  border-bottom: 1px solid var(--ef-border);
+  background: transparent;
+  padding: 16px;
+}
+.forge-worldnotion :is(.modal-footer, .property-create-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--ef-border);
+  background: transparent;
+}
+.forge-worldnotion .modal-body {
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .modal-message {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.forge-worldnotion
+  :is(
+    .context-menu,
+    .context-menu-submenu-panel,
+    .dock-panel-menu,
+    .inspector-popover,
+    .picker-popover,
+    .font-selector-dropdown,
+    .explorer-depth-dropdown,
+    .floating-format-more > div,
+    .wn-home-menu-popover,
+    .wn-desktop-menu-submenu
+  ) {
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius-card);
+  background: var(--ef-panel);
+  color: var(--ef-text);
+  font-family: var(--ef-ui-font);
+  box-shadow: 0 8px 28px #0003;
+}
+.forge-worldnotion :is(.context-menu-item, .picker-item, .dock-panel-menu-option) {
+  min-height: 32px;
+  border-radius: var(--ef-radius-control);
+  font-size: 13px;
+}
+.forge-worldnotion
+  :is(
+    .settings-grid,
+    .settings-panel,
+    .settings-section,
+    .settings-page-title,
+    .settings-row,
+    .settings-grid label
+  ) {
+  min-width: 0;
+}
+.forge-worldnotion .settings-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+.forge-worldnotion .settings-grid :is(p, small, label) {
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .settings-nav button {
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.forge-worldnotion .settings-page-title h3 {
+  font-size: 18px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.forge-worldnotion .settings-page-title p {
+  line-height: 1.6;
+  color: var(--ef-muted);
+}
+.forge-worldnotion .settings-section {
+  container-type: inline-size;
+  container-name: wn-settings-content;
+}
+.forge-worldnotion .dock-panel-body {
+  container-type: inline-size;
+  container-name: wn-panel-content;
+}
+.forge-worldnotion :is(.backlinks-panel, .links-panel, .relationship-panel, .outline-panel) {
+  min-width: 0;
+  padding: 12px;
+  font: 13px var(--ef-ui-font);
+  background: transparent;
+  color: var(--ef-text);
+}
+.forge-worldnotion :is(.backlinks-header, .links-header) {
+  color: var(--ef-muted);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.forge-worldnotion :is(.backlink-item, .link-item, .outline-item) {
+  border-radius: 6px;
+  padding: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .ai-advisor-toolbar {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: var(--ef-panel);
+  border-bottom: 1px solid var(--ef-border);
+}
+.forge-worldnotion .ai-advisor-provider-control {
+  min-width: 0;
+  flex: 1;
+}
+.forge-worldnotion .ai-advisor-provider-control select {
+  max-width: 100%;
+  min-width: 0;
+  border-radius: 6px;
+}
+.forge-worldnotion :is(.ai-advisor-browser-fallback, .dock-empty-group) {
+  font-family: var(--ef-ui-font);
+  line-height: 1.6;
+  color: var(--ef-muted);
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .search-panel {
+  max-width: calc(100% - 16px);
+  box-sizing: border-box;
+  border: 1px solid var(--ef-border);
+  border-radius: 8px;
+  background: var(--ef-panel);
+  box-shadow: 0 8px 24px #0002;
+  font-family: var(--ef-ui-font);
+}
+.forge-worldnotion .search-panel-row {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.forge-worldnotion .search-panel-input {
+  flex: 1 1 110px;
+  min-width: 0;
+  border-radius: 6px;
+  background: var(--ef-panel-soft);
+  color: var(--ef-text);
+}
+.forge-worldnotion .search-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.forge-worldnotion .inspector-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--ef-border);
+  border-radius: 8px;
+  background: var(--ef-panel-soft);
+}
+.forge-worldnotion .inspector-view-tabs button {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.forge-worldnotion .inspector-view-tabs button.active {
+  background: var(--ef-accent-soft);
+  color: var(--ef-accent);
+}
+.forge-worldnotion :is(.inspector-section, .presentation-role-card, .inspector-setup-card) {
+  border-radius: 8px;
+}
+.forge-worldnotion
+  .inspector
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.forge-worldnotion :is(.timeline-inspector, .ef-visual-inspector) {
+  box-sizing: border-box;
+  border-radius: 10px;
+  margin: 8px;
+  border: 1px solid var(--ef-border);
+  box-shadow: 0 6px 18px #0001;
+}
+.forge-worldnotion .ef-visual-inspector {
+  flex-basis: 236px;
+}
+.forge-worldnotion :is(.timeline-inspector, .ef-visual-inspector) :is(fieldset, details) {
+  min-width: 0;
+  border-radius: 6px;
+}
+.forge-worldnotion
+  :is(.timeline-inspector, .ef-visual-inspector)
+  :is(input, select, textarea, button) {
+  max-width: 100%;
+}
+.forge-worldnotion .ef-visual-toolbar {
+  padding: 6px 8px;
+  gap: 6px;
+}
+.forge-worldnotion .home-panel {
+  padding-top: clamp(24px, 6vh, 56px);
+}
+.forge-worldnotion .recent-universe-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+}
+.forge-worldnotion .explorer-sections {
+  display: flex;
+  flex-wrap: wrap;
+}
+.forge-worldnotion .explorer-sections button {
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 32px;
+}
+.forge-worldnotion .explorer-search-panel input {
+  min-width: 0;
+  max-width: 100%;
+}
+@container wn-panel-content (max-width: 280px) {
+  .forge-worldnotion .inspector {
+    padding: 10px;
+  }
+  .forge-worldnotion .inspector-view-tabs button {
+    font-size: 12px;
+    padding: 6px;
+  }
+  .forge-worldnotion .ecosystem-view-heading {
+    flex-wrap: wrap;
+  }
+  .forge-worldnotion .property-row {
+    min-width: 0;
+  }
+  .forge-worldnotion .ai-advisor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+@container wn-settings-content (max-width: 440px) {
+  .forge-worldnotion .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container wn-relationships (max-width: 650px) {
+  .forge-worldnotion .ef-visual-inspector {
+    width: auto;
+    flex: 0 1 auto;
+    max-height: 42%;
+  }
+}
+@media (max-width: 900px) {
+  .forge-worldnotion .settings-body {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+  .forge-worldnotion .settings-nav {
+    padding: 10px 6px;
+  }
+  .forge-worldnotion .settings-section {
+    padding: 16px;
+  }
+}
+@media (max-width: 540px) {
+  .forge-worldnotion .settings-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .forge-worldnotion .settings-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 160px;
+    overflow: auto;
+    border-bottom: 1px solid var(--ef-border);
+  }
+  .forge-worldnotion .settings-nav-group {
+    flex: 1 1 140px;
+  }
+}
+
+.forge-worldnotion .ef-visual-editor {
+  container-name: wn-relationships;
+}
+
+.forge-worldnotion .appearance-behavior-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border: 1px solid var(--ef-border);
+  border-radius: 8px;
+  background: var(--ef-panel-soft);
+}
+.forge-worldnotion .appearance-behavior-tabs button {
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ef-muted);
+  font-size: 13px;
+}
+.forge-worldnotion .appearance-behavior-tabs button.active {
+  background: var(--ef-accent-soft);
+  color: var(--ef-accent);
+}
+.forge-worldnotion .settings-grid > :is(h3, h4) {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ef-text);
+}
+.forge-worldnotion .settings-grid > .settings-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.forge-worldnotion .explorer-sections button {
+  flex: 1 1 0;
+  padding: 6px;
+}
+
+/* Submenus are positioned outside the parent menu; do not clip them. */
+.forge-worldnotion .context-menu {
+  overflow: visible;
+}
+.forge-worldnotion :is(.template-dialog-header, .template-dialog-tabs, .template-dialog-footer) {
+  padding: 12px 16px;
+  gap: 8px;
+  border-color: var(--ef-border);
+  background: transparent;
+}
+.forge-worldnotion .template-dialog-tabs {
+  display: flex;
+  flex-wrap: wrap;
+}
+.forge-worldnotion .template-dialog-tabs button {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.forge-worldnotion .template-dialog-tabs .active {
+  color: var(--ef-accent);
+  background: var(--ef-accent-soft);
+}
+.forge-worldnotion :is(.template-item, .template-preview, .template-form) {
+  border-color: var(--ef-border);
+  border-radius: 8px;
+  background: var(--ef-panel-soft);
+}
+
+/* Retain the existing named queries while adding common panel adaptation. */
+.forge-worldnotion .editor-shell {
+  container-name: wn-editor wn-panel-content;
+}
+.forge-worldnotion .inspector {
+  container-name: wn-inspector wn-panel-content;
+}
+@container wn-editor (max-width: 340px) {
+  .forge-worldnotion .floating-control-panel {
+    position: relative;
+    inset: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin: 8px;
+    padding: 6px;
+    max-width: calc(100% - 16px);
+  }
+  .forge-worldnotion .floating-control-panel .mode-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .forge-worldnotion .floating-control-panel .mode-toggle button {
+    padding: 5px 8px;
+  }
+  .forge-worldnotion .floating-format-toolbar-fixed {
+    position: relative;
+    inset: auto;
+    margin: 8px;
+    max-width: calc(100% - 16px);
+  }
+  .forge-worldnotion .editor-surface.mode-source {
+    padding-top: 12px;
+  }
+}

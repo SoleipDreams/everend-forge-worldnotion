@@ -446,3 +446,57 @@ export const WorldnotionLocaleProvider = WorldnotionLocaleContext.Provider;
 export function useWorldnotionUi(): WorldnotionUiCopy {
   return uiCopy[useContext(WorldnotionLocaleContext)];
 }
+
+/** Standalone surface labels; locale always comes from the owning app. */
+export function useWorldnotionLocale(): Locale { return useContext(WorldnotionLocaleContext); }
+const surfaceSpanish: Record<string, string> = {
+"New group from tab": "Nuevo grupo desde pestaña",
+"Remove from group": "Quitar del grupo",
+"Close others": "Cerrar otras",
+"Close tabs to right": "Cerrar pestañas a la derecha",
+"Close all tabs": "Cerrar todas las pestañas",
+"Close saved tabs": "Cerrar pestañas guardadas",
+"Add to": "Añadir a",
+"Import/Export": "Importar/Exportar",
+"Search templates...": "Buscar plantillas...",
+"Review changes": "Revisar cambios",
+"Open a note to see outgoing links.": "Abre una nota para ver sus enlaces salientes.",
+"No outgoing links from this note.": "Esta nota no tiene enlaces salientes.",
+"Ambiguous": "Ambiguo",
+"Unresolved": "Sin resolver",
+"Property Templates": "Plantillas de propiedades",
+"Close templates": "Cerrar plantillas",
+"Browse": "Explorar",
+"Save Current": "Guardar actual",
+"Import / Export": "Importar / Exportar",
+ "Visual document": "Documento visual",
+ "Content, calendar and relationships belong to this document. Edit them in its visual workspace or Source.": "El contenido, calendario y relaciones pertenecen a este documento. Edítalos en su espacio visual o en Fuente.",
+"Settings": "Ajustes",
+"Close settings": "Cerrar ajustes",
+"Appearance & Behavior": "Apariencia y comportamiento",
+"Help & Docs": "Ayuda y documentación",
+"Appearance": "Apariencia",
+"Workspace": "Espacio de trabajo",
+"Page Style": "Estilo de página",
+"Typography": "Tipografía",
+"Open Everend menu": "Abrir menú de Everend",
+"Reveal universe folder in Explorer": "Mostrar carpeta del universo",
+"Default": "Predeterminado",
+"Writing": "Escritura",
+"Flow Map": "Mapa de flujo",
+"Focus": "Enfoque",
+"Custom": "Personalizado",
+"Folder note": "Nota de carpeta",
+"Unsaved changes": "Cambios sin guardar",
+ "Search files": "Buscar archivos", "All Files": "Todos los archivos", "Favorites": "Favoritos", "Ecosystem": "Ecosistema", "Images": "Imágenes",
+ "Explorer": "Explorador", "Inspector": "Inspector", "Graph": "Grafo", "Outline": "Esquema", "Links": "Enlaces", "Backlinks": "Enlaces entrantes", "AI Advisor": "Asesor IA",
+ "Documents": "Documentos", "Visual documents": "Documentos visuales", "Templates": "Plantillas", "Search": "Buscar", "Replace": "Reemplazar", "All": "Todos",
+ "Close tab": "Cerrar pestaña", "Open note": "Abrir nota", "Drag to resize": "Arrastrar para redimensionar", "Drag": "Arrastrar", "Close": "Cerrar",
+ "Collapse all folders": "Contraer todas las carpetas", "Expand all folders": "Expandir todas las carpetas", "Show active file in explorer": "Mostrar archivo activo en el explorador", "Expand by depth": "Expandir por profundidad", "Explorer expansion actions": "Acciones de expansión del explorador",
+ "Ecosystem view": "Vista del ecosistema", "Gallery view": "Vista de galería", "List view": "Vista de lista", "Clear ecosystem filters": "Limpiar filtros del ecosistema", "Ecosystem type filter": "Tipo del ecosistema", "Ecosystem group by": "Agrupar ecosistema", "Ecosystem filter match": "Coincidencia de filtros", "Create a folder or note": "Crear carpeta o nota", "New template": "Nueva plantilla",
+ "Workspace controls": "Controles del espacio de trabajo", "Workspace layout": "Disposición del espacio de trabajo", "Universe settings": "Ajustes del universo", "Application settings": "Ajustes de la aplicación", "Toggle theme": "Cambiar tema", "View": "Vista", "Show workspace panels": "Mostrar paneles", "View workspace panels": "Paneles del espacio de trabajo", "Close workspace panels": "Cerrar menú de paneles", "Toggle panels": "Alternar paneles", "Open Command Palette": "Abrir paleta de comandos", "Save": "Guardar", "More formatting": "Más formato", "Headings": "Encabezados", "Source view": "Vista de fuente",
+ "Add property": "Añadir propiedad", "Add existing": "Añadir existente", "Find a property…": "Buscar una propiedad…", "No properties in schema": "No hay propiedades en el esquema", "Define the field and add it to this note.": "Define el campo y añádelo a esta nota.", "Name": "Nombre", "Type": "Tipo", "Property type": "Tipo de propiedad", "Parent section": "Sección superior", "Top level": "Nivel superior", "Choose a section only when this property belongs inside it.": "Selecciona una sección solo cuando esta propiedad pertenezca a ella.", "Cancel": "Cancelar", "Adding…": "Añadiendo…",
+ "Open a note to see backlinks.": "Abre una nota para ver sus enlaces entrantes.", "No backlinks to this note.": "Esta nota no tiene enlaces entrantes.", "Close (Esc)": "Cerrar (Esc)", "Match case (Aa)": "Distinguir mayúsculas (Aa)", "Match whole word (Ab)": "Palabra completa (Ab)", "Use regex (.*)": "Expresión regular (.*)", "Replace next (implementation pending)": "Reemplazar siguiente (no disponible)", "Replace all (implementation pending)": "Reemplazar todos (no disponible)",
+};
+export function worldnotionSurfaceText(locale: Locale, text: string): string { return locale === "es" ? surfaceSpanish[text] ?? text : text; }
+export function useWorldnotionSurfaceText() { const locale = useWorldnotionLocale(); return (text: string) => worldnotionSurfaceText(locale, text); }

@@ -1,3 +1,4 @@
+import { useWorldnotionSurfaceText } from "../i18n";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import type { Entity } from "../domain";
@@ -23,13 +24,14 @@ export interface BacklinksPanelProps {
  * direct navigation to source entities.
  */
 export function BacklinksPanel({ entity, allEntities, onOpenEntity }: BacklinksPanelProps) {
+  const t = useWorldnotionSurfaceText();
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!entity) {
     return (
       <div className="backlinks-panel relationship-panel">
-        <h4 className="backlinks-header">Backlinks</h4>
-        <p className="muted text-sm">Open a note to see backlinks.</p>
+        <h4 className="backlinks-header">{t("Backlinks")}</h4>
+        <p className="muted text-sm">{t("Open a note to see backlinks.")}</p>
       </div>
     );
   }
@@ -69,8 +71,8 @@ export function BacklinksPanel({ entity, allEntities, onOpenEntity }: BacklinksP
   if (backlinks.length === 0) {
     return (
       <div className="backlinks-panel">
-        <h4 className="backlinks-header">Backlinks</h4>
-        <p className="muted text-sm">No backlinks to this note.</p>
+        <h4 className="backlinks-header">{t("Backlinks")}</h4>
+        <p className="muted text-sm">{t("No backlinks to this note.")}</p>
       </div>
     );
   }
@@ -84,7 +86,7 @@ export function BacklinksPanel({ entity, allEntities, onOpenEntity }: BacklinksP
           <ChevronRight className="icon-inline" size={16} />
         )}
         <h4 className="inline">
-          Backlinks <span className="muted">({backlinks.length})</span>
+          {t("Backlinks")} <span className="muted">({backlinks.length})</span>
         </h4>
       </button>
 

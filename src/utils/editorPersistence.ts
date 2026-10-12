@@ -18,11 +18,15 @@ export function saveFilePayloadForTab(tab: OpenTab): SaveFileCommandPayload {
   };
 }
 
-export function markTabSaved(tab: OpenTab, modifiedMs?: number | null): OpenTab {
+export function markTabSaved(
+  tab: OpenTab,
+  modifiedMs?: number | null,
+  savedContent = tab.rawMarkdown,
+): OpenTab {
   return {
     ...tab,
-    savedMarkdown: tab.rawMarkdown,
-    dirty: false,
+    savedMarkdown: savedContent,
+    dirty: tab.rawMarkdown !== savedContent,
     modifiedMs: modifiedMs ?? tab.modifiedMs,
   };
 }
@@ -31,6 +35,7 @@ export function markSavedTabInList(
   tabs: OpenTab[],
   path: string,
   modifiedMs?: number | null,
+  savedContent?: string,
 ): OpenTab[] {
-  return tabs.map((tab) => (tab.path === path ? markTabSaved(tab, modifiedMs) : tab));
+  return tabs.map((tab) => (tab.path === path ? markTabSaved(tab, modifiedMs, savedContent) : tab));
 }

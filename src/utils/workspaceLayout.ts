@@ -50,12 +50,11 @@ export function documentDockTabId(path: string): string {
   return `document:${path}`;
 }
 
-export function isDockMoveAllowedAroundDocumentAnchor(input: MoveDockTabInput): boolean {
+export function isDockMoveAllowedAroundDocumentAnchor(input: MoveDockTabInput, layout?: WorkspaceLayoutV1): boolean {
   if (!input.tabId.startsWith("document:")) return true;
   return (
-    input.targetGroupId === DOCUMENT_GROUP_ID &&
-    input.position === "center" &&
-    (!input.targetTabId || input.targetTabId.startsWith("document:"))
+    (layout ? groupCanHostDocument(findGroup(layout.root, input.targetGroupId)) : input.targetGroupId === DOCUMENT_GROUP_ID) &&
+    ["center", "left", "right"].includes(input.position)
   );
 }
 
@@ -78,6 +77,7 @@ function createDockGroup(id: string, tabs: DockTabRef[], activeTabId?: string): 
     tabs,
     activeTabId:
       activeTabId && tabs.some((tab) => tab.id === activeTabId) ? activeTabId : tabs[0]?.id,
+    role: id === DOCUMENT_GROUP_ID || tabs.some((tab) => tab.kind === "document") ? "documents" : "panels",
   };
 }
 
@@ -121,7 +121,7 @@ export function createDefaultWorkspaceLayout(
     : documentGroup;
 
   return {
-    version: 1,
+    version: 2,
     root: createDockSplit("dock-root", "horizontal", 0.22, explorerGroup, centerNode),
     activeGroupId: DOCUMENT_GROUP_ID,
   };
@@ -137,13 +137,13 @@ export function createWorkspaceLayoutPreset(
   const documents = createDockGroup(DOCUMENT_GROUP_ID, documentTabs, activeDocumentId);
 
   if (preset === "focus") {
-    return { version: 1, root: documents, activeGroupId: DOCUMENT_GROUP_ID };
+    return { version: 2, root: documents, activeGroupId: DOCUMENT_GROUP_ID };
   }
 
   const explorer = createDockGroup(EXPLORER_GROUP_ID, [createPanelDockTab("explorer")]);
   if (preset === "writing") {
     return {
-      version: 1,
+      version: 2,
       root: createDockSplit("dock-root", "horizontal", 0.24, explorer, documents),
       activeGroupId: DOCUMENT_GROUP_ID,
     };
@@ -152,7 +152,7 @@ export function createWorkspaceLayoutPreset(
   if (preset === "graph") {
     const graphTab = createPanelDockTab("graph");
     return {
-      version: 1,
+      version: 2,
       root: createDockSplit(
         "dock-root",
         "horizontal",
@@ -286,9 +286,10 @@ export function setPanelInGroup(
 }
 
 export function moveDockTab(layout: WorkspaceLayoutV1, input: MoveDockTabInput): WorkspaceLayoutV1 {
-  if (!isDockMoveAllowedAroundDocumentAnchor(input)) {
+  if (!isDockMoveAllowedAroundDocumentAnchor(input, layout)) {
     return normalizeWorkspaceLayout(layout);
   }
+  if (input.sourceGroupId === input.targetGroupId && input.position !== "center" && findGroup(layout.root, input.sourceGroupId)?.tabs.length === 1) return layout;
 
   if (input.position === "center" && input.sourceGroupId === input.targetGroupId) {
     return reorderTabWithinGroup(layout, input);
@@ -340,13 +341,16 @@ export function closeDockTab(layout: WorkspaceLayoutV1, tabId: string): Workspac
   const groupId = findGroupIdForTab(layout.root, tabId);
   if (!groupId) return layout;
   const removed = removeTab(layout.root, groupId, tabId);
-  return normalizeWorkspaceLayout({
+  const normalized = normalizeWorkspaceLayout({
     ...layout,
     root: removed.node,
-    activeGroupId: tabId.startsWith("document:")
-      ? DOCUMENT_GROUP_ID
-      : (findFirstGroupId(removed.node) ?? DOCUMENT_GROUP_ID),
+    activeGroupId: findGroup(removed.node, groupId) ? groupId : (findFirstDocumentGroupId(removed.node) ?? findFirstGroupId(removed.node) ?? DOCUMENT_GROUP_ID),
   });
+  // Closing the final writing tab recreates the empty writing pane. Keep that
+  // pane focused rather than transferring document commands to the explorer.
+  return tabId.startsWith("document:") && !documentPathsInLayout(normalized).length
+    ? { ...normalized, activeGroupId: findFirstDocumentGroupId(normalized.root) ?? normalized.activeGroupId }
+    : normalized;
 }
 
 export function syncLayoutWithOpenTabs(
@@ -437,13 +441,14 @@ export function updateLayoutForPathChange(
 }
 
 export function normalizeWorkspaceLayout(layout: WorkspaceLayoutV1): WorkspaceLayoutV1 {
+  const migratedRoot = mapGroups(layout.root, (group) => ({ ...group, role: group.role ?? (group.id === DOCUMENT_GROUP_ID || group.tabs.some((tab) => tab.kind === "document") ? "documents" : "panels") }));
   const root = ensureDocumentAnchor(
-    pruneNode(layout.root) ?? createDockGroup(DOCUMENT_GROUP_ID, []),
+    pruneNode(migratedRoot) ?? createDockGroup(DOCUMENT_GROUP_ID, []),
   );
   const activeGroupId = findGroup(root, layout.activeGroupId)
     ? layout.activeGroupId
     : (findFirstGroupId(root) ?? DOCUMENT_GROUP_ID);
-  return { ...layout, root, activeGroupId };
+  return { ...layout, version: 2, root, activeGroupId };
 }
 
 export function orderOpenTabsByLayout(tabs: OpenTab[], layout: WorkspaceLayoutV1): OpenTab[] {
@@ -541,13 +546,6 @@ function removeTab(
 
 function pruneNode(node: DockNode): DockNode | undefined {
   if (node.type === "group") {
-    if (node.id === DOCUMENT_GROUP_ID) {
-      const activeTabId =
-        node.activeTabId && node.tabs.some((tab) => tab.id === node.activeTabId)
-          ? node.activeTabId
-          : node.tabs[0]?.id;
-      return { ...node, activeTabId };
-    }
     return node.tabs.length ? node : undefined;
   }
 
@@ -560,7 +558,7 @@ function pruneNode(node: DockNode): DockNode | undefined {
 function createLayoutForDetachedTab(tab: DockTabRef): WorkspaceLayoutV1 {
   if (tab.kind !== "document") {
     return {
-      version: 1,
+      version: 2,
       root: createDockSplit(
         "dock-root-anchor",
         "horizontal",
@@ -573,14 +571,14 @@ function createLayoutForDetachedTab(tab: DockTabRef): WorkspaceLayoutV1 {
   }
 
   return {
-    version: 1,
+    version: 2,
     root: createDockGroup(DOCUMENT_GROUP_ID, [tab], tab.id),
     activeGroupId: DOCUMENT_GROUP_ID,
   };
 }
 
 function ensureDocumentAnchor(node: DockNode): DockNode {
-  if (findGroup(node, DOCUMENT_GROUP_ID)) return node;
+  if (findFirstDocumentGroupId(node)) return node;
   return createDockSplit(
     "dock-root-anchor",
     "horizontal",
@@ -648,7 +646,7 @@ function findFirstGroupId(node: DockNode): string | undefined {
 
 function findFirstDocumentGroupId(node: DockNode): string | undefined {
   if (node.type === "group") {
-    return node.tabs.some((tab) => tab.kind === "document") || node.id === DOCUMENT_GROUP_ID
+    return node.role === "documents" || node.tabs.some((tab) => tab.kind === "document") || node.id === DOCUMENT_GROUP_ID
       ? node.id
       : undefined;
   }
@@ -662,8 +660,25 @@ function findFirstPanelGroupId(node: DockNode): string | undefined {
   return findFirstPanelGroupId(node.first) ?? findFirstPanelGroupId(node.second);
 }
 
-function groupCanHostDocument(group: DockGroupNode): boolean {
-  return !group.tabs.length || group.tabs.some((tab) => tab.kind === "document");
+function groupCanHostDocument(group: DockGroupNode | undefined): boolean {
+  return Boolean(group && (group.role === "documents" || group.id === DOCUMENT_GROUP_ID || group.tabs.some((tab) => tab.kind === "document")));
+}
+
+export function documentGroupIdForPath(layout: WorkspaceLayoutV1, path: string): string | undefined {
+  return findGroupIdForTab(layout.root, documentDockTabId(path));
+}
+
+/** Open a linked note beside its visual document, preserving an existing pane. */
+export function openDocumentBeside(layout: WorkspaceLayoutV1, path: string, originPath: string): WorkspaceLayoutV1 {
+  const next = addDocumentToLayout(layout, path);
+  if (path === originPath) return next;
+  const sourceGroupId = documentGroupIdForPath(next, path);
+  const targetGroupId = documentGroupIdForPath(next, originPath);
+  if (!sourceGroupId || !targetGroupId) return next;
+  const beside = sourceGroupId !== targetGroupId ? next : moveDockTab(next, { tabId: documentDockTabId(path), sourceGroupId, targetGroupId, targetTabId: documentDockTabId(originPath), position: "right" });
+  // Adding then extracting the linked tab must not select an unrelated tab in
+  // its old pane. The source stays visible while the linked pane takes focus.
+  return { ...beside, root: updateGroup(beside.root, targetGroupId, group => ({ ...group, activeTabId: documentDockTabId(originPath) })) };
 }
 
 function nextGroupId(groupId: string, tabId: string): string {

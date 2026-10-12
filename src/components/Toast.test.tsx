@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { Toast } from "./Toast";
 import { ToastProvider, TOAST_DURATION_MS, useToast } from "./ToastProvider";
+import { NotificationBell } from "../notifications";
 
 describe("Toast", () => {
   it("renders nothing when not visible", () => {
@@ -40,9 +41,10 @@ describe("ToastProvider", () => {
     vi.useRealTimers();
   });
 
-  it("shows queued toasts one at a time in FIFO order", () => {
+  it("shows the latest toast without a backlog and keeps earlier notices in the bell", () => {
     render(
       <ToastProvider>
+        <NotificationBell />
         <ShowOnMount
           messages={[
             ["First", "success"],
@@ -56,21 +58,17 @@ describe("ToastProvider", () => {
       screen.getByText("fire").click();
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent("First");
-    expect(screen.queryByText("Second")).not.toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(TOAST_DURATION_MS.success + 10);
-    });
-
     expect(screen.getByRole("status")).toHaveTextContent("Second");
-    expect(screen.getByRole("status")).toHaveClass("toast-error");
+    expect(screen.queryByText("First")).not.toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(TOAST_DURATION_MS.error + 10);
     });
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    act(() => screen.getByRole("button", { name: "Notifications (2)" }).click());
+    expect(screen.getByRole("dialog")).toHaveTextContent("First");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Second");
   });
 
   it("keeps error toasts on screen longer than success toasts", () => {

@@ -1,9 +1,11 @@
+import { useWorldnotionSurfaceText } from "../i18n";
+import { useModalFocus } from "../hooks/useModalFocus";
 /**
  * Dialog for managing property templates.
  * Allows users to save, load, and delete templates.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { X, Download, Upload, Trash2, Save } from "lucide-react";
 import type { PropertyDefinition } from "../editorTypes";
 import {
@@ -31,6 +33,9 @@ export function TemplateDialog({
   onLoadTemplate,
   onClose,
 }: TemplateDialogProps) {
+  const t = useWorldnotionSurfaceText();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, true);
   const { alertDialog, confirmDialog } = useAppDialogs();
   const [mode, setMode] = useState<TemplateDialogMode>("list");
   const [templateName, setTemplateName] = useState("");
@@ -118,10 +123,10 @@ export function TemplateDialog({
   return (
     <div className="template-dialog-overlay" onClick={onClose}>
       <div
-        className="template-dialog"
+        ref={dialogRef} tabIndex={-1} className="template-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Property Templates"
+        aria-label={t("Property Templates")}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -131,8 +136,8 @@ export function TemplateDialog({
         }}
       >
         <div className="template-dialog-header">
-          <h2>Property Templates</h2>
-          <button className="close-btn" aria-label="Close templates" onClick={onClose}>
+          <h2>{t("Property Templates")}</h2>
+          <button className="close-btn" aria-label={t("Close templates")} onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -142,19 +147,19 @@ export function TemplateDialog({
             className={`tab ${mode === "list" ? "active" : ""}`}
             onClick={() => setMode("list")}
           >
-            Browse
+            {t("Browse")}
           </button>
           <button
             className={`tab ${mode === "save" ? "active" : ""}`}
             onClick={() => setMode("save")}
           >
-            Save Current
+            {t("Save Current")}
           </button>
           <button
             className={`tab ${mode === "import-export" ? "active" : ""}`}
             onClick={() => setMode("import-export")}
           >
-            Import/Export
+            {t("Import/Export")}
           </button>
         </div>
 
@@ -164,7 +169,7 @@ export function TemplateDialog({
             <>
               <input
                 type="text"
-                placeholder="Search templates..."
+                placeholder={t("Search templates...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="template-search"

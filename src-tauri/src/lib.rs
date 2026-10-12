@@ -4,10 +4,12 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::UNIX_EPOCH;
+#[cfg(target_os = "macos")]
 use tauri::menu::{
     Menu, MenuItem, PredefinedMenuItem, Submenu, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID,
 };
-use tauri::Emitter;
+#[cfg(target_os = "macos")]
+use tauri::{Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(Serialize)]
@@ -55,6 +57,7 @@ struct ThemeManifest {
     kind: String,
 }
 
+#[cfg(target_os = "macos")]
 fn menu_item(
     app: &tauri::AppHandle,
     id: &str,
@@ -64,12 +67,14 @@ fn menu_item(
     MenuItem::with_id(app, id, label, true, accelerator)
 }
 
+#[cfg(target_os = "macos")]
 fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let style_menu = Submenu::with_items(
         app,
         "Style",
         true,
         &[
+            &menu_item(app, "wn:window:style:forge-mono", "Everend Forge", None)?,
             &menu_item(app, "wn:window:style:github", "GitHub", None)?,
             &menu_item(app, "wn:window:style:one-dark-pro", "One Dark Pro", None)?,
             &menu_item(app, "wn:window:style:dracula", "Dracula", None)?,
@@ -1240,13 +1245,23 @@ fn save_explorer_icons(vault_path: String, content: String) -> ExplorerIconsResp
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "macos")]
+    let builder = builder
         .menu(build_app_menu)
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if id.starts_with("wn:") {
                 let _ = app.emit("worldnotion-menu", id);
             }
+        });
+    builder
+        .setup(|_app| {
+            #[cfg(target_os = "macos")]
+            if let Some(window) = _app.get_webview_window("main") {
+                window.set_decorations(true)?;
+            }
+            Ok(())
         })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())

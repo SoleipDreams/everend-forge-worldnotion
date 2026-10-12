@@ -1,6 +1,7 @@
 import type { ThemeId } from "./editorTypes";
 
-export type ThemeFamily = "worldnotion" | "github" | "one" | "dracula" | "owl" | "material";
+export type ThemeFamily =
+  "forge-mono" | "worldnotion" | "github" | "one" | "dracula" | "owl" | "material";
 export type ThemeMode = "light" | "dark";
 
 export type ThemeDefinition = {
@@ -24,6 +25,20 @@ export const THEMES: ThemeDefinition[] = [
     label: "WorldNotion Dark",
     isDark: true,
     family: "worldnotion",
+    mode: "dark",
+  },
+  {
+    id: "forge-mono-light",
+    label: "Everend Forge Light",
+    isDark: false,
+    family: "forge-mono",
+    mode: "light",
+  },
+  {
+    id: "forge-mono-dark",
+    label: "Everend Forge Dark",
+    isDark: true,
+    family: "forge-mono",
     mode: "dark",
   },
   { id: "github", label: "GitHub Light", isDark: false, family: "github", mode: "light" },
@@ -53,6 +68,9 @@ export const THEMES: ThemeDefinition[] = [
 export const THEME_IDS = THEMES.map((theme) => theme.id);
 
 const STYLE_FAMILY_BY_ID: Record<string, ThemeFamily> = {
+  "forge-mono": "forge-mono",
+  "forge-mono-light": "forge-mono",
+  "forge-mono-dark": "forge-mono",
   worldnotion: "worldnotion",
   github: "github",
   "one-dark-pro": "one",
@@ -115,6 +133,10 @@ export function selectionColorForTheme(themeId: ThemeId): {
     ThemeFamily,
     Record<ThemeMode, { backgroundColor: string; opacity: string }>
   > = {
+    "forge-mono": {
+      light: { backgroundColor: "#87531e", opacity: "0.22" },
+      dark: { backgroundColor: "#f2c46d", opacity: "0.25" },
+    },
     worldnotion: {
       light: { backgroundColor: "#3f7f64", opacity: "0.35" }, // Green accent at 35% opacity (was 25%)
       dark: { backgroundColor: "#7cc7a2", opacity: "0.45" }, // Lighter green at 45% opacity (was 35%)

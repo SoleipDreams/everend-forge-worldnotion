@@ -1,6 +1,22 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { mergeUniverseProfile, readUniverseProfileSource } from "./universeProfilePersistence";
+import { useLearningAdapter, useLearningReporter } from "./learning";
+import { worldnotionIntroduction, worldnotionLessons } from "./learningCatalog";
+import { worldnotionSurfaceText } from "./i18n";
+import { normalizeBackgroundScene } from "./backgroundScenes";
+import "./sceneChoices.css";
+import {
+  lazy,
+  Suspense,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl as openExternalUrl } from "@tauri-apps/plugin-opener";
 import type { EditorView } from "@codemirror/view";
 import {
@@ -13,6 +29,7 @@ import {
   FolderOpen,
   Home,
   Moon,
+  MoreHorizontal,
   Plus,
   Save,
   Search,
@@ -49,6 +66,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import "./App.css";
+import "./forgeUi.css";
+import "./forgeTransition.css";
+import "./forgeMotion.css";
+import "./visualDocuments/base.css";
+import "./windowChrome.css";
+import "./topBar.css";
+import "./forgeAmbient.css";
 import forgeLogoOnDark from "./assets/everend-forge-logo-on-dark.png";
 import forgeLogoOnLight from "./assets/everend-forge-logo-on-light.png";
 import worldnotionIcon from "./assets/worldnotion-icon.png";
@@ -59,8 +83,9 @@ import { OutlineGuide } from "./components/OutlineGuide";
 import { FontSelector } from "./components/FontSelector";
 import { InputDialog } from "./components/InputDialog";
 import { InheritAppearanceDialog } from "./components/InheritAppearanceDialog";
-import { useToast } from "./components/ToastProvider";
-import { useAppDialogs } from "./components/DialogProvider";
+import { useToast, ToastProvider } from "./components/ToastProvider";
+import { NotificationProvider, NotificationBell, useNotificationMessage } from "./notifications";
+import { useAppDialogs, DialogProvider } from "./components/DialogProvider";
 import { useDismissableMenu } from "./hooks/useDismissableMenu";
 import { useInputDialog } from "./hooks/useInputDialog";
 import { useInheritAppearanceDialog } from "./hooks/useInheritAppearanceDialog";
@@ -69,6 +94,9 @@ import { useWorkspaceState } from "./hooks/useWorkspaceState";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { SaveStatusIndicator } from "./components/SaveStatusIndicator";
 import { BrandLoadingScreen } from "./components/BrandLoadingScreen";
+import { DesktopMenuBar } from "./components/DesktopMenuBar";
+import { WindowChromeSetup, WindowTitleControls } from "./components/WindowTitleControls";
+import { handleWindowTitlebarMouseDown, hasCustomWindowChrome } from "./utils/windowTitlebar";
 import { OnboardingGuide, UniverseBasicsCard } from "./components/OnboardingGuide";
 import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -137,7 +165,7 @@ import {
   writeBrowserBinaryFile,
   writeBrowserFile,
 } from "./utils/browserVault";
-import { uniqueAttachmentPath } from "./utils/attachments";
+import { imageMarkdown, uniqueAttachmentPath } from "./utils/attachments";
 import { normalizeLocaleList, normalizeLocaleNames } from "./utils/localization";
 import {
   createVaultEntity,
@@ -145,7 +173,7 @@ import {
   duplicateVaultPath,
   moveVaultPath,
   renameVaultPath,
-  saveVaultFile,
+  saveVaultFile as writeVaultFile,
   trashVaultPath,
   vaultHandleFor,
 } from "./utils/vaultFileOps";
@@ -260,6 +288,52 @@ import {
 import { profileForRecent, rememberUniverse, universeDisplayName } from "./utils/universeSession";
 import { isTauriRuntime, platformLabels, shortcutMatches } from "./utils/appEnvironment";
 import { indexCanonChangeSets, type IndexedCanonChangeSet } from "./utils/canonChangeSets";
+import {
+  readVisualDocument,
+  writeVisualDocument,
+  createVisualDocumentMarkdown,
+} from "./visualDocuments/markdown";
+import { createTimelineDocument } from "./visualDocuments/timelineTypes";
+import { createRelationshipDocument } from "./visualDocuments/relationships";
+import type {
+  VisualDocument,
+  VisualDocumentKind,
+  VisualDocumentSession,
+} from "./visualDocuments/types";
+import { VisualDocumentHistory } from "./visualDocuments/history";
+import { resolveVisualDocumentReference } from "./visualDocuments/references";
+import {
+  moveVisualSessions,
+  pendingVisualDraft,
+  type VisualDocumentSessions,
+} from "./visualDocuments/session";
+import {
+  moveVisualRecovery,
+  readVisualRecovery,
+  recordVisualTabs,
+  recoveryConflicts,
+  restoreVisualRecovery,
+  writeVisualRecovery,
+  visualRecoveryKey,
+  type VisualRecoverySnapshots,
+} from "./visualDocuments/recovery";
+import { documentGroupIdForPath, openDocumentBeside } from "./utils/workspaceLayout";
+import {
+  CALENDAR_PRESETS_PATH,
+  parseCalendarPresets,
+  serializeCalendarPresets,
+  upsertCalendarPreset,
+} from "./visualDocuments/calendarPresets";
+import type { CalendarDefinition } from "./visualDocuments/calendar";
+import { useUniverseDraft } from "./hooks/useUniverseDraft";
+const TimelineEditor = lazy(() =>
+  import("./components/TimelineEditor").then((module) => ({ default: module.TimelineEditor })),
+);
+const RelationshipTreeEditor = lazy(() =>
+  import("./components/RelationshipTreeEditor").then((module) => ({
+    default: module.RelationshipTreeEditor,
+  })),
+);
 
 const EVEREND_FORGE_GITHUB_URL = "https://github.com/SoleipDreams/everend-forge";
 const BUY_SUITE_URL = "https://everendforge.com/buy-suite";
@@ -300,6 +374,10 @@ import {
 import { selectLiveEntity } from "./utils/liveEntity";
 import { planUniverseWorkspaceState } from "./utils/universeApply";
 import { markSavedTabInList, saveFilePayloadForTab } from "./utils/editorPersistence";
+import { UniverseSaveCoordinator } from "./utils/universeSaveCoordinator";
+import { UniverseDraftContext, UniverseDraftRegistry } from "./hooks/useUniverseDraft";
+import { useAppKeyboard } from "./hooks/useAppKeyboard";
+import { AppInteractionContext } from "./hooks/useAppInteraction";
 import { resolveWikilinkInIndex } from "./utils/wikilinkResolver";
 import {
   currentHeaderForLine,
@@ -473,17 +551,30 @@ function pickImageFile(): Promise<File | null> {
 
 const STARTUP_LOADER_MIN_MS = 700;
 
-function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
+function WorldnotionWorkbench({
+  suiteChrome,
+  uiRoot,
+  onInterfaceLocaleChange,
+}: {
+  suiteChrome?: SuiteChrome;
+  uiRoot: { current: HTMLDivElement | null };
+  onInterfaceLocaleChange: (locale: "es" | "en") => void;
+}) {
   const [settings, setSettings] = useState<AppSettingsV4>(() => loadSettings());
+  const localDrafts = useContext(UniverseDraftContext);
   const interfaceLocale = resolveInterfaceLocale(
     suiteChrome?.suiteSettings?.localePreference ?? settings.localePreference ?? "system",
   );
+  useEffect(() => onInterfaceLocaleChange(interfaceLocale), [interfaceLocale, onInterfaceLocaleChange]);
   const editorModeText = worldnotionEditorModeCopy(interfaceLocale);
+  const surfaceText = (text: string) => worldnotionSurfaceText(interfaceLocale, text);
   const activeTheme = (suiteChrome?.suiteSettings?.style ?? settings.theme) as ThemeId;
   const activeThemeIsDark = isDarkTheme(activeTheme);
   const [view, setView] = useState<AppView>("home");
   const [index, setIndex] = useState<VaultIndex>();
   const [browserRoot, setBrowserRoot] = useState<BrowserDirectoryHandle>();
+  const reportLearning = useLearningReporter(suiteChrome?.learning, index?.rootPath);
+  const [learningSection, setLearningSection] = useState("notes");
   const [selectedPath, setSelectedPath] = useState<string>();
   const [selectedExplorerTarget, setSelectedExplorerTarget] = useState<{
     path: string;
@@ -497,6 +588,15 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [initialReady, setInitialReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const visualRecoveryRef = useRef<{
+    root?: string;
+    snapshots: VisualRecoverySnapshots;
+    pending: Set<string>;
+    unreadable?: boolean;
+  }>({ snapshots: {}, pending: new Set() });
+  const [visualRecoveryOffers, setVisualRecoveryOffers] = useState<VisualRecoverySnapshots>({});
+  const [visualRecoveryProblem, setVisualRecoveryProblem] = useState("");
+  const [, setVisualRecoveryRevision] = useState(0);
   const {
     tabs,
     setTabs,
@@ -515,10 +615,19 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     selectedPath,
     sessions: settings.sessions,
     setSettings,
+    onTabsChange: recordVisualRecovery,
   });
   const [activeWorkspacePreset, setActiveWorkspacePreset] =
     useState<ActiveWorkspacePreset>("default");
   const [showSettings, setShowSettings] = useState(false);
+  useEffect(() => suiteChrome?.registerSettingsOpener?.((section) => {
+    if (section) setSettingsInitialSection(section);
+    setShowSettings(true);
+  }), [suiteChrome?.registerSettingsOpener]);
+  const [settingsMounted, setSettingsMounted] = useState(false);
+  useEffect(() => {
+    if (showSettings) setSettingsMounted(true);
+  }, [showSettings]);
 
   useEffect(() => {
     applyInterfaceLocale(
@@ -526,8 +635,8 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     );
   }, [settings.localePreference, suiteChrome?.suiteSettings?.localePreference]);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
-    "overview" | "utils" | "appearance-behavior" | "ai-advisor"
-  >("overview");
+    "overview" | "utils" | "appearance-behavior" | "ai-advisor" | "suite"
+  >("appearance-behavior");
   const [settingsInitialPropertiesMode, setSettingsInitialPropertiesMode] = useState<
     "template" | "blank"
   >("template");
@@ -547,14 +656,49 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   const [isSavingBeforeClose, setIsSavingBeforeClose] = useState(false);
   const [, setPendingClosePaths] = useState<string[]>([]);
   const editorViewRef = useRef<EditorView | null>(null);
+  const editorViewsRef = useRef(new Map<string, EditorView>());
+  const editorRootRef = useRef(index?.rootPath);
+  const visualHistoriesRef = useRef(new Map<string, VisualDocumentHistory>());
+  const [documentSaveStates, setDocumentSaveStates] = useState<
+    Record<string, { saving: boolean; error?: string }>
+  >({});
+  const [calendarPresetDirty, setCalendarPresetDirty] = useState(false);
+  const calendarPresetDirtyRef = useRef(false);
+  const [calendarPresetRevision, setCalendarPresetRevision] = useState(0);
+  const visualSessionsRef = useRef<{ root?: string; sessions?: VisualDocumentSessions }>({});
+  // The guard also covers editors that are no longer mounted in a dock pane.
+  if (visualSessionsRef.current.root !== index?.rootPath)
+    visualSessionsRef.current = {
+      root: index?.rootPath,
+      sessions: index ? settings.sessions[index.rootPath]?.visualDocumentSessions : undefined,
+    };
+  useEffect(() => {
+    visualSessionsRef.current = {
+      root: index?.rootPath,
+      sessions: index ? settings.sessions[index.rootPath]?.visualDocumentSessions : undefined,
+    };
+  }, [index?.rootPath, settings.sessions]);
+  const calendarPresetRef = useRef<
+    { root: string; content: string; modifiedMs?: number | null } | undefined
+  >(undefined);
+  useUniverseDraft(calendarPresetDirty);
+  if (editorRootRef.current !== index?.rootPath) {
+    editorViewsRef.current.clear();
+    visualHistoriesRef.current.clear();
+    editorRootRef.current = index?.rootPath;
+  }
   const editorShellRef = useRef<HTMLDivElement | null>(null);
   const forgeMenuRef = useRef<HTMLDivElement | null>(null);
-  const inspectorSaveTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const saveCoordinatorRef = useRef(new UniverseSaveCoordinator());
   const propertiesOnboardingPromptedRef = useRef<Set<string>>(new Set());
   const propertiesSaveFingerprintRef = useRef<string | undefined>(undefined);
   /** Serialized appearance last known to match `.everend/settings.json` on disk for the open universe. */
   const vaultAppearanceOnDiskRef = useRef<string | undefined>(undefined);
   const folderNotesEnabledBootstrappedRef = useRef(false);
+
+  async function saveVaultFile(...args: Parameters<typeof writeVaultFile>) {
+    return saveCoordinatorRef.current.run(`file:${args[1]}`, () => writeVaultFile(...args));
+  }
 
   // Font detection hook
   const { fonts } = useFonts();
@@ -604,7 +748,65 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     useInheritAppearanceDialog();
 
   const { showToast } = useToast();
+  useNotificationMessage(loadState === "error" ? errorMessage : undefined, "error");
   const { confirmDialog } = useAppDialogs();
+
+  function persistVisualRecovery() {
+    const recovery = visualRecoveryRef.current;
+    if (!recovery.root || recovery.unreadable) return;
+    try {
+      writeVisualRecovery(recovery.root, recovery.snapshots);
+      setVisualRecoveryProblem("");
+    } catch (error) {
+      setVisualRecoveryProblem(error instanceof Error ? error.message : String(error));
+    }
+    setVisualRecoveryRevision((current) => current + 1);
+  }
+
+  function preservedVisualRecoveryData() {
+    try {
+      return index ? localStorage.getItem(visualRecoveryKey(index.rootPath)) : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function recordVisualRecovery(next: OpenTab[], previous: OpenTab[]) {
+    const recovery = visualRecoveryRef.current;
+    if (!recovery.root) return;
+    for (const tab of previous)
+      if (!next.some((candidate) => candidate.path === tab.path) && recovery.snapshots[tab.path]) {
+        recovery.pending.add(tab.path);
+        setVisualRecoveryOffers((current) => ({
+          ...current,
+          [tab.path]: recovery.snapshots[tab.path],
+        }));
+      }
+    recovery.snapshots = recordVisualTabs(
+      recovery.snapshots,
+      next.filter((tab) => !recovery.pending.has(tab.path)),
+      previous,
+    );
+    persistVisualRecovery();
+  }
+
+  async function discardVisualRecovery(path: string) {
+    await saveCoordinatorRef.current.discard(`note:${path}`);
+    setDocumentSaveStates((current) => {
+      const next = { ...current };
+      delete next[path];
+      return next;
+    });
+    const recovery = visualRecoveryRef.current;
+    delete recovery.snapshots[path];
+    recovery.pending.delete(path);
+    setVisualRecoveryOffers((current) => {
+      const next = { ...current };
+      delete next[path];
+      return next;
+    });
+    persistVisualRecovery();
+  }
   const [pointerDragItem, setPointerDragItem] = useState<PointerDragItem>();
   const [showCanonChanges, setShowCanonChanges] = useState(false);
   const [graphControlsPosition, setGraphControlsPosition] = useState({ x: 14, y: 14 });
@@ -613,13 +815,12 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   useEffect(() => {
     return () => {
-      inspectorSaveTimersRef.current.forEach((timer) => clearTimeout(timer));
-      inspectorSaveTimersRef.current.clear();
+      saveCoordinatorRef.current.cancelPending();
     };
   }, []);
 
   useEffect(() => {
-    if (!forgeMenuOpen) return;
+    if (!forgeMenuOpen || (suiteChrome && !suiteChrome.active)) return;
 
     function handlePointerDown(event: PointerEvent) {
       if (forgeMenuRef.current?.contains(event.target as Node)) return;
@@ -636,9 +837,22 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [forgeMenuOpen]);
+  }, [forgeMenuOpen, suiteChrome?.active]);
 
   const activeTab = tabs.find((tab) => tab.path === activeTabPath);
+  useEffect(() => {
+    const current = activeTabPath ? editorViewsRef.current.get(activeTabPath) : undefined;
+    editorViewRef.current = current?.dom.isConnected ? current : null;
+    for (const [path, view] of editorViewsRef.current)
+      if (!tabs.some((tab) => tab.path === path) || !view.dom.isConnected)
+        editorViewsRef.current.delete(path);
+  }, [activeTabPath, tabs]);
+  useEffect(() => {
+    calendarPresetRef.current = undefined;
+    calendarPresetDirtyRef.current = false;
+    setCalendarPresetDirty(false);
+    setDocumentSaveStates({});
+  }, [index?.rootPath]);
   useEffect(() => {
     const rootPath = index?.rootPath;
     if (!rootPath) {
@@ -842,34 +1056,48 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }, [aiAdvisorEnabled, index?.rootPath, setWorkspaceLayout]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = suiteChrome?.suiteSettings?.style ?? settings.theme;
+    if (uiRoot.current)
+      uiRoot.current.dataset.theme = suiteChrome?.suiteSettings?.style ?? settings.theme;
+    if (uiRoot.current)
+      uiRoot.current.dataset.ambientBackground = String(suiteChrome?.suiteSettings?.ambientBackground ?? settings.ambientBackground !== false);
+    if (uiRoot.current) uiRoot.current.dataset.backgroundScene = normalizeBackgroundScene(suiteChrome?.suiteSettings?.backgroundScene ?? settings.backgroundScene);
+    if (!suiteChrome) document.documentElement.dataset.theme = settings.theme;
+    if (uiRoot.current) { if (suiteChrome?.suiteSettings) uiRoot.current.style.removeProperty("--ef-primary-font"); else uiRoot.current.style.setProperty("--ef-primary-font", ({sans:"Inter, system-ui, sans-serif",serif:"Georgia, serif",humanist:"Atkinson Hyperlegible, Trebuchet MS, sans-serif"}[settings.interfaceFont ?? "sans"])); }
     saveSettings(settings);
-  }, [settings, suiteChrome?.suiteSettings?.style]);
+  }, [settings, suiteChrome, uiRoot]);
 
   useEffect(() => {
     if (!index?.rootPath) return;
     const rootPath = index.rootPath;
     const content = serializeVaultAppearanceSettings(settings);
     if (vaultAppearanceOnDiskRef.current === content) return;
-    const timer = setTimeout(() => {
-      vaultAppearanceOnDiskRef.current = content;
-      void saveVaultFile(
-        vaultHandleFor(rootPath, browserRoot),
-        VAULT_APPEARANCE_SETTINGS_PATH,
-        content,
-        "Could not save universe appearance settings.",
-      ).catch(() => {
-        if (vaultAppearanceOnDiskRef.current === content) {
-          vaultAppearanceOnDiskRef.current = undefined;
+    return saveCoordinatorRef.current.schedule(
+      `appearance:${rootPath}`,
+      async () => {
+        try {
+          await saveVaultFile(
+            vaultHandleFor(rootPath, browserRoot),
+            VAULT_APPEARANCE_SETTINGS_PATH,
+            content,
+            "Could not save universe appearance settings.",
+          );
+          vaultAppearanceOnDiskRef.current = content;
+          return true;
+        } catch {
+          if (vaultAppearanceOnDiskRef.current === content) {
+            vaultAppearanceOnDiskRef.current = undefined;
+          }
+          return false;
         }
-      });
-    }, 500);
-    return () => clearTimeout(timer);
+      },
+      500,
+    );
   }, [settings, index?.rootPath, browserRoot]);
 
   useEffect(() => {
-    document.body.style.setProperty("zoom", String(appZoom));
-  }, [appZoom]);
+    uiRoot.current?.style.setProperty("zoom", String(appZoom));
+    uiRoot.current?.style.setProperty("--wn-ui-zoom", String(appZoom));
+  }, [appZoom, uiRoot]);
 
   // Load explorer icons from persistent storage when vault opens
   useEffect(() => {
@@ -1033,8 +1261,18 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     if (pathExists(index, focusedFolderPath, "folder")) return;
     setFocusedFolder(undefined);
   }, [focusedFolderPath, index]);
+  useEffect(() => {
+    if (!suiteChrome?.settingsHost || !index?.rootPath) return;
+    const root = index.rootPath;
+    const refresh = (event: Event) => {
+      if ((event as CustomEvent<{path:string}>).detail?.path !== root) return;
+      void readUniverseProfileSource(root).then(source => { const profile = source ? JSON.parse(source) as UniverseProfile : undefined; setIndex(current => current?.rootPath === root ? {...current, universeProfile:profile} : current); }).catch(error => console.warn("Could not refresh universe profile.", error));
+    };
+    window.addEventListener("everend-forge:profile-saved",refresh);
+    return () => window.removeEventListener("everend-forge:profile-saved",refresh);
+  }, [suiteChrome?.settingsHost !== undefined, index?.rootPath]);
   const universeSettings = useMemo(() => {
-    if (!index) return undefined;
+    if (!index || (suiteChrome?.sharedUniversePath && index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/"))) return undefined;
     return {
       name: universeDisplayName(index),
       rootPath: index.rootPath,
@@ -1047,7 +1285,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         index.files.some((file) => file.relativePath.startsWith(".everend/")),
       propertiesConfig: index.propertiesConfig,
     };
-  }, [index]);
+  }, [index, suiteChrome?.sharedUniversePath]);
   const favoriteItems = useMemo(() => {
     return selectFavoriteItems(index, settings.explorer.favorites);
   }, [index, settings.explorer.favorites]);
@@ -1068,6 +1306,11 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   useEffect(() => {
     if (!pointerDragItem) return;
+    if (suiteChrome && !suiteChrome.active) {
+      setPointerDragItem(undefined);
+      setPointerDragTargetPath(undefined);
+      return;
+    }
 
     function handlePointerMove(event: PointerEvent) {
       const dragItem = pointerDragItem;
@@ -1124,36 +1367,42 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
       document.removeEventListener("pointermove", handlePointerMove);
       document.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [pointerDragItem, explorerSelection]);
+  }, [pointerDragItem, explorerSelection, suiteChrome?.active]);
 
-  useEffect(() => {
-    function handleUndoRedo(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      const isUndo =
-        (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey;
-      const isRedo =
-        (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && event.shiftKey;
+  useAppKeyboard(suiteChrome, (event) => {
+    const target = event.target as HTMLElement | null;
+    const isUndo =
+      (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey;
+    const isRedo =
+      (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && event.shiftKey;
 
-      // Don't prevent default in CodeMirror (handled internally by @codemirror/history)
-      if (target?.closest(".cm-content")) {
-        return;
-      }
-
-      // Only handle explorer-level undo/redo if not in editor
-      if (!isUndo && !isRedo) return;
-
-      if (isUndo && undoRedo.canUndo) {
-        event.preventDefault();
-        performUndo();
-      } else if (isRedo && undoRedo.canRedo) {
-        event.preventDefault();
-        performRedo();
-      }
+    // Don't prevent default in CodeMirror (handled internally by @codemirror/history)
+    if (target?.closest(".cm-content")) {
+      return;
     }
 
-    window.addEventListener("keydown", handleUndoRedo);
-    return () => window.removeEventListener("keydown", handleUndoRedo);
-  }, [undoRedo.canUndo, undoRedo.canRedo, undoRedo.undoStack, undoRedo.redoStack]);
+    // Only handle explorer-level undo/redo if not in editor
+    if (!isUndo && !isRedo) return;
+    if (showSettings || target?.matches("input,textarea,[contenteditable='true']")) return;
+    if (
+      activeTab &&
+      activeTab.mode === "write" &&
+      activeTab.visualMode !== "markdown" &&
+      readVisualDocument(activeTab.rawMarkdown).status === "supported"
+    ) {
+      event.preventDefault();
+      visualUndoRedo(activeTab.path, isRedo);
+      return;
+    }
+
+    if (isUndo && undoRedo.canUndo) {
+      event.preventDefault();
+      performUndo();
+    } else if (isRedo && undoRedo.canRedo) {
+      event.preventDefault();
+      performRedo();
+    }
+  });
 
   function toggleExpand(path: string) {
     setExpandedPaths((prev) => {
@@ -1167,7 +1416,9 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     });
   }
 
-  function handleExplorerTreeAction(action: ExplorerTreeAction | { action: "expandDepth"; depth: number }) {
+  function handleExplorerTreeAction(
+    action: ExplorerTreeAction | { action: "expandDepth"; depth: number },
+  ) {
     if (action === "collapseAll") {
       // If in focus mode, keep the focused folder and its ancestors expanded
       if (focusedFolderPath) {
@@ -1321,6 +1572,37 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     change: PathChangeSet,
     updateChangedTab?: (tab: OpenTab) => OpenTab,
   ) {
+    const moveOwnedPaths = <T,>(owned: Map<string, T>) => {
+      for (const [path, value] of [...owned])
+        if (pathIsAffectedByChanges(path, change)) {
+          owned.delete(path);
+          owned.set(pathAfterChanges(path, change), value);
+        }
+    };
+    moveOwnedPaths(editorViewsRef.current);
+    moveOwnedPaths(visualHistoriesRef.current);
+    setDocumentSaveStates((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([path, state]) => [
+          pathIsAffectedByChanges(path, change) ? pathAfterChanges(path, change) : path,
+          state,
+        ]),
+      ),
+    );
+    visualSessionsRef.current.sessions = moveVisualSessions(
+      visualSessionsRef.current.sessions,
+      change,
+    );
+    visualRecoveryRef.current.snapshots = moveVisualRecovery(
+      visualRecoveryRef.current.snapshots,
+      change,
+    );
+    visualRecoveryRef.current.pending = new Set(
+      [...visualRecoveryRef.current.pending].map((path) =>
+        pathIsAffectedByChanges(path, change) ? pathAfterChanges(path, change) : path,
+      ),
+    );
+    setVisualRecoveryOffers((current) => moveVisualRecovery(current, change));
     setTabs((current) => {
       const changed = updateOpenTabsForPathChange(current, change, index?.rootPath);
       return updateChangedTab ? changed.map(updateChangedTab) : changed;
@@ -1361,6 +1643,18 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
         return {
           ...current,
+          sessions: {
+            ...current.sessions,
+            [index.rootPath]: {
+              ...current.sessions[index.rootPath],
+              rootPath: index.rootPath,
+              tabs: current.sessions[index.rootPath]?.tabs ?? [],
+              visualDocumentSessions: moveVisualSessions(
+                current.sessions[index.rootPath]?.visualDocumentSessions,
+                change,
+              ),
+            },
+          },
           explorer: {
             ...current.explorer,
             focusedFoldersByUniverse,
@@ -1560,7 +1854,13 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         });
         const nextIndex = await refreshUniverse(filePath);
         selectPathAfterRefresh(filePath, nextIndex);
+        reportLearning("note-created", filePath);
         showToast(`Created blank page: ${fileName}`, "success");
+      } else if (action === "newTimeline" || action === "newRelationshipTree") {
+        await createVisualDocument(
+          action === "newTimeline" ? "timeline" : "relationships",
+          parentPath,
+        );
       } else if (action === "newPageFromTemplate" && templateType) {
         const name = await promptUser(`Enter ${templateType} name:`);
         if (!name || name.trim() === "") {
@@ -1584,6 +1884,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         });
         const nextIndex = await refreshUniverse(filePath);
         selectPathAfterRefresh(filePath, nextIndex);
+        reportLearning("note-created", filePath);
         showToast(`Created ${templateType}: ${name}`, "success");
       } else if (action === "newFolder") {
         const name = await promptUser("Enter folder name:");
@@ -2250,22 +2551,29 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   async function saveUniverseProfile(profile: UniverseProfile) {
-    if (!index) return;
+    return saveCoordinatorRef.current.run("universe-profile", () =>
+      performUniverseProfileSave(profile),
+    );
+  }
+
+  async function performUniverseProfileSave(profile: UniverseProfile) {
+    if (!index) throw new Error("Open a universe before saving its profile.");
+    if (suiteChrome?.sharedUniversePath && index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/")) throw new Error("The selected universe is still loading.");
     const locales = normalizeLocaleList(
       profile.localization?.primaryLocale ?? navigator.language ?? "en",
       profile.localization?.locales ?? [],
     );
-    const normalizedProfile: UniverseProfile = {
+    const patch = {
       name: profile.name?.trim() || undefined,
       icon: profile.icon,
-      localization: profile.localization
-        ? {
+      ...(JSON.stringify(profile.localization) !== JSON.stringify(index.universeProfile?.localization) && profile.localization ? { localization: {
             primaryLocale: locales[0],
             locales,
             localeNames: normalizeLocaleNames(profile.localization.localeNames, locales),
-          }
-        : undefined,
+          } } : {}),
     };
+    const latestSource = browserRoot ? await (async () => { try { return await (await (await getBrowserFile(browserRoot, ".everend/universe.json")).getFile()).text(); } catch (error) { if (error instanceof DOMException && error.name === "NotFoundError") return undefined; throw error; } })() : await readUniverseProfileSource(index.rootPath);
+    const normalizedProfile = mergeUniverseProfile(latestSource, patch) as UniverseProfile;
     const content = `${JSON.stringify(normalizedProfile, null, 2)}\n`;
     try {
       await saveVaultFile(
@@ -2278,6 +2586,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         current ? { ...current, universeProfile: normalizedProfile } : current,
       );
       await reindexUniverseMetadata();
+      suiteChrome?.settingsHost?.profileSaved(index.rootPath);
       showToast("Universe profile updated.", "success");
     } catch (error) {
       setLoadState("error");
@@ -2292,6 +2601,14 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   async function savePropertiesConfig(properties: import("./editorTypes.js").PropertiesConfig) {
+    return saveCoordinatorRef.current.run("properties-config", () =>
+      performPropertiesConfigSave(properties),
+    );
+  }
+
+  async function performPropertiesConfigSave(
+    properties: import("./editorTypes.js").PropertiesConfig,
+  ) {
     if (!index) return;
     const normalizedProperties = normalizeCoreBaseProperties(properties);
     const validation = validatePropertiesConfig(normalizedProperties);
@@ -2623,6 +2940,32 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     });
     const isSameUniverse = index?.rootPath === readResult.rootPath;
     if (!isSameUniverse) {
+      let snapshots: VisualRecoverySnapshots = {};
+      let unreadable = false;
+      try {
+        snapshots = readVisualRecovery(readResult.rootPath);
+        for (const [path, snapshot] of Object.entries(snapshots)) {
+          if (
+            nextIndex.files.find((file) => file.relativePath === path)?.content ===
+            snapshot.rawMarkdown
+          )
+            delete snapshots[path];
+        }
+        writeVisualRecovery(readResult.rootPath, snapshots);
+        setVisualRecoveryProblem("");
+      } catch (error) {
+        unreadable = true;
+        setVisualRecoveryProblem(error instanceof Error ? error.message : String(error));
+      }
+      visualRecoveryRef.current = {
+        root: readResult.rootPath,
+        snapshots,
+        pending: new Set(Object.keys(snapshots)),
+        unreadable,
+      };
+      setVisualRecoveryOffers(snapshots);
+    }
+    if (!isSameUniverse) {
       // Track what's on disk for this universe so the appearance-save effect
       // doesn't immediately re-write the file it just loaded, but does seed
       // `.everend/settings.json` the first time a universe without one opens.
@@ -2688,8 +3031,10 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     setWorkspaceLayout(workspacePlan.layout);
     setDocumentTabGroups(workspacePlan.documentTabGroups);
     setActiveWorkspacePreset("custom");
+    // Replace the outgoing session before opening a fallback document.
+    // openDocument must never reuse a same-named tab from another universe.
+    setTabs(workspacePlan.tabs);
     if (workspacePlan.tabs.length) {
-      setTabs(workspacePlan.tabs);
       setActiveTabPath(workspacePlan.nextPath);
       setSelectedPath(workspacePlan.nextPath);
     } else if (workspacePlan.nextPath) {
@@ -2853,6 +3198,8 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   function activateTab(path: string) {
+    const view = editorViewsRef.current.get(path);
+    editorViewRef.current = view?.dom.isConnected ? view : null;
     setActiveTabPath(path);
     setSelectedPath(path);
     rememberRecentFile(path);
@@ -2976,6 +3323,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   async function openUniverse() {
+    if (!(await universeSwitchGuardRef.current())) return;
     setLoadState("loading");
     setErrorMessage("");
     try {
@@ -3025,6 +3373,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   async function createUniverseFromHome() {
+    if (!(await universeSwitchGuardRef.current())) return;
     setErrorMessage("");
     try {
       if (!isTauriRuntime()) {
@@ -3099,6 +3448,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   async function openRecentUniverse(path = settings.recentUniverse) {
     if (!path || path.startsWith("browser:")) return;
+    if (!(await universeSwitchGuardRef.current())) return;
     setLoadState("loading");
     try {
       setBrowserRoot(undefined);
@@ -3118,6 +3468,11 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   function updateRawMarkdownForPath(path: string, rawMarkdown: string) {
+    const previous = tabsRef.current.find(tab => tab.path === path);
+    if (previous) {
+      const oldLinks = new Set(Array.from(previous.rawMarkdown.matchAll(/\[\[([^\]]+)\]\]/g), match => match[1]));
+      if (Array.from(rawMarkdown.matchAll(/\[\[([^\]]+)\]\]/g), match => match[1]).some(link => !oldLinks.has(link) && resolveWikilink(link.split("|")[0].split("#")[0]))) reportLearning("reference-added", path);
+    }
     setTabs((current) =>
       current.map((tab) => {
         if (tab.path !== path) return tab;
@@ -3130,6 +3485,170 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         };
       }),
     );
+  }
+
+  function visualUndoRedo(path: string, redo: boolean) {
+    const tab = tabsRef.current.find((tab) => tab.path === path);
+    if (!tab) return;
+    const history = visualHistoriesRef.current.get(path);
+    const next = redo ? history?.redo(tab.rawMarkdown) : history?.undo(tab.rawMarkdown);
+    if (next === undefined) return;
+    setTabs((current) =>
+      current.map((candidate) =>
+        candidate.path === path
+          ? { ...candidate, rawMarkdown: next, dirty: next !== candidate.savedMarkdown }
+          : candidate,
+      ),
+    );
+  }
+
+  function updateVisualDocument(path: string, document: VisualDocument, label?: string) {
+    const tab = tabsRef.current.find((tab) => tab.path === path);
+    if (!tab) return;
+    try {
+      const next = writeVisualDocument(tab.rawMarkdown, document);
+      const history = visualHistoriesRef.current.get(path) ?? new VisualDocumentHistory();
+      history.record(tab.rawMarkdown, next, label);
+      visualHistoriesRef.current.set(path, history);
+      setTabs((current) =>
+        current.map((candidate) =>
+          candidate.path === path
+            ? { ...candidate, rawMarkdown: next, dirty: next !== candidate.savedMarkdown }
+            : candidate,
+        ),
+      );
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), "error");
+    }
+  }
+
+  function updateVisualSession(path: string, next: VisualDocumentSession) {
+    if (!index) return;
+    visualSessionsRef.current = {
+      root: index.rootPath,
+      sessions: { ...visualSessionsRef.current.sessions, [path]: next },
+    };
+    setSettings((current) => {
+      const session = current.sessions[index.rootPath] ?? { rootPath: index.rootPath, tabs: [] };
+      return {
+        ...current,
+        sessions: {
+          ...current.sessions,
+          [index.rootPath]: {
+            ...session,
+            visualDocumentSessions: { ...session.visualDocumentSessions, [path]: next },
+          },
+        },
+      };
+    });
+  }
+
+  function openVisualReference(reference: string, originPath = activeTabPath) {
+    const result = resolveVisualDocumentReference(index, reference);
+    if (result.status !== "resolved") {
+      showToast(`Cannot open reference: ${result.status}.`, "warning");
+      return;
+    }
+    openOrCreateTab(result.path);
+    if (originPath && originPath !== result.path)
+      setWorkspaceLayout((current) => {
+        return openDocumentBeside(current, result.path, originPath);
+      });
+    if (index)
+      setSettings((current) => {
+        const session = current.sessions[index.rootPath] ?? { rootPath: index.rootPath, tabs: [] };
+        return {
+          ...current,
+          sessions: {
+            ...current.sessions,
+            [index.rootPath]: {
+              ...session,
+              variantSelections: {
+                ...session.variantSelections,
+                [result.path]: result.variantId ?? BASE_VARIANT_ID,
+              },
+            },
+          },
+        };
+      });
+  }
+
+  async function createVisualDocument(
+    kind: VisualDocumentKind,
+    folder = getActiveCreationFolder(selectedExplorerTarget, selectedPath),
+  ) {
+    if (!index) return;
+    const title = kind === "timeline" ? "Timeline" : "Relation tree";
+    const name = await promptUser(`New ${title}`, "Document name", title);
+    if (!name?.trim()) return;
+    const base = slugify(name) || kind;
+    let suffix = 0;
+    let path: string;
+    do {
+      path = `${folder ? `${folder}/` : ""}${base}${suffix ? `-${suffix}` : ""}.md`;
+      suffix += 1;
+    } while (index.files.some((file) => file.relativePath === path));
+    try {
+      const content = createVisualDocumentMarkdown(
+        name,
+        kind === "timeline" ? createTimelineDocument() : createRelationshipDocument(),
+      );
+      await saveVaultFile(vaultHandleFor(index.rootPath, browserRoot), path, content);
+      const nextIndex = await refreshUniverse(path);
+      selectPathAfterRefresh(path, nextIndex);
+      setTabs((current) =>
+        current.map((tab) =>
+          tab.path === path ? { ...tab, mode: "write", visualMode: "visual" } : tab,
+        ),
+      );
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), "error");
+    }
+  }
+
+  async function saveCalendarPreset(calendar: CalendarDefinition) {
+    if (!index) return;
+    const root = index.rootPath;
+    const existing = index.files.find((file) => file.relativePath === CALENDAR_PRESETS_PATH);
+    const previous =
+      calendarPresetRef.current?.root === root
+        ? calendarPresetRef.current
+        : { root, content: existing?.content ?? "", modifiedMs: existing?.modifiedMs };
+    const parsed = parseCalendarPresets(previous.content);
+    if (parsed.issues.length) throw new Error(parsed.issues.join("; "));
+    const content = serializeCalendarPresets(upsertCalendarPreset(parsed.calendars, calendar));
+    calendarPresetRef.current = { ...previous, content };
+    calendarPresetDirtyRef.current = true;
+    setCalendarPresetDirty(true);
+    setCalendarPresetRevision((current) => current + 1);
+    try {
+      await saveCoordinatorRef.current.run(`file:${CALENDAR_PRESETS_PATH}`, async () => {
+        const expected = calendarPresetRef.current?.modifiedMs ?? null;
+        if (browserRoot && expected != null) {
+          const file = await (await getBrowserFile(browserRoot, CALENDAR_PRESETS_PATH)).getFile();
+          if (file.lastModified !== expected)
+            throw new Error("Calendar presets changed externally. Reload before saving.");
+        }
+        const modifiedMs = await writeVaultFile(
+          vaultHandleFor(root, browserRoot),
+          CALENDAR_PRESETS_PATH,
+          content,
+          "Could not save calendar preset.",
+          expected,
+        );
+        if (calendarPresetRef.current?.root === root) {
+          const latest = calendarPresetRef.current;
+          calendarPresetRef.current = { ...latest, modifiedMs };
+          if (latest.content === content) {
+            calendarPresetDirtyRef.current = false;
+            setCalendarPresetDirty(false);
+          }
+        }
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), "error");
+      throw error;
+    }
   }
 
   function setTabMode(path: string, mode: OpenTab["mode"]) {
@@ -3150,9 +3669,9 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     );
   }
 
-  async function persistInspectorFrontmatter(path: string, content: string) {
+  async function persistInspectorFrontmatter(path: string, content: string): Promise<boolean> {
     const tab = tabsRef.current.find((candidate) => candidate.path === path);
-    if (!tab || tab.rawMarkdown !== content) return;
+    if (!tab || tab.rawMarkdown !== content) return true;
 
     try {
       if (browserRoot) {
@@ -3164,30 +3683,21 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
           }
         }
         const modifiedMs = await writeBrowserFile(browserRoot, tab.path, content);
-        setTabs((current) =>
-          current.map((candidate) =>
-            candidate.path === path && candidate.rawMarkdown === content
-              ? { ...candidate, savedMarkdown: content, dirty: false, modifiedMs }
-              : candidate,
-          ),
-        );
-        return;
+        setTabs((current) => markSavedTabInList(current, path, modifiedMs, content));
+        reportLearning("note-saved", path);
+        return true;
       }
 
-      if (!tab.absolutePath) return;
+      if (!tab.absolutePath) throw new Error("This document does not have a writable path.");
       const result = await invoke<WriteResult>("save_file", {
         path: tab.absolutePath,
         content,
         expectedModifiedMs: tab.modifiedMs ?? null,
       });
       if (!result.ok) throw new Error(result.message ?? "Could not save metadata.");
-      setTabs((current) =>
-        current.map((candidate) =>
-          candidate.path === path && candidate.rawMarkdown === content
-            ? { ...candidate, savedMarkdown: content, dirty: false, modifiedMs: result.modifiedMs }
-            : candidate,
-        ),
-      );
+      setTabs((current) => markSavedTabInList(current, path, result.modifiedMs, content));
+      reportLearning("note-saved", path);
+      return true;
     } catch (error) {
       setTabs((current) =>
         current.map((candidate) =>
@@ -3197,21 +3707,22 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         ),
       );
       showToast(error instanceof Error ? error.message : String(error), "error");
+      return false;
     }
   }
 
   function scheduleInspectorFrontmatterSave(path: string, content: string) {
-    const existing = inspectorSaveTimersRef.current.get(path);
-    if (existing) clearTimeout(existing);
-    const timer = setTimeout(() => {
-      inspectorSaveTimersRef.current.delete(path);
-      void persistInspectorFrontmatter(path, content);
-    }, 300);
-    inspectorSaveTimersRef.current.set(path, timer);
+    saveCoordinatorRef.current.schedule(
+      `note:${path}`,
+      () => persistInspectorFrontmatter(path, content),
+      300,
+    );
   }
 
   function updateActiveFrontmatter(frontmatterRaw: string, options?: { persist?: boolean }) {
     if (!activeTabPath) return;
+    const previous = tabsRef.current.find((tab) => tab.path === activeTabPath);
+    if (previous && rawToEditorParts(previous.rawMarkdown).frontmatterRaw !== frontmatterRaw) reportLearning("property-edited", activeTabPath);
     let nextContent: string | undefined;
     setTabs((current) =>
       current.map((tab) => {
@@ -3300,19 +3811,67 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     await saveTab(activeTabPath);
   }
 
-  async function saveTab(path: string) {
-    const tabToSave = tabs.find((tab) => tab.path === path);
-    if (!tabToSave) return;
-    if (!tabToSave.dirty) return;
-    setErrorMessage("");
+  async function saveTab(path: string): Promise<boolean> {
+    saveCoordinatorRef.current.cancel(`note:${path}`);
+    return saveCoordinatorRef.current.run(`note:${path}`, () => performTabSave(path));
+  }
+
+  async function performTabSave(path: string): Promise<boolean> {
+    const tabToSave = tabsRef.current.find((tab) => tab.path === path);
+    if (!tabToSave) return false;
+    const clearSaveState = () =>
+      setDocumentSaveStates((current) => {
+        if (!(path in current)) return current;
+        const next = { ...current };
+        delete next[path];
+        return next;
+      });
+    const failed = (message: string) => {
+      setDocumentSaveStates((current) => ({
+        ...current,
+        [path]: { saving: false, error: message },
+      }));
+      showToast(`${path}: ${message}`, "error");
+      return false;
+    };
+    if (visualRecoveryRef.current.pending.has(path))
+      return failed(
+        interfaceLocale === "es"
+          ? "Recupera o descarta la copia local antes de guardar."
+          : "Recover or discard the local copy before saving.",
+      );
+    const recovery = visualRecoveryRef.current.snapshots[path];
+    if (
+      recovery &&
+      recoveryConflicts(
+        recovery,
+        index?.files.find((file) => file.relativePath === path),
+      )
+    )
+      return failed(
+        interfaceLocale === "es"
+          ? "El archivo cambió desde la base de recuperación. Revisa el archivo guardado y confirma la nueva base antes de guardar."
+          : "The file changed since the recovery base. Review the saved file and confirm the new base before saving.",
+      );
+    if (!tabToSave.dirty) {
+      clearSaveState();
+      return true;
+    }
+    setDocumentSaveStates((current) => ({
+      ...current,
+      [path]: { ...current[path], saving: true },
+    }));
     try {
       if (browserRoot) {
         if (tabToSave.modifiedMs) {
           const handle = await getBrowserFile(browserRoot, tabToSave.path);
           const currentFile = await handle.getFile();
           if (currentFile.lastModified !== tabToSave.modifiedMs) {
-            showToast("File changed externally. Reload before saving.", "error");
-            return;
+            return failed(
+              interfaceLocale === "es"
+                ? "El archivo cambió externamente. Recarga antes de guardar."
+                : "File changed externally. Reload before saving.",
+            );
           }
         }
         const modifiedMs = await writeBrowserFile(
@@ -3320,25 +3879,73 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
           tabToSave.path,
           tabToSave.rawMarkdown,
         );
-        setTabs((current) => markSavedTabInList(current, tabToSave.path, modifiedMs));
-        showToast("Saved.", "success");
-        await reindexUniverseMetadata();
-        return;
+        setTabs((current) =>
+          markSavedTabInList(current, tabToSave.path, modifiedMs, tabToSave.rawMarkdown),
+        );
+      } else {
+        const result = await invoke<WriteResult>("save_file", saveFilePayloadForTab(tabToSave));
+        if (!result.ok)
+          return failed(
+            result.message ?? (interfaceLocale === "es" ? "No se pudo guardar." : "Save failed."),
+          );
+        setTabs((current) =>
+          markSavedTabInList(current, tabToSave.path, result.modifiedMs, tabToSave.rawMarkdown),
+        );
       }
-
-      const result = await invoke<WriteResult>("save_file", saveFilePayloadForTab(tabToSave));
-      if (!result.ok) {
-        showToast(result.message ?? "Save failed.", "error");
-        return;
-      }
-      setTabs((current) => markSavedTabInList(current, tabToSave.path, result.modifiedMs));
-      showToast("Saved.", "success");
+    } catch (error) {
+      return failed(error instanceof Error ? error.message : String(error));
+    }
+    clearSaveState();
+    reportLearning("note-saved", path);
+    showToast(interfaceLocale === "es" ? "Guardado." : "Saved.", "success");
+    // A metadata refresh failure cannot turn a completed file write into a
+    // failed save or put its error in a neighboring document pane.
+    try {
       await reindexUniverseMetadata();
     } catch (error) {
-      setLoadState("error");
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      showToast(
+        `${path}: ${interfaceLocale === "es" ? "Guardado; no se pudo actualizar el índice" : "Saved; could not refresh the index"}. ${error instanceof Error ? error.message : String(error)}`,
+        "warning",
+      );
     }
+    return true;
   }
+
+  const universeSwitchGuardRef = useRef<() => Promise<boolean>>(async () => true);
+  universeSwitchGuardRef.current = async () => {
+    const safe = await saveCoordinatorRef.current.canSwitch(
+      () =>
+        tabsRef.current.some((tab) => tab.dirty) ||
+        Object.keys(visualRecoveryRef.current.snapshots).length > 0 ||
+        Boolean(visualRecoveryProblem) ||
+        calendarPresetDirtyRef.current ||
+        Boolean(localDrafts?.hasDrafts()) ||
+        Boolean(pendingVisualDraft(visualSessionsRef.current.sessions)),
+    );
+    if (!safe) {
+      const draft = pendingVisualDraft(visualSessionsRef.current.sessions);
+      const recoveryPath = visualRecoveryRef.current.pending.values().next().value;
+      showToast(
+        recoveryPath
+          ? interfaceLocale === "es"
+            ? `Recupera o descarta la copia local de ${recoveryPath} antes de cambiar de universo.`
+            : `Recover or discard the local copy of ${recoveryPath} before switching universes.`
+          : draft
+            ? interfaceLocale === "es"
+              ? `Aplica o descarta el borrador «${draft.label}» de ${draft.path} antes de cambiar de universo.`
+              : `Apply or discard the “${draft.label}” draft in ${draft.path} before switching universes.`
+            : interfaceLocale === "es"
+              ? "Guarda los documentos pendientes o resuelve el error de guardado antes de cambiar de universo."
+              : "Save pending documents or resolve the save error before switching universes.",
+        "warning",
+      );
+    }
+    return safe;
+  };
+  useEffect(
+    () => suiteChrome?.registerUniverseSwitchGuard?.(() => universeSwitchGuardRef.current()),
+    [suiteChrome?.registerUniverseSwitchGuard],
+  );
 
   function replaceSelection(before: string, after = before, placeholder = "text") {
     const view = editorViewRef.current;
@@ -3528,7 +4135,35 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   // Helper to actually close a tab without confirmation
+  function blockCloseForVisualDrafts(paths: string[]) {
+    const recoveryPath = paths.find((path) => visualRecoveryRef.current.pending.has(path));
+    if (recoveryPath) {
+      showToast(
+        interfaceLocale === "es"
+          ? `Recupera o descarta la copia local de ${recoveryPath} antes de cerrar el documento.`
+          : `Recover or discard the local copy of ${recoveryPath} before closing the document.`,
+        "warning",
+      );
+      return true;
+    }
+    const draft = pendingVisualDraft(visualSessionsRef.current.sessions, paths);
+    if (!draft) return false;
+    showToast(
+      interfaceLocale === "es"
+        ? `Aplica o descarta el borrador «${draft.label}» de ${draft.path} antes de cerrar el documento.`
+        : `Apply or discard the “${draft.label}” draft in ${draft.path} before closing the document.`,
+      "warning",
+    );
+    return true;
+  }
+
   function doCloseTab(path: string) {
+    if (blockCloseForVisualDrafts([path])) return;
+    const snapshot = visualRecoveryRef.current.snapshots[path];
+    if (snapshot) {
+      visualRecoveryRef.current.pending.add(path);
+      setVisualRecoveryOffers((current) => ({ ...current, [path]: snapshot }));
+    }
     setActiveWorkspacePreset("custom");
     setWorkspaceLayout((current) => closeDockLayoutTab(current, documentDockTabId(path)));
     setDocumentTabGroups((current) => removeTabFromGroups(current, path));
@@ -3545,6 +4180,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   async function closeTab(path = activeTabPath) {
     if (!path) return;
+    if (blockCloseForVisualDrafts([path])) return;
     const target = tabs.find((tab) => tab.path === path);
     if (!target) return;
     if (target.dirty && settings.editor.confirmCloseDirtyTab) {
@@ -3555,32 +4191,29 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     doCloseTab(path);
   }
 
-  function handleUnsavedDialogDiscard() {
-    if (!unsavedDialogPath) return;
-    doCloseTab(unsavedDialogPath);
-    setPendingClosePaths((current) => {
-      const next = advancePendingCloseQueue(current);
-      setUnsavedDialogPath(next.unsavedDialogPath);
-      return next.pendingClosePaths;
-    });
+  async function handleUnsavedDialogDiscard() {
+    if (!unsavedDialogPath || isSavingBeforeClose) return;
+    const path = unsavedDialogPath;
+    setIsSavingBeforeClose(true);
+    try {
+      await discardVisualRecovery(path);
+      doCloseTab(path);
+      setPendingClosePaths((current) => {
+        const next = advancePendingCloseQueue(current);
+        setUnsavedDialogPath(next.unsavedDialogPath);
+        return next.pendingClosePaths;
+      });
+    } finally {
+      setIsSavingBeforeClose(false);
+    }
   }
 
   async function handleUnsavedDialogSave() {
     if (!unsavedDialogPath) return;
     setIsSavingBeforeClose(true);
     try {
-      // Activate the tab temporarily to save it
-      setActiveTabPath(unsavedDialogPath);
-      // Give a moment for state to update
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      // The saveEditor function uses activeTab, so we need to ensure it's set
-      const tabToSave = tabs.find((tab) => tab.path === unsavedDialogPath);
-      if (tabToSave && tabToSave.absolutePath) {
-        const result = await invoke<WriteResult>("save_file", saveFilePayloadForTab(tabToSave));
-        if (result.ok) {
-          setTabs((current) => markSavedTabInList(current, unsavedDialogPath, result.modifiedMs));
-        }
-      }
+      if (!(await saveTab(unsavedDialogPath))) return;
+      if (tabsRef.current.find((tab) => tab.path === unsavedDialogPath)?.dirty) return;
       doCloseTab(unsavedDialogPath);
       setPendingClosePaths((current) => {
         const next = advancePendingCloseQueue(current);
@@ -3596,6 +4229,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   function handleUnsavedDialogCancel() {
+    if (isSavingBeforeClose) return;
     // Cancel entire sequence
     setUnsavedDialogPath(null);
     setPendingClosePaths([]);
@@ -3603,6 +4237,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   async function closeAllTabs() {
     if (tabs.length === 0) return;
+    if (blockCloseForVisualDrafts(tabs.map((tab) => tab.path))) return;
 
     // Get all dirty tabs
     const dirtyPaths = getDirtyTabPaths(tabs, settings.editor.confirmCloseDirtyTab);
@@ -3623,6 +4258,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
 
   async function closeOtherTabs(path: string) {
     const tabsToClose = tabs.filter((tab) => tab.path !== path);
+    if (blockCloseForVisualDrafts(tabsToClose.map((tab) => tab.path))) return;
 
     // Get dirty tabs that need confirmation
     const dirtyPaths = getDirtyTabPaths(tabsToClose, settings.editor.confirmCloseDirtyTab);
@@ -3644,6 +4280,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     const indexOfTab = tabs.findIndex((tab) => tab.path === path);
     if (indexOfTab === -1) return;
     const rightTabs = tabs.slice(indexOfTab + 1);
+    if (blockCloseForVisualDrafts(rightTabs.map((tab) => tab.path))) return;
 
     // Get dirty tabs that need confirmation
     const dirtyPaths = getDirtyTabPaths(rightTabs, settings.editor.confirmCloseDirtyTab);
@@ -3661,6 +4298,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   function closeSavedTabs() {
+    if (blockCloseForVisualDrafts(tabs.filter((tab) => !tab.dirty).map((tab) => tab.path))) return;
     setTabs((current) => {
       const result = closeSavedOpenTabs(current, activeTabPath);
       if (result.activePath !== activeTabPath) {
@@ -3695,8 +4333,11 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     setWorkspaceLayout((current) =>
       moveDockTab(current, {
         tabId: documentDockTabId(input.path),
-        sourceGroupId: "dock-documents",
-        targetGroupId: "dock-documents",
+        sourceGroupId: documentGroupIdForPath(current, input.path) ?? "dock-documents",
+        targetGroupId:
+          (input.targetPath
+            ? documentGroupIdForPath(current, input.targetPath)
+            : documentGroupIdForPath(current, input.path)) ?? "dock-documents",
         position: "center",
         targetTabId: input.targetPath ? documentDockTabId(input.targetPath) : undefined,
       }),
@@ -3759,6 +4400,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     if (!group) return;
     const pathSet = new Set(group.tabPaths);
     const tabsToClose = tabs.filter((tab) => pathSet.has(tab.path));
+    if (blockCloseForVisualDrafts(tabsToClose.map((tab) => tab.path))) return;
     const dirtyPaths = getDirtyTabPaths(tabsToClose, settings.editor.confirmCloseDirtyTab);
     if (dirtyPaths.length > 0) {
       const queue = pendingCloseQueueFromDirtyPaths(dirtyPaths);
@@ -3802,6 +4444,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
       );
       const nextIndex = await refreshUniverse(relativePath);
       selectPathAfterRefresh(relativePath, nextIndex);
+      reportLearning("note-created", relativePath);
       showToast(`Created ${name}.`, "success");
     } catch (error) {
       setLoadState("error");
@@ -3932,6 +4575,75 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     }
   }
 
+  async function handleDesktopEditCommand(command: string) {
+    const view = editorViewRef.current;
+    const target = document.activeElement;
+    const inCodeMirror = view && target?.closest(".cm-content");
+    try {
+      if (inCodeMirror && view.state.readOnly && (command === "cut" || command === "paste")) return;
+      if (command === "selectAll" && inCodeMirror) {
+        const { selectAll } = await import("@codemirror/commands");
+        selectAll(view);
+      } else if ((command === "copy" || command === "cut") && inCodeMirror) {
+        if (document.execCommand(command)) return;
+        const text = view.state.selection.ranges
+          .map((range) => view.state.sliceDoc(range.from, range.to))
+          .join("\n");
+        if (!text) return;
+        await navigator.clipboard.writeText(text);
+        if (command === "cut") view.dispatch(view.state.replaceSelection(""));
+        view.focus();
+      } else if (command === "paste") {
+        let text: string;
+        if (inCodeMirror && navigator.clipboard.read) {
+          const items = await navigator.clipboard.read();
+          const images = items.flatMap((item) =>
+            item.types.filter((type) => type.startsWith("image/")).map((type) => ({ item, type })),
+          );
+          if (images.length) {
+            for (const { item, type } of images) {
+              const extension = type.split("/")[1].split("+")[0];
+              const file = new File([await item.getType(type)], `clipboard-image.${extension}`, {
+                type,
+              });
+              const path = await persistImageFile(file);
+              if (!path) continue;
+              const snippet = `${imageMarkdown(path, "clipboard-image")}\n`;
+              const from = view.state.selection.main.head;
+              view.dispatch({
+                changes: { from, insert: snippet },
+                selection: { anchor: from + snippet.length },
+              });
+            }
+            view.focus();
+            return;
+          }
+          const plain = items.find((item) => item.types.includes("text/plain"));
+          text = plain ? await (await plain.getType("text/plain")).text() : "";
+        } else {
+          text = await navigator.clipboard.readText();
+        }
+        if (!text) return;
+        if (inCodeMirror) {
+          view.dispatch(view.state.replaceSelection(text));
+          view.focus();
+        } else {
+          document.execCommand("insertText", false, text);
+        }
+      } else {
+        document.execCommand(command);
+      }
+    } catch (error) {
+      showToast(
+        interfaceLocale === "es"
+          ? "No se pudo acceder al portapapeles. Usa el atajo de teclado."
+          : "Could not access the clipboard. Use the keyboard shortcut.",
+        "warning",
+      );
+      console.error("Could not execute desktop edit command:", error);
+    }
+  }
+
   async function handleNativeMenuCommand(commandId: string) {
     if (commandId.startsWith("wn:window:style:")) {
       setThemeById(themeForStyleCommand(commandId.replace("wn:window:style:", ""), settings.theme));
@@ -3945,12 +4657,43 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     }
 
     switch (commandId) {
+      case "wn:window:minimize":
+        await getCurrentWindow().minimize();
+        break;
+      case "wn:window:close":
+        await getCurrentWindow().close();
+        break;
+      case "wn:edit:undo":
+      case "wn:edit:redo": {
+        const redo = commandId === "wn:edit:redo";
+        if (editorViewRef.current && document.activeElement?.closest(".cm-content")) {
+          const commands = await import("@codemirror/commands");
+          (redo ? commands.redo : commands.undo)(editorViewRef.current);
+        } else if (document.activeElement?.matches("input, textarea, [contenteditable='true']")) {
+          document.execCommand(redo ? "redo" : "undo");
+        } else if (
+          activeTab?.mode === "write" &&
+          activeTab.visualMode !== "markdown" &&
+          readVisualDocument(activeTab.rawMarkdown).status === "supported"
+        ) {
+          visualUndoRedo(activeTab.path, redo);
+        } else {
+          await (redo ? performRedo() : performUndo());
+        }
+        break;
+      }
       case "wn:file:new-note":
         if (!index) {
           showToast("Open a universe before creating notes.", "warning");
           return;
         }
         await createNoteFromTabButton();
+        break;
+      case "wn:file:new-timeline":
+        await createVisualDocument("timeline");
+        break;
+      case "wn:file:new-relationships":
+        await createVisualDocument("relationships");
         break;
       case "wn:file:new-folder":
         if (!index) {
@@ -3989,7 +4732,10 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         toggleBuiltinTheme();
         break;
       case "wn:view:reload":
-        window.location.reload();
+        if (await universeSwitchGuardRef.current()) {
+          if (suiteChrome) suiteChrome.onReload?.();
+          else window.location.reload();
+        }
         break;
       case "wn:view:zoom-in":
         setAppZoom((current) => Math.min(1.4, Number((current + 0.1).toFixed(2))));
@@ -4009,22 +4755,73 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     }
   }
 
+  useAppKeyboard(suiteChrome, (event) => {
+    if (showSettings) return;
+    const binding = settings.keybindings.find((candidate) =>
+      shortcutMatches(event, candidate.shortcut),
+    );
+    if (!binding) return;
+    event.preventDefault();
+    void executeCommand(binding.commandId);
+  });
+
+  // These accelerators used to be supplied by the native menu. Editor commands
+  // continue to use the configurable bindings above.
+  useAppKeyboard(suiteChrome, (event) => {
+    if (suiteChrome || !hasCustomWindowChrome() || showSettings || event.defaultPrevented) return;
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+    if (settings.keybindings.some((binding) => shortcutMatches(event, binding.shortcut))) return;
+    const key = event.key.toLowerCase();
+    let command: string | undefined;
+    if (key === "n") command = event.shiftKey ? "wn:file:new-folder" : "wn:file:new-note";
+    else if (key === "o" && !event.shiftKey) command = "wn:file:open-universe";
+    else if (key === "\\")
+      command = event.shiftKey ? "wn:view:toggle-inspector" : "wn:view:toggle-sidebar";
+    else if (key === "l" && event.shiftKey) command = "wn:view:toggle-light-dark";
+    else if (key === "r" && !event.shiftKey) command = "wn:view:reload";
+    else if (key === "=" || key === "+") command = "wn:view:zoom-in";
+    else if (key === "-" && !event.shiftKey) command = "wn:view:zoom-out";
+    else if (key === "0" && !event.shiftKey) command = "wn:view:zoom-reset";
+    if (!command) return;
+    event.preventDefault();
+    void handleNativeMenuCommand(command);
+  });
+
   useEffect(() => {
-    if (suiteChrome && !suiteChrome.active) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (showSettings) return;
-      const binding = settings.keybindings.find((candidate) =>
-        shortcutMatches(event, candidate.shortcut),
-      );
-      if (!binding) return;
-      event.preventDefault();
-      void executeCommand(binding.commandId);
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTabPath, settings.keybindings, showSettings, tabs]);
+    if (suiteChrome || !isTauriRuntime()) return;
+    const window = getCurrentWindow();
+    let disposed = false;
+    let closing = false;
+    let approved = false;
+    let unlisten: (() => void) | undefined;
+    void window
+      .onCloseRequested(async (event) => {
+        if (approved) return;
+        event.preventDefault();
+        if (closing) return;
+        closing = true;
+        try {
+          if (await universeSwitchGuardRef.current()) {
+            approved = true;
+            await window.close();
+          }
+        } catch (error) {
+          approved = false;
+          console.error("Could not close WorldNotion:", error);
+        } finally {
+          closing = false;
+        }
+      })
+      .then((stop) => {
+        unlisten = stop;
+        if (disposed) stop();
+      })
+      .catch((error) => console.error("Could not listen for window close requests:", error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [suiteChrome]);
 
   useEffect(() => {
     if (suiteChrome && !suiteChrome.active) return;
@@ -4088,24 +4885,142 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     </>
   );
 
+  useLearningAdapter(suiteChrome?.learning, {
+    introduction: worldnotionIntroduction, lessons: worldnotionLessons,
+    available: Boolean(index && loadState !== "loading"), busy: showSettings || showFeedback,
+    section: learningSection, subjectId: activeTabPath,
+    openSection: section => {
+      if (!index) return;
+      setView("workspace");
+      const kind = section === "properties" ? "inspector" : section === "references" ? "links" : "explorer";
+      if (!layoutHasPanel(workspaceLayout, kind)) toggleDockPanel(kind);
+      setLearningSection(section);
+    },
+  });
+
+  const forgeNavigation = suiteChrome ? (
+    suiteChrome.renderAppSwitcher()
+  ) : (
+    <div ref={forgeMenuRef} className={`forge-corner-menu ${forgeMenuOpen ? "open" : ""}`}>
+      <button
+        type="button"
+        className="forge-corner-button"
+        onClick={() => setForgeMenuOpen((open) => !open)}
+        aria-expanded={forgeMenuOpen}
+        aria-label={surfaceText("Open Everend menu")}
+        title="Everend menu"
+      >
+        <ForgeCornerLogo />
+      </button>
+      <div className="forge-orbit-panel" aria-label="Everend menu">
+        <button
+          type="button"
+          onClick={() => void openUrl(EVEREND_FORGE_GITHUB_URL).then(() => setForgeMenuOpen(false))}
+        >
+          Github
+        </button>
+        <button
+          type="button"
+          onClick={() => void openUrl(BUY_SUITE_URL).then(() => setForgeMenuOpen(false))}
+        >
+          Buy Suite
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setForgeMenuOpen(false);
+            setShowFeedback(true);
+          }}
+        >
+          Enviar feedback
+        </button>
+      </div>
+    </div>
+  );
+
+
+  const renderedSettings = <>        {showSettings || settingsMounted || suiteChrome?.settingsHost ? (
+          <Suspense fallback={<LazyPanelFallback label="Loading settings..." />}>
+            <SettingsModal
+              key={index?.rootPath ?? "application"}
+              hidden={!showSettings}
+              settings={settings}
+              universe={universeSettings}
+              initialSection={settingsInitialSection}
+              initialPropertiesMode={settingsInitialPropertiesMode}
+              onChange={setSettings}
+              onSaveUniverseProfile={saveUniverseProfile}
+              onSavePropertiesConfig={savePropertiesConfig}
+              onInitializePropertiesWorkspace={initializeUniverseProperties}
+              onScanFrontmatterNormalization={scanFrontmatterNormalization}
+              onApplyFrontmatterNormalization={applyFrontmatterNormalization}
+              onScanPropertyNormalization={scanPropertyNormalization}
+              onApplyPropertyNormalization={applyFrontmatterNormalization}
+              onScanPropertyStructureMigration={scanPropertyStructureMigration}
+              onApplyPropertyStructureMigration={applyPropertyStructureMigration}
+              onClose={() => setShowSettings(false)}
+              onRevealUniverse={() => {
+                void revealExplorerPath();
+              }}
+              onOpenUniverseNote={openUniverseNote}
+              onResetOnboarding={restartWorldNotionOnboarding}
+              revealUniverseLabel={labels.revealUniverse}
+              suiteSettings={suiteChrome?.suiteSettings}
+              settingsHost={suiteChrome?.settingsHost}
+            />
+          </Suspense>
+        ) : null}</>;
+
   if (!suiteChrome && !initialReady) {
     return (
-      <BrandLoadingScreen
-        message={loadState === "loading" ? "Opening your universe…" : "Preparing your workspace…"}
-      />
+      <>
+        <BrandLoadingScreen
+          message={loadState === "loading" ? "Opening your universe…" : "Preparing your workspace…"}
+        />
+        {hasCustomWindowChrome() ? (
+          <header
+            className="home-topbar wn-loading-topbar"
+            onMouseDown={handleWindowTitlebarMouseDown}
+          >
+            <div className="home-topbar-leading">
+              {forgeNavigation}
+              <h1>Worldnotion</h1>
+            </div>
+            <WindowTitleControls
+              locale={interfaceLocale}
+              onClose={() => getCurrentWindow().close()}
+            />
+          </header>
+        ) : null}
+      </>
     );
   }
+
 
   if (view === "home" || !index) {
     return (
       <>
+        {renderedSettings}
         <main className="home-shell">
-          <header className="home-topbar">
-            <div className="brand">
-              <img className="app-brand-icon" src={worldnotionIcon} alt="" aria-hidden="true" />
-              <div>
-                <h1>Worldnotion</h1>
-                <p>Universe-first Markdown workspace</p>
+          <header
+            className="home-topbar"
+            onMouseDown={!suiteChrome ? handleWindowTitlebarMouseDown : undefined}
+          >
+            <div className="home-topbar-leading">
+              {forgeNavigation}
+              {!suiteChrome ? (
+                <DesktopMenuBar
+                  locale={interfaceLocale}
+                  onHome={() => setView("home")}
+                  onCommand={handleNativeMenuCommand}
+                  onEditCommand={handleDesktopEditCommand}
+                />
+              ) : null}
+              <div className="brand">
+                <img className="app-brand-icon" src={worldnotionIcon} alt="" aria-hidden="true" />
+                <div>
+                  <h1>Worldnotion</h1>
+                </div>
               </div>
             </div>
             <div className="home-topbar-actions">
@@ -4120,11 +5035,18 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               <button
                 type="button"
                 onClick={toggleBuiltinTheme}
-                title="Toggle theme"
-                aria-label="Toggle theme"
+                title={surfaceText("Toggle theme")}
+                aria-label={surfaceText("Toggle theme")}
               >
                 {activeThemeIsDark ? <Sun size={15} /> : <Moon size={15} />}
               </button>
+              <NotificationBell locale={interfaceLocale} />
+              {!suiteChrome ? (
+                <WindowTitleControls
+                  locale={interfaceLocale}
+                  onClose={() => getCurrentWindow().close()}
+                />
+              ) : null}
             </div>
           </header>
 
@@ -4206,7 +5128,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               </div>
             </div>
 
-            {loadState === "error" ? <div className="error-banner">{errorMessage}</div> : null}
+
             {loadState === "loading" ? (
               <div className="loading-banner">Loading universe...</div>
             ) : null}
@@ -4297,6 +5219,8 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
       favoritePaths={favoritePaths}
       favoriteItems={favoriteItems}
       ecosystemGroups={ecosystemGroups}
+      ecosystemView={settings.explorer.ecosystemView}
+      onEcosystemViewChange={(ecosystemView) => updateExplorer({ ecosystemView })}
       ecosystemEntityColors={ecosystemEntityColors}
       entityTagColors={entityTagColors}
       folderNotesEnabled={settings.explorer.folderNotesEnabled}
@@ -4330,6 +5254,190 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     />
   );
 
+  function renderDocumentSaveError(path: string) {
+    const saveState = documentSaveStates[path];
+    if (!saveState?.error) return null;
+    return (
+      <div className="document-save-error" role="alert" data-document-save-error={path}>
+        <div>
+          <strong>
+            {interfaceLocale === "es" ? "No se pudo guardar" : "Save failed"}: {path}
+          </strong>
+          <p>{saveState.error}</p>
+        </div>
+        <button type="button" disabled={saveState.saving} onClick={() => void saveTab(path)}>
+          {saveState.saving
+            ? interfaceLocale === "es"
+              ? "Guardando…"
+              : "Saving…"
+            : interfaceLocale === "es"
+              ? "Reintentar"
+              : "Retry"}
+        </button>
+      </div>
+    );
+  }
+
+  function recoverVisualDocument(path: string) {
+    const snapshot = visualRecoveryRef.current.snapshots[path];
+    if (!snapshot) return;
+    visualRecoveryRef.current.pending.delete(path);
+    setVisualRecoveryOffers((current) => {
+      const next = { ...current };
+      delete next[path];
+      return next;
+    });
+    setTabs((current) =>
+      current.map((tab) =>
+        tab.path === path
+          ? {
+              ...restoreVisualRecovery(tab, snapshot),
+              mode:
+                readVisualDocument(snapshot.rawMarkdown).status === "supported"
+                  ? "write"
+                  : "source",
+              visualMode: "visual",
+              sourceView: "raw",
+            }
+          : tab,
+      ),
+    );
+  }
+
+  async function confirmDiscardVisualRecovery(path: string) {
+    if (
+      await confirmDialog(
+        interfaceLocale === "es"
+          ? `¿Descartar la copia local sin guardar de ${path}? El archivo en disco se conserva.`
+          : `Discard the unsaved local copy of ${path}? The file on disk stays intact.`,
+        {
+          title: interfaceLocale === "es" ? "Descartar recuperación" : "Discard recovery",
+          confirmLabel: interfaceLocale === "es" ? "Descartar" : "Discard",
+          destructive: true,
+        },
+      )
+    )
+      await discardVisualRecovery(path);
+  }
+
+  async function confirmVisualRecoveryBase(path: string) {
+    try {
+      const result = await readCurrentUniverse();
+      const file = result?.files.find((candidate) => candidate.relativePath === path);
+      if (!file)
+        throw new Error(
+          interfaceLocale === "es"
+            ? "El archivo guardado ya no existe."
+            : "The saved file no longer exists.",
+        );
+      if (
+        !(await confirmDialog(
+          interfaceLocale === "es"
+            ? `Has revisado el archivo guardado de ${path}. Al guardar después, el contenido local reemplazará esa versión. ¿Usar esta versión como nueva base?`
+            : `You have reviewed the saved file for ${path}. Saving afterwards will replace that version with the local content. Use this version as the new base?`,
+          {
+            title: interfaceLocale === "es" ? "Confirmar nueva base" : "Confirm new base",
+            confirmLabel: interfaceLocale === "es" ? "Usar nueva base" : "Use new base",
+          },
+        ))
+      )
+        return;
+      setTabs((current) =>
+        current.map((tab) =>
+          tab.path === path
+            ? {
+                ...tab,
+                savedMarkdown: file.content,
+                modifiedMs: file.modifiedMs,
+                dirty: tab.rawMarkdown !== file.content,
+              }
+            : tab,
+        ),
+      );
+      if (result)
+        setIndex(indexVault(result, { folderNotesEnabled: settings.explorer.folderNotesEnabled }));
+      setDocumentSaveStates((current) => {
+        const next = { ...current };
+        delete next[path];
+        return next;
+      });
+    } catch (error) {
+      showToast(`${path}: ${error instanceof Error ? error.message : String(error)}`, "error");
+    }
+  }
+
+  function renderVisualRecovery(path: string, offer = false) {
+    const snapshot = visualRecoveryRef.current.snapshots[path];
+    if (!snapshot) return null;
+    const file = index?.files.find((candidate) => candidate.relativePath === path);
+    const conflict = recoveryConflicts(snapshot, file);
+    if (!offer && !conflict) return null;
+    return (
+      <div
+        className="document-save-error visual-recovery-banner"
+        role="status"
+        data-visual-recovery={path}
+      >
+        <div>
+          <strong>
+            {interfaceLocale === "es" ? "Recuperación local" : "Local recovery"}: {path}
+          </strong>
+          <p>
+            {offer
+              ? interfaceLocale === "es"
+                ? "Hay cambios sin guardar de una sesión anterior. Recupera o descarta la copia local para continuar."
+                : "Unsaved changes from an earlier session are available. Recover or discard the local copy to continue."
+              : interfaceLocale === "es"
+                ? "El archivo guardado cambió desde la base local. Revisa ambas versiones antes de confirmar una nueva base."
+                : "The saved file changed since the local base. Review both versions before confirming a new base."}
+          </p>
+          {conflict ? (
+            <p>
+              {interfaceLocale === "es"
+                ? "Conflicto con el archivo guardado. La copia local y el archivo en disco se conservan."
+                : "Conflict with the saved file. The local copy and file on disk are preserved."}
+            </p>
+          ) : null}
+          <details>
+            <summary>{interfaceLocale === "es" ? "Ver copia local" : "View local copy"}</summary>
+            <pre>{snapshot.rawMarkdown}</pre>
+          </details>
+          {conflict ? (
+            <details>
+              <summary>
+                {interfaceLocale === "es" ? "Ver archivo guardado" : "View saved file"}
+              </summary>
+              <pre>
+                {file?.content ??
+                  (interfaceLocale === "es" ? "El archivo no existe." : "The file is missing.")}
+              </pre>
+            </details>
+          ) : null}
+        </div>
+        {offer ? (
+          <>
+            <button type="button" disabled={!file} onClick={() => recoverVisualDocument(path)}>
+              {interfaceLocale === "es" ? "Recuperar" : "Recover"}
+            </button>
+            <button type="button" onClick={() => void confirmDiscardVisualRecovery(path)}>
+              {interfaceLocale === "es" ? "Descartar copia local" : "Discard local copy"}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            disabled={!file}
+            onClick={() => void confirmVisualRecoveryBase(path)}
+          >
+            {interfaceLocale === "es"
+              ? "Usar archivo guardado como base"
+              : "Use saved file as base"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   function renderDocumentPanel(tabRef: DockTabRef) {
     const documentTab = tabRef.path ? tabs.find((tab) => tab.path === tabRef.path) : undefined;
     if (!documentTab) {
@@ -4345,6 +5453,152 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
       );
     }
 
+    if (visualRecoveryOffers[documentTab.path])
+      return (
+        <section
+          key={`${index?.rootPath}:${documentTab.path}`}
+          className="editor-shell dock-panel-body visual-document-shell"
+          data-document-path={documentTab.path}
+        >
+          {renderVisualRecovery(documentTab.path, true)}
+        </section>
+      );
+    const visual = readVisualDocument(documentTab.rawMarkdown);
+    const visualSession = index
+      ? settings.sessions[index.rootPath]?.visualDocumentSessions?.[documentTab.path]
+      : undefined;
+    if (
+      visual.status !== "none" &&
+      documentTab.mode === "write" &&
+      documentTab.visualMode !== "markdown"
+    ) {
+      const presets = parseCalendarPresets(
+        calendarPresetRef.current && calendarPresetRef.current.root === index?.rootPath
+          ? calendarPresetRef.current.content
+          : index?.files.find((file) => file.relativePath === CALENDAR_PRESETS_PATH)?.content,
+      );
+      // A successful preset write changes the ref while the vault index remains untouched.
+      void calendarPresetRevision;
+      const shared = {
+        vaultIndex: index,
+        session: visualSession,
+        onSessionChange: (next: VisualDocumentSession) =>
+          updateVisualSession(documentTab.path, next),
+        onOpenReference: (reference: string) => openVisualReference(reference, documentTab.path),
+        locale: interfaceLocale,
+        active:
+          (!suiteChrome || suiteChrome.active) &&
+          !showSettings &&
+          documentTab.path === activeTabPath,
+      };
+      return (
+        <section
+          className="editor-shell dock-panel-body visual-document-shell"
+          data-visual-document={
+            visual.status === "supported" ? visual.document.kind : visual.status
+          }
+          data-document-path={documentTab.path}
+          onMouseDownCapture={() => {
+            if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
+          }}
+          onFocusCapture={() => {
+            if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
+          }}
+        >
+          <div className="visual-document-controls">
+            <strong>
+              {visual.status === "supported"
+                ? (visual.name ?? documentTab.title)
+                : documentTab.title}
+            </strong>
+            <button
+              type="button"
+              onClick={() =>
+                setTabs((current) =>
+                  current.map((tab) =>
+                    tab.path === documentTab.path ? { ...tab, visualMode: "markdown" } : tab,
+                  ),
+                )
+              }
+            >
+              {interfaceLocale === "es" ? "Escritura" : "Writing"}
+            </button>
+            <button type="button" onClick={() => setTabMode(documentTab.path, "source")}>
+              {interfaceLocale === "es" ? "Fuente" : "Source"}
+            </button>
+            <button type="button" onClick={() => visualUndoRedo(documentTab.path, false)}>
+              {interfaceLocale === "es" ? "Deshacer" : "Undo"}
+            </button>
+            <button type="button" onClick={() => visualUndoRedo(documentTab.path, true)}>
+              {interfaceLocale === "es" ? "Rehacer" : "Redo"}
+            </button>
+            <button
+              type="button"
+              disabled={documentSaveStates[documentTab.path]?.saving}
+              onClick={() => void saveTab(documentTab.path)}
+            >
+              <Save size={14} />{" "}
+              {documentSaveStates[documentTab.path]?.saving
+                ? interfaceLocale === "es"
+                  ? "Guardando…"
+                  : "Saving…"
+                : interfaceLocale === "es"
+                  ? "Guardar"
+                  : "Save"}
+              {documentTab.dirty ? " •" : ""}
+            </button>
+          </div>
+          {renderDocumentSaveError(documentTab.path)}
+          {renderVisualRecovery(documentTab.path)}
+          {visual.status === "supported" ? (
+            <Suspense
+              fallback={
+                <LazyPanelFallback
+                  label={interfaceLocale === "es" ? "Cargando documento..." : "Loading document..."}
+                />
+              }
+            >
+              {visual.document.kind === "timeline" ? (
+                <TimelineEditor
+                  key={`${index?.rootPath}:${documentTab.path}`}
+                  {...shared}
+                  document={visual.document}
+                  onChange={(next, label) => updateVisualDocument(documentTab.path, next, label)}
+                  calendarPresets={presets.calendars}
+                  onSaveCalendarPreset={saveCalendarPreset}
+                />
+              ) : (
+                <RelationshipTreeEditor
+                  key={`${index?.rootPath}:${documentTab.path}`}
+                  {...shared}
+                  documentPath={documentTab.path}
+                  document={visual.document}
+                  onChange={(next, label) => updateVisualDocument(documentTab.path, next, label)}
+                />
+              )}
+            </Suspense>
+          ) : (
+            <div className="empty-editor">
+              <h2>
+                {interfaceLocale === "es"
+                  ? "Fuente del documento conservada"
+                  : "Document source preserved"}
+              </h2>
+              <p>{visual.message}</p>
+              <button type="button" onClick={() => setTabMode(documentTab.path, "source")}>
+                {interfaceLocale === "es" ? "Abrir fuente" : "Open Source"}
+              </button>
+            </div>
+          )}
+        </section>
+      );
+    }
+
+    const documentVariantId = resolveVariantId(
+      parseFrontmatterRaw(rawToEditorParts(documentTab.rawMarkdown).frontmatterRaw),
+      index ? settings.sessions[index.rootPath]?.variantSelections?.[documentTab.path] : undefined,
+    );
+
     const documentOutline = outlineForTab(documentTab);
     const documentCurrentHeader =
       documentTab.path === activeTabPath ? currentHeaderForLine(documentTab, cursorLine) : null;
@@ -4352,22 +5606,39 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     const isXmlDocument = isXmlPath(documentTab.path);
     const sourceView =
       documentTab.sourceView ?? (isJsonDocument ? "json" : isXmlDocument ? "xml" : "raw");
-    const activeVariantLabel =
-      documentTab.path === activeTabPath
-        ? readNoteVariants(
-            parseFrontmatterRaw(rawToEditorParts(documentTab.rawMarkdown).frontmatterRaw),
-          )[activeVariantId]?.label
-        : undefined;
+    const activeVariantLabel = readNoteVariants(
+      parseFrontmatterRaw(rawToEditorParts(documentTab.rawMarkdown).frontmatterRaw),
+    )[documentVariantId]?.label;
 
     return (
       <section
-        className="editor-shell dock-panel-body"
+        key={`${index?.rootPath}:${documentTab.path}`}
+        data-onboarding-target="worldnotion.document" className="editor-shell dock-panel-body"
         ref={documentTab.path === activeTabPath ? editorShellRef : undefined}
         onMouseDownCapture={() => {
           if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
         }}
+        onFocusCapture={() => {
+          if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
+        }}
       >
         <div className="floating-control-panel">
+          {visual.status !== "none" ? (
+            <button
+              type="button"
+              onClick={() =>
+                setTabs((current) =>
+                  current.map((tab) =>
+                    tab.path === documentTab.path
+                      ? { ...tab, mode: "write", visualMode: "visual" }
+                      : tab,
+                  ),
+                )
+              }
+            >
+              Visual
+            </button>
+          ) : null}
           <EditorModeSelector
             mode={documentTab.mode}
             writingMode={documentTab.writingMode}
@@ -4382,7 +5653,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               <span className="sr-only">Source view</span>
               <select
                 className="source-view-select"
-                aria-label="Source view"
+                aria-label={surfaceText("Source view")}
                 value={sourceView}
                 onChange={(event) =>
                   setTabSourceView(
@@ -4401,7 +5672,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
             type="button"
             onClick={() => saveTab(documentTab.path)}
             disabled={!canWrite}
-            title="Save"
+            title={surfaceText("Save")}
           >
             <Save size={15} />
           </button>
@@ -4412,21 +5683,28 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
         settings.editor.floatingToolbarEnabled ? (
           <div className="floating-format-toolbar-fixed">
             <FontSelector availableFonts={fonts} onSelectFont={applyFontFamily} />
-            {[
-              ...TOOLBAR_INLINE_COMMANDS,
-              ...TOOLBAR_BLOCK_COMMANDS,
-              ...TOOLBAR_FIXED_EXTRA_COMMANDS,
-            ]
-              .filter(
-                (command) =>
-                  command.id !== "table" || isPluginEnabled(settings.plugins, "table-tools"),
-              )
-              .map((command) => renderToolbarButton(command))}
-            <details className="floating-format-group">
-              <summary title="Headings">
-                <Heading size={14} />
+            {TOOLBAR_INLINE_COMMANDS.filter((command) =>
+              ["bold", "italic", "link"].includes(command.id),
+            ).map((command) => renderToolbarButton(command))}
+            <details className="floating-format-group floating-format-more">
+              <summary title={surfaceText("More formatting")} aria-label={surfaceText("More formatting")}>
+                <MoreHorizontal size={14} />
               </summary>
-              <div>{TOOLBAR_HEADING_COMMANDS.map((command) => renderToolbarButton(command))}</div>
+              <div>
+                {[
+                  ...TOOLBAR_INLINE_COMMANDS.filter(
+                    (command) => !["bold", "italic", "link"].includes(command.id),
+                  ),
+                  ...TOOLBAR_BLOCK_COMMANDS,
+                  ...TOOLBAR_HEADING_COMMANDS,
+                  ...TOOLBAR_FIXED_EXTRA_COMMANDS,
+                ]
+                  .filter(
+                    (command) =>
+                      command.id !== "table" || isPluginEnabled(settings.plugins, "table-tools"),
+                  )
+                  .map((command) => renderToolbarButton(command))}
+              </div>
             </details>
           </div>
         ) : null}
@@ -4450,7 +5728,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               renderToolbarButton(command),
             )}
             <details className="floating-format-group">
-              <summary title="Headings">
+              <summary title={surfaceText("Headings")}>
                 <Heading size={14} />
               </summary>
               <div>{TOOLBAR_HEADING_COMMANDS.map((command) => renderToolbarButton(command))}</div>
@@ -4458,7 +5736,9 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
           </div>
         ) : null}
 
-        {loadState === "error" ? <div className="error-banner">{errorMessage}</div> : null}
+
+        {renderDocumentSaveError(documentTab.path)}
+        {renderVisualRecovery(documentTab.path)}
         {loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null}
         <div
           className={`editor-surface page-style-${settings.editor.pageStyle} mode-${documentTab.mode}${
@@ -4491,7 +5771,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                       : {};
                 const effectiveFrontmatter = resolveVariantFrontmatter(
                   frontmatter,
-                  activeVariantId,
+                  documentVariantId,
                 );
                 const portraitPath = entity
                   ? getPresentationRoleValue(
@@ -4530,15 +5810,12 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                 ) : null;
               })()}
               <CodeMirrorEditor
+                key={documentTab.path}
                 value={editorDisplayValue(documentTab)}
                 onChange={(value) => updateRawMarkdownForPath(documentTab.path, value)}
-                activeVariantId={
-                  documentTab.path === activeTabPath ? activeVariantId : BASE_VARIANT_ID
-                }
-                activeVariantLabel={
-                  documentTab.path === activeTabPath ? activeVariantLabel : undefined
-                }
-                theme={settings.theme}
+                activeVariantId={documentVariantId}
+                activeVariantLabel={activeVariantLabel}
+                theme={activeTheme}
                 mode={documentTab.mode}
                 writingMode={documentTab.writingMode}
                 settings={settings.editor}
@@ -4555,7 +5832,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                     };
                     const effectiveFrontmatter = resolveVariantFrontmatter(
                       frontmatter,
-                      activeVariantId,
+                      documentVariantId,
                     );
                     return Boolean(
                       getPresentationRoleValue(
@@ -4610,6 +5887,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                   if (documentTab.path === activeTabPath) setFloatingToolbarRect(rect);
                 }}
                 onEditorReady={(view) => {
+                  editorViewsRef.current.set(documentTab.path, view);
                   if (documentTab.path === activeTabPath) editorViewRef.current = view;
                 }}
               />
@@ -4622,9 +5900,11 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               currentHeader={documentCurrentHeader}
               position={settings.editor.outlinePosition}
               onNavigate={(line) => {
-                if (editorViewRef.current) {
-                  const pos = editorViewRef.current.state.doc.line(line + 1).from;
-                  void scrollEditorTo(pos);
+                const documentView = editorViewsRef.current.get(documentTab.path);
+                if (documentView) {
+                  activateTab(documentTab.path);
+                  const pos = documentView.state.doc.line(line + 1).from;
+                  documentView.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
                   setCursorLine(line);
                 }
               }}
@@ -4676,6 +5956,12 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
             <Plus size={15} />
             New note
           </button>
+          <button type="button" onClick={() => void createVisualDocument("timeline")}>
+            <Plus size={15} /> Timeline
+          </button>
+          <button type="button" onClick={() => void createVisualDocument("relationships")}>
+            <Plus size={15} /> Relation tree
+          </button>
           <button
             type="button"
             data-onboarding-target="worldnotion.create-folder"
@@ -4705,42 +5991,50 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     </section>
   );
 
-  const inspectorPanel = (
-    <InspectorPanel
-      entity={inspectorEntity}
-      template={inspectorTemplate}
-      index={index}
-      activeTab={activeTab}
-      onChangeFrontmatter={(frontmatterRaw) =>
-        updateActiveFrontmatter(frontmatterRaw, { persist: true })
-      }
-      onUpdateEntity={updateEntityMetadata}
-      onAddFrontmatter={addFrontmatterToActiveTab}
-      onUpdatePropertiesConfig={savePropertiesConfig}
-      onRequestPropertyPathChange={requestPropertyPathChange}
-      onApplyPropertiesTemplate={() =>
-        initializeUniverseProperties(
-          applyPropertyTemplate(createDefaultTaxonomyConfig(), WORLDBUILDING_TEMPLATE),
-        )
-      }
-      onOpenPropertiesSettings={() => {
-        openSettingsAt("utils", "blank");
-      }}
-      onOpenEntity={(path) => {
-        openOrCreateTab(path);
-        setSelectedPath(path);
-      }}
-      onConserveField={handleConserveField}
-      onDeleteField={handleDeleteField}
-      onRequestImage={requestImageInsertion}
-      activeVariantId={activeVariantId}
-      onSelectVariant={selectActiveVariant}
-      onInsertVariantBlock={insertActiveVariantBlock}
-      onDeleteVariant={deleteActiveVariant}
-      explorerSelection={explorerSelection}
-      onMoveExplorerSelection={moveExplorerSelection}
-    />
-  );
+  const inspectorPanel =
+    activeTab && readVisualDocument(activeTab.rawMarkdown).status !== "none" ? (
+      <aside className="inspector dock-panel-body">
+        <h3>{surfaceText("Visual document")}</h3>
+        <p>
+          {surfaceText("Content, calendar and relationships belong to this document. Edit them in its visual workspace or Source.")}
+        </p>
+      </aside>
+    ) : (
+      <InspectorPanel
+        entity={inspectorEntity}
+        template={inspectorTemplate}
+        index={index}
+        activeTab={activeTab}
+        onChangeFrontmatter={(frontmatterRaw) =>
+          updateActiveFrontmatter(frontmatterRaw, { persist: true })
+        }
+        onUpdateEntity={updateEntityMetadata}
+        onAddFrontmatter={addFrontmatterToActiveTab}
+        onUpdatePropertiesConfig={savePropertiesConfig}
+        onRequestPropertyPathChange={requestPropertyPathChange}
+        onApplyPropertiesTemplate={() =>
+          initializeUniverseProperties(
+            applyPropertyTemplate(createDefaultTaxonomyConfig(), WORLDBUILDING_TEMPLATE),
+          )
+        }
+        onOpenPropertiesSettings={() => {
+          openSettingsAt("utils", "blank");
+        }}
+        onOpenEntity={(path) => {
+          openOrCreateTab(path);
+          setSelectedPath(path);
+        }}
+        onConserveField={handleConserveField}
+        onDeleteField={handleDeleteField}
+        onRequestImage={requestImageInsertion}
+        activeVariantId={activeVariantId}
+        onSelectVariant={selectActiveVariant}
+        onInsertVariantBlock={insertActiveVariantBlock}
+        onDeleteVariant={deleteActiveVariant}
+        explorerSelection={explorerSelection}
+        onMoveExplorerSelection={moveExplorerSelection}
+      />
+    );
 
   const linksPanel = (
     <aside className="inspector dock-panel-body">
@@ -4913,8 +6207,12 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   }
 
   function handleDockMove(request: DockMoveRequest) {
-    if (!isDockMoveAllowedAroundDocumentAnchor(request)) return;
-    if (request.tabId.startsWith("document:")) {
+    if (!isDockMoveAllowedAroundDocumentAnchor(request, workspaceLayout)) return;
+    if (
+      request.tabId.startsWith("document:") &&
+      request.position === "center" &&
+      request.sourceGroupId === request.targetGroupId
+    ) {
       const path = request.tabId.slice("document:".length);
       const targetPath = request.targetTabId?.startsWith("document:")
         ? request.targetTabId.slice("document:".length)
@@ -4933,6 +6231,8 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     const nextLayout = moveDockTab(workspaceLayout, request);
     setWorkspaceLayout(nextLayout);
     setTabs((current) => orderOpenTabsByLayout(current, nextLayout));
+    if (request.tabId.startsWith("document:"))
+      setActiveTabPath(request.tabId.slice("document:".length));
   }
 
   function handleDockResize(splitId: string, ratio: number) {
@@ -4997,111 +6297,84 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
     <WorldnotionLocaleProvider value={interfaceLocale}>
       <main
         className="app-shell dock-app-shell"
+        onFocusCapture={event => {
+          const target = (event.target as HTMLElement).closest("[data-onboarding-target]")?.getAttribute("data-onboarding-target");
+          if (target === "worldnotion.inspector") setLearningSection("properties");
+          else if (target === "worldnotion.document" || target === "worldnotion.explorer") setLearningSection("notes");
+        }}
         style={{ "--dock-tab-scale": settings.editor.dockTabScale } as CSSProperties}
       >
-        <div className="dock-top-bar" aria-label="Workspace controls">
-          {suiteChrome ? (
-            suiteChrome.renderAppSwitcher()
-          ) : (
-            <div ref={forgeMenuRef} className={`forge-corner-menu ${forgeMenuOpen ? "open" : ""}`}>
-              <div className="forge-orbit-panel" aria-label="Everend menu">
-                <button
-                  type="button"
-                  onClick={() =>
-                    void openUrl(EVEREND_FORGE_GITHUB_URL).then(() => setForgeMenuOpen(false))
-                  }
-                >
-                  Github
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void openUrl(BUY_SUITE_URL).then(() => setForgeMenuOpen(false))}
-                >
-                  Buy Suite
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForgeMenuOpen(false);
-                    setShowFeedback(true);
-                  }}
-                >
-                  Enviar feedback
-                </button>
-              </div>
-              <button
-                type="button"
-                className="forge-corner-button"
-                onClick={() => setForgeMenuOpen((open) => !open)}
-                aria-expanded={forgeMenuOpen}
-                aria-label="Open Everend menu"
-                title="Everend menu"
-              >
-                <ForgeCornerLogo />
-              </button>
-            </div>
-          )}
-
+        <div
+          className="dock-top-bar"
+          aria-label={surfaceText("Workspace controls")}
+          onMouseDown={!suiteChrome ? handleWindowTitlebarMouseDown : undefined}
+        >
           <div className="dock-top-left">
-            <button
-              type="button"
-              className="dock-icon-button"
-              onClick={suiteChrome?.onHome ?? (() => setView("home"))}
-              title="Home"
-            >
-              <Home size={15} />
-            </button>
+            {forgeNavigation}
+            {(
+              <>
+                {!suiteChrome ? <DesktopMenuBar
+                  locale={interfaceLocale}
+                  onHome={async () => {
+                    if (await universeSwitchGuardRef.current()) setView("home");
+                  }}
+                  onCommand={handleNativeMenuCommand}
+                  onEditCommand={handleDesktopEditCommand}
+                /> : null}
 
-            <div className="dock-top-divider" />
+                <div className="dock-top-divider" />
 
-            <button
-              type="button"
-              className="dock-universe-button"
-              onClick={() => openSettingsAt("overview")}
-              title="Universe settings"
-            >
-              <UniverseIconFrame profile={index.universeProfile} size={28} />
-              <span className="dock-universe-copy">
-                <strong>{universeDisplayName(index)}</strong>
-                <span>{pathName(index.rootPath)}</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="dock-icon-button dock-settings-button"
-              onClick={() => openSettingsAt("appearance-behavior")}
-              title="Application settings"
-            >
-              <Settings size={14} />
-            </button>
-            <button
-              type="button"
-              className="dock-icon-button"
-              onClick={() => revealExplorerPath()}
-              title={browserRoot ? "Reveal is available in the desktop app" : labels.revealUniverse}
-              disabled={Boolean(browserRoot)}
-            >
-              <ExternalLink size={14} />
-            </button>
+                <button
+                  type="button"
+                  className="dock-universe-button"
+                  onClick={() => openSettingsAt("overview")}
+                  title={surfaceText("Universe settings")}
+                >
+                  <UniverseIconFrame profile={index.universeProfile} size={24} />
+                  <span className="dock-universe-copy">
+                    <strong>{universeDisplayName(index)}</strong>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="dock-icon-button dock-settings-button"
+                  onClick={() => openSettingsAt("appearance-behavior")}
+                  title={surfaceText("Application settings")}
+                >
+                  <Settings size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="dock-icon-button"
+                  onClick={() => revealExplorerPath()}
+                  title={
+                    browserRoot ? "Reveal is available in the desktop app" : labels.revealUniverse
+                  }
+                  disabled={Boolean(browserRoot)}
+                >
+                  <ExternalLink size={14} />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="dock-top-right">
             <SaveStatusIndicator path={activeTab?.path} dirty={Boolean(activeTab?.dirty)} />
-            <label className="dock-layout-select" title="Workspace layout">
-              <span>{layoutPresetLabel(activeWorkspacePreset)}</span>
+            <label className="dock-layout-select" title={surfaceText("Workspace layout")}>
+              <span>{surfaceText(layoutPresetLabel(activeWorkspacePreset))}</span>
               <select
-                aria-label="Workspace layout"
+                aria-label={surfaceText("Workspace layout")}
                 value={activeWorkspacePreset === "custom" ? "custom" : activeWorkspacePreset}
                 onChange={(event) => {
                   const preset = event.target.value as ActiveWorkspacePreset;
                   if (preset !== "custom") applyDockPreset(preset);
                 }}
               >
-                {activeWorkspacePreset === "custom" ? <option value="custom">Custom</option> : null}
-                <option value="default">Default</option>
-                <option value="writing">Writing</option>
-                <option value="graph">Flow Map</option>
-                <option value="focus">Focus</option>
+                {activeWorkspacePreset === "custom" ? <option value="custom">{surfaceText("Custom")}</option> : null}
+                <option value="default">{surfaceText("Default")}</option>
+                <option value="writing">{surfaceText("Writing")}</option>
+                <option value="graph">{surfaceText("Flow Map")}</option>
+                <option value="focus">{surfaceText("Focus")}</option>
               </select>
               <ChevronDown size={13} />
             </label>
@@ -5113,31 +6386,31 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                 onClick={() => setDockPanelMenuOpen((current) => !current)}
                 aria-haspopup="dialog"
                 aria-expanded={Boolean(dockPanelMenuOpen)}
-                title="Show workspace panels"
+                title={surfaceText("Show workspace panels")}
               >
                 <SlidersHorizontal size={14} />
-                <span>View</span>
+                <span>{surfaceText("View")}</span>
                 <small>{openPanelCount}</small>
               </button>
               {dockPanelMenuOpen ? (
                 <div
                   className="topbar-menu-popover dock-panel-menu"
                   role="dialog"
-                  aria-label="View workspace panels"
+                  aria-label={surfaceText("View workspace panels")}
                   onMouseDown={(event) => event.stopPropagation()}
                 >
                   <div className="dock-panel-menu-header">
-                    <strong>View</strong>
+                    <strong>{surfaceText("View")}</strong>
                     <button
                       type="button"
                       className="dock-panel-menu-close"
-                      aria-label="Close workspace panels"
+                      aria-label={surfaceText("Close workspace panels")}
                       onClick={closeDockPanelMenu}
                     >
                       <X size={14} />
                     </button>
                   </div>
-                  <div className="dock-panel-menu-options" role="group" aria-label="Toggle panels">
+                  <div className="dock-panel-menu-options" role="group" aria-label={surfaceText("Toggle panels")}>
                     {panelMenuItems.map((item) => (
                       <button
                         key={item.kind}
@@ -5149,7 +6422,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                         <span className="dock-panel-menu-check">
                           {item.open ? <Check size={12} /> : null}
                         </span>
-                        <span>{item.label}</span>
+                        <span>{surfaceText(item.label)}</span>
                       </button>
                     ))}
                   </div>
@@ -5163,32 +6436,100 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                     }}
                   >
                     <GitPullRequest size={14} />
-                    <span>Review changes</span>
+                    <span>{surfaceText("Review changes")}</span>
                   </button>
                 </div>
               ) : null}
             </div>
 
-            <button
-              type="button"
-              className="dock-icon-button"
-              onClick={() => setShowFeedback(true)}
-              title="Enviar feedback"
-              aria-label="Enviar feedback"
-            >
-              <MessageSquareText size={15} />
-            </button>
-            <button
-              type="button"
-              className="dock-icon-button"
-              onClick={toggleBuiltinTheme}
-              title="Toggle theme"
-              aria-label="Toggle theme"
-            >
-              {activeThemeIsDark ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
+            {!suiteChrome ? (
+              <>
+                <button
+                  type="button"
+                  className="dock-icon-button"
+                  onClick={() => setShowFeedback(true)}
+                  title="Enviar feedback"
+                  aria-label="Enviar feedback"
+                >
+                  <MessageSquareText size={15} />
+                </button>
+                <button
+                  type="button"
+                  className="dock-icon-button"
+                  onClick={toggleBuiltinTheme}
+                  title={surfaceText("Toggle theme")}
+                  aria-label={surfaceText("Toggle theme")}
+                >
+                  {activeThemeIsDark ? <Sun size={15} /> : <Moon size={15} />}
+                </button>
+                <NotificationBell locale={interfaceLocale} />
+                <WindowTitleControls
+                  locale={interfaceLocale}
+                  onClose={() => getCurrentWindow().close()}
+                />
+              </>
+            ) : <NotificationBell locale={interfaceLocale} />}
           </div>
         </div>
+        {visualRecoveryProblem ? (
+          <div className="document-save-error" role="alert">
+            <div>
+              <strong>
+                {interfaceLocale === "es"
+                  ? "La recuperación local necesita atención"
+                  : "Local recovery needs attention"}
+              </strong>
+              <p>{visualRecoveryProblem}</p>
+              <details>
+                <summary>
+                  {interfaceLocale === "es"
+                    ? "Ver datos locales conservados"
+                    : "View preserved local data"}
+                </summary>
+                <pre>{preservedVisualRecoveryData()}</pre>
+              </details>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (
+                  index &&
+                  (await confirmDialog(
+                    interfaceLocale === "es"
+                      ? "¿Descartar los datos locales de recuperación? Copia primero cualquier contenido que quieras conservar."
+                      : "Discard local recovery data? Copy any content you want to keep first.",
+                    { destructive: true },
+                  ))
+                ) {
+                  try {
+                    localStorage.removeItem(visualRecoveryKey(index.rootPath));
+                    visualRecoveryRef.current.unreadable = false;
+                    persistVisualRecovery();
+                  } catch (error) {
+                    setVisualRecoveryProblem(
+                      error instanceof Error ? error.message : String(error),
+                    );
+                  }
+                }
+              }}
+            >
+              {interfaceLocale === "es" ? "Descartar datos locales" : "Discard local data"}
+            </button>
+          </div>
+        ) : null}
+        {Object.keys(visualRecoveryOffers)
+          .filter((path) => !tabs.some((tab) => tab.path === path))
+          .map((path) => (
+            <div key={path}>
+              {index?.files.some((file) => file.relativePath === path) ? (
+                <button type="button" onClick={() => openOrCreateTab(path)}>
+                  {interfaceLocale === "es" ? "Abrir recuperación" : "Open recovery"}: {path}
+                </button>
+              ) : (
+                renderVisualRecovery(path, true)
+              )}
+            </div>
+          ))}
         <DockWorkspace
           layout={workspaceLayout}
           renderTab={renderDockTab}
@@ -5217,7 +6558,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               <button
                 type="button"
                 onClick={() => setShowCommandPalette(true)}
-                title="Open Command Palette"
+                title={surfaceText("Open Command Palette")}
               >
                 <Search size={14} />
                 Search
@@ -5225,7 +6566,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
             </div>
           )}
         />
-        {!onboardingDismissed ? (
+        {!suiteChrome?.learning && !onboardingDismissed ? (
           <OnboardingGuide
             steps={worldNotionOnboardingSteps}
             onDismiss={dismissWorldNotionOnboarding}
@@ -5319,34 +6660,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
             </button>
           </div>
         ) : null}
-        {showSettings ? (
-          <Suspense fallback={<LazyPanelFallback label="Loading settings..." />}>
-            <SettingsModal
-              settings={settings}
-              universe={universeSettings}
-              initialSection={settingsInitialSection}
-              initialPropertiesMode={settingsInitialPropertiesMode}
-              onChange={setSettings}
-              onSaveUniverseProfile={saveUniverseProfile}
-              onSavePropertiesConfig={savePropertiesConfig}
-              onInitializePropertiesWorkspace={initializeUniverseProperties}
-              onScanFrontmatterNormalization={scanFrontmatterNormalization}
-              onApplyFrontmatterNormalization={applyFrontmatterNormalization}
-              onScanPropertyNormalization={scanPropertyNormalization}
-              onApplyPropertyNormalization={applyFrontmatterNormalization}
-              onScanPropertyStructureMigration={scanPropertyStructureMigration}
-              onApplyPropertyStructureMigration={applyPropertyStructureMigration}
-              onClose={() => setShowSettings(false)}
-              onRevealUniverse={() => {
-                void revealExplorerPath();
-              }}
-              onOpenUniverseNote={openUniverseNote}
-              onResetOnboarding={restartWorldNotionOnboarding}
-              revealUniverseLabel={labels.revealUniverse}
-              suiteSettings={suiteChrome?.suiteSettings}
-            />
-          </Suspense>
-        ) : null}
+        {renderedSettings}
 
         {showCommandPalette ? (
           <Suspense fallback={<LazyPanelFallback label="Loading command palette..." />}>
@@ -5469,7 +6783,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               onClick={() => createDocumentGroup(tabContextMenu.path)}
             >
               <Files size={16} />
-              <span>New group from tab</span>
+              <span>{surfaceText("New group from tab")}</span>
             </button>
             {documentTabGroups.map((group) => (
               <button
@@ -5479,7 +6793,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                 onClick={() => addTabToDocumentGroup(tabContextMenu.path, group.id)}
               >
                 <Circle size={16} style={{ color: group.color }} />
-                <span>Add to {group.name}</span>
+                <span>{surfaceText("Add to")} {group.name}</span>
               </button>
             ))}
             {documentTabGroups.some((group) => group.tabPaths.includes(tabContextMenu.path)) ? (
@@ -5489,7 +6803,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
                 onClick={() => removeTabFromDocumentGroup(tabContextMenu.path)}
               >
                 <Files size={16} />
-                <span>Remove from group</span>
+                <span>{surfaceText("Remove from group")}</span>
               </button>
             ) : null}
             <div className="context-menu-separator" />
@@ -5503,7 +6817,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               }}
             >
               <X size={16} />
-              <span>Close tab</span>
+              <span>{surfaceText("Close tab")}</span>
             </button>
             <button
               type="button"
@@ -5514,7 +6828,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               }}
             >
               <X size={16} />
-              <span>Close others</span>
+              <span>{surfaceText("Close others")}</span>
             </button>
             <button
               type="button"
@@ -5525,7 +6839,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               }}
             >
               <X size={16} />
-              <span>Close tabs to right</span>
+              <span>{surfaceText("Close tabs to right")}</span>
             </button>
             <button
               type="button"
@@ -5536,7 +6850,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               }}
             >
               <X size={16} />
-              <span>Close all tabs</span>
+              <span>{surfaceText("Close all tabs")}</span>
             </button>
             <button
               type="button"
@@ -5547,7 +6861,7 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
               }}
             >
               <X size={16} />
-              <span>Close saved tabs</span>
+              <span>{surfaceText("Close saved tabs")}</span>
             </button>
           </div>
         ) : null}
@@ -5565,4 +6879,35 @@ function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   );
 }
 
-export default App;
+export default function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
+  const uiRoot = useRef<HTMLDivElement>(null);
+  const drafts = useRef(new UniverseDraftRegistry());
+  const [dialogLocale, setDialogLocale] = useState(() => resolveInterfaceLocale(suiteChrome?.suiteSettings?.localePreference ?? loadSettings().localePreference ?? "system"));
+  return (
+    <div
+      ref={uiRoot}
+      className="forge-worldnotion"
+      data-ambient-background={suiteChrome?.suiteSettings?.ambientBackground ?? loadSettings().ambientBackground !== false}
+      data-background-scene={normalizeBackgroundScene(suiteChrome?.suiteSettings?.backgroundScene ?? loadSettings().backgroundScene)}
+      data-theme={suiteChrome?.suiteSettings?.style ?? loadSettings().theme}
+      data-suite-embedded={Boolean(suiteChrome)}
+      data-app-active={!suiteChrome || suiteChrome.active}
+      data-window-chrome={!suiteChrome && hasCustomWindowChrome()}
+    >
+      <AppInteractionContext.Provider value={!suiteChrome || suiteChrome.active}>
+        <WindowChromeSetup enabled={!suiteChrome} />
+        <UniverseDraftContext.Provider value={drafts.current}>
+          <NotificationProvider host={suiteChrome?.notifications} source="WorldNotion" active={!suiteChrome || suiteChrome.active}>
+            <ToastProvider integrated>
+              <WorldnotionLocaleProvider value={dialogLocale}>
+                <DialogProvider notifyAlerts>
+                  <WorldnotionWorkbench suiteChrome={suiteChrome} uiRoot={uiRoot} onInterfaceLocaleChange={setDialogLocale} />
+                </DialogProvider>
+              </WorldnotionLocaleProvider>
+            </ToastProvider>
+          </NotificationProvider>
+        </UniverseDraftContext.Provider>
+      </AppInteractionContext.Provider>
+    </div>
+  );
+}

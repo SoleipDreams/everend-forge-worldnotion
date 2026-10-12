@@ -1,4 +1,5 @@
 import type { OpenTab } from "../editorTypes";
+import { hasVisualDocumentMarker } from "../visualDocuments/marker";
 import type { Entity, VaultFile, VaultIndex } from "../domain";
 import { extractWikilinks, parseMarkdownFrontmatter, slugify } from "./markdownFrontmatter";
 
@@ -97,6 +98,7 @@ export function selectLiveEntity(
 ): Entity | undefined {
   const indexEntity = index?.entities.find((entity) => entity.path === selectedPath);
   const activeTabForSelected = tabs.find((tab) => tab.path === selectedPath);
+  if (hasVisualDocumentMarker(activeTabForSelected?.rawMarkdown ?? index?.markdownFiles.find(file => file.relativePath === selectedPath)?.content ?? "")) return undefined;
 
   if (!activeTabForSelected) {
     return indexEntity;

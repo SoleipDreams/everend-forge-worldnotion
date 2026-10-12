@@ -4,6 +4,14 @@ import { LEGACY_SETTINGS_KEY, SETTINGS_KEY, loadSettings, saveSettings } from ".
 import { createDefaultWorkspaceLayout, resizeDockSplit } from "./utils/workspaceLayout";
 
 describe("settings persistence", () => {
+  it("persists interface typography separately from document typography", () => {
+    const before = loadSettings();
+    saveSettings({ ...before, interfaceFont: "serif" });
+    expect(loadSettings().interfaceFont).toBe("serif");
+    expect(loadSettings().editor.writeFontFamily).toBe(before.editor.writeFontFamily);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ interfaceFont: "unknown" }));
+    expect(loadSettings().interfaceFont).toBe("sans");
+  });
   beforeEach(() => {
     localStorage.clear();
   });
@@ -14,6 +22,37 @@ describe("settings persistence", () => {
     expect(settings.theme).toBe("worldnotion-light");
     expect(settings.keybindings).toEqual(DEFAULT_KEYBINDINGS);
     expect(settings.recentUniverses).toEqual([]);
+    expect(settings.explorer.ecosystemView).toBe("gallery");
+    expect(settings.ambientBackground).toBe(true);
+  });
+
+  it("keeps a disabled atmosphere across saves and accepts older settings", () => {
+    saveSettings({ ...loadSettings(), ambientBackground: false });
+    expect(loadSettings().ambientBackground).toBe(false);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ theme: "github-dark" }));
+    expect(loadSettings().ambientBackground).toBe(true);
+  });
+
+  it("persists each background scene independently of its enabled state", () => {
+    for (const backgroundScene of ["original", "amber", "violet", "jade", "copper"]) {
+      saveSettings({ ...loadSettings(), backgroundScene, ambientBackground: false });
+      expect(loadSettings().backgroundScene).toBe(backgroundScene);
+      expect(loadSettings().ambientBackground).toBe(false);
+    }
+    for (const backgroundScene of [undefined, "missing", 42, { scene: "amber" }]) {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ backgroundScene }));
+      expect(loadSettings().backgroundScene).toBe("original");
+    }
+  });
+
+  it("persists the local ecosystem display preference and normalizes unknown views", () => {
+    const settings = loadSettings();
+    settings.explorer.ecosystemView = "list";
+    saveSettings(settings);
+    expect(loadSettings().explorer.ecosystemView).toBe("list");
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ explorer: { ecosystemView: "unknown" } }));
+    expect(loadSettings().explorer.ecosystemView).toBe("gallery");
   });
 
   it("migrates a legacy recent universe into the recent list", () => {
@@ -130,7 +169,7 @@ describe("settings persistence", () => {
     expect(
       JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}").sessions["C:/Vault"].layout,
     ).toMatchObject({
-      version: 1,
+      version: 2,
       activeGroupId: "dock-documents",
       root: {
         ratio: 0.34,

@@ -1,6 +1,7 @@
 import type { TaxonomyConfig } from "../editorTypes";
 import type { Entity, Variant, ValidationFinding, VaultFile } from "../domain";
 import { validateAgainstTaxonomy } from "./taxonomyValidation";
+import { hasVisualDocumentMarker } from "../visualDocuments/marker";
 import {
   extractWikilinks,
   normalizeMarkdownKey,
@@ -113,6 +114,7 @@ export function indexMarkdownEntities(
   const ids = new Map<string, Entity[]>();
 
   for (const file of markdownFiles) {
+    if (hasVisualDocumentMarker(file.content)) continue;
     if (file.relativePath.endsWith("README.md")) {
       continue;
     }

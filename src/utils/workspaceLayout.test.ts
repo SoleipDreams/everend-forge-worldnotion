@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenTab } from "../editorTypes";
+import type { DockGroupNode, DockNode, OpenTab } from "../editorTypes";
 import {
   activateDockTab,
   addDocumentToLayout,
@@ -12,6 +12,9 @@ import {
   documentPathsInLayout,
   layoutHasPanel,
   moveDockTab,
+  normalizeWorkspaceLayout,
+  openDocumentBeside,
+  documentGroupIdForPath,
   orderOpenTabsByLayout,
   panelDockTabId,
   resizeDockSplit,
@@ -32,6 +35,10 @@ function tab(path: string): OpenTab {
   };
 }
 
+function groups(node: DockNode): DockGroupNode[] {
+  return node.type === "group" ? [node] : [...groups(node.first), ...groups(node.second)];
+}
+
 describe("workspace layout utilities", () => {
   it("creates a Unity-style default layout from persisted document tabs", () => {
     const layout = createDefaultWorkspaceLayout([tab("A.md"), tab("B.md")], {
@@ -39,7 +46,7 @@ describe("workspace layout utilities", () => {
       showGraph: true,
     });
 
-    expect(layout.version).toBe(1);
+    expect(layout.version).toBe(2);
     expect(documentPathsInLayout(layout)).toEqual(["A.md", "B.md"]);
     expect(layoutHasPanel(layout, "explorer")).toBe(true);
     expect(layoutHasPanel(layout, "inspector")).toBe(true);
@@ -69,7 +76,7 @@ describe("workspace layout utilities", () => {
     expect(documentPathsInLayout(next)).toEqual(["C.md", "A.md", "B.md"]);
   });
 
-  it("keeps document tabs in the writing sheet instead of splitting them out", () => {
+  it("splits document tabs into simultaneous writing panes", () => {
     const layout = createDefaultWorkspaceLayout([tab("A.md"), tab("B.md")]);
     const next = moveDockTab(layout, {
       tabId: documentDockTabId("B.md"),
@@ -78,8 +85,39 @@ describe("workspace layout utilities", () => {
       position: "right",
     });
 
-    expect(next).toEqual(layout);
+    expect(groups(next.root).filter(group => group.role === "documents")).toHaveLength(2);
+    expect(documentGroupIdForPath(next, "A.md")).not.toBe(documentGroupIdForPath(next, "B.md"));
     expect(documentPathsInLayout(next)).toEqual(["A.md", "B.md"]);
+  });
+
+  it("opens a linked card alongside the originating canvas and preserves it through sync", () => {
+    const tabs = [tab("Timeline.md"), tab("Tree.md")];
+    const layout = createDefaultWorkspaceLayout(tabs, { activePath: "Tree.md" });
+    const beside = openDocumentBeside(layout, "Hero.md", "Tree.md");
+    const synced = syncLayoutWithOpenTabs(beside, [...tabs, tab("Hero.md")], "Hero.md");
+    const origin = groups(synced.root).find(group => group.id === documentGroupIdForPath(synced, "Tree.md"))!;
+    expect(origin.activeTabId).toBe(documentDockTabId("Tree.md"));
+    expect(synced.activeGroupId).toBe(documentGroupIdForPath(synced, "Hero.md"));
+    expect(groups(synced.root).filter(group => group.role === "documents")).toHaveLength(2);
+    // Reopening the same reference reuses the pane rather than splitting again.
+    const reopened = openDocumentBeside(synced, "Hero.md", "Tree.md");
+    expect(groups(reopened.root).filter(group => group.role === "documents")).toHaveLength(2);
+    expect(groups(reopened.root).find(group => group.id === origin.id)?.activeTabId).toBe(documentDockTabId("Tree.md"));
+  });
+
+  it("migrates legacy writing panes and restores independent active tabs", () => {
+    const layout = createDefaultWorkspaceLayout([tab("A.md"), tab("B.md"), tab("C.md")], { activePath: "B.md" });
+    const split = openDocumentBeside(layout, "C.md", "B.md");
+    const legacy = JSON.parse(JSON.stringify(split));
+    legacy.version = 1;
+    groups(legacy.root).forEach(group => delete group.role);
+    const restored = normalizeWorkspaceLayout(legacy);
+    expect(restored.version).toBe(2);
+    expect(groups(restored.root).filter(group => group.role === "documents")).toHaveLength(2);
+    expect(groups(restored.root).find(group => group.id === documentGroupIdForPath(restored, "B.md"))?.activeTabId).toBe(documentDockTabId("B.md"));
+    const merged = moveDockTab(restored, { tabId: documentDockTabId("C.md"), sourceGroupId: documentGroupIdForPath(restored, "C.md")!, targetGroupId: documentGroupIdForPath(restored, "B.md")!, position: "center" });
+    expect(groups(merged.root).filter(group => group.role === "documents")).toHaveLength(1);
+    expect(documentPathsInLayout(merged)).toEqual(["A.md", "B.md", "C.md"]);
   });
 
   it("moves panel tabs into split groups and activates the new panel group", () => {

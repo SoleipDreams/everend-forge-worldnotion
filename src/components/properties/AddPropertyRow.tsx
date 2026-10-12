@@ -1,3 +1,5 @@
+import { useModalFocus } from "../../hooks/useModalFocus";
+import { useWorldnotionSurfaceText } from "../../i18n";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
@@ -5,6 +7,8 @@ import type { CustomFieldType } from "../../editorTypes";
 import type { VisiblePropertyDefinition } from "../../utils/propertiesConfig";
 import { PickerPopover, type PickerItem } from "./PickerPopover";
 import { propertyTypeIcon, PROPERTY_TYPE_LABELS } from "./propertyTypeIcons";
+import { useUniverseDraft } from "../../hooks/useUniverseDraft";
+import { focusAppElement, useAppIsActive } from "../../hooks/useAppInteraction";
 
 export type NewInspectorProperty = {
   name: string;
@@ -34,6 +38,8 @@ export function AddPropertyRow({
   onAddExisting,
   onCreate,
 }: AddPropertyRowProps) {
+  const t = useWorldnotionSurfaceText();
+  const appActive = useAppIsActive();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -43,10 +49,13 @@ export function AddPropertyRow({
   const [createError, setCreateError] = useState("");
   const pickerAnchorRef = useRef<HTMLButtonElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useModalFocus(dialogRef, createOpen);
+  useUniverseDraft(createOpen && (Boolean(name.trim()) || submitting || Boolean(createError)));
 
   useEffect(() => {
-    if (!createOpen) return;
-    const frame = window.requestAnimationFrame(() => nameInputRef.current?.focus());
+    if (!createOpen || !appActive) return;
+    const frame = window.requestAnimationFrame(() => focusAppElement(nameInputRef.current));
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !submitting) {
         setCreateOpen(false);
@@ -61,7 +70,7 @@ export function AddPropertyRow({
       window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [createOpen, submitting]);
+  }, [createOpen, submitting, appActive]);
 
   const items: PickerItem[] = availableProperties.map((property) => {
     const TypeIcon = propertyTypeIcon(property.type);
@@ -105,7 +114,7 @@ export function AddPropertyRow({
         onClick={() => setCreateOpen(true)}
       >
         <Plus size={13} />
-        Add property
+        {t("Add property")}
       </button>
       <button
         ref={pickerAnchorRef}
@@ -114,14 +123,14 @@ export function AddPropertyRow({
         onClick={() => setPickerOpen((current) => !current)}
         aria-expanded={pickerOpen}
       >
-        Add existing
+        {t("Add existing")}
       </button>
       <PickerPopover
         open={pickerOpen}
         anchorRef={pickerAnchorRef}
         items={items}
-        placeholder="Find a property…"
-        emptyLabel="No properties in schema"
+        placeholder={t("Find a property…")}
+        emptyLabel={t("No properties in schema")}
         onSelect={(item) => onAddExisting(item.id)}
         onClose={() => setPickerOpen(false)}
       />
@@ -135,6 +144,8 @@ export function AddPropertyRow({
               }}
             >
               <form
+                ref={dialogRef}
+                tabIndex={-1}
                 className="property-create-dialog"
                 role="dialog"
                 aria-modal="true"
@@ -142,11 +153,11 @@ export function AddPropertyRow({
                 onSubmit={submitCreate}
               >
                 <div>
-                  <h3 id="property-create-title">Add property</h3>
-                  <p>Define the field and add it to this note.</p>
+                  <h3 id="property-create-title">{t("Add property")}</h3>
+                  <p>{t("Define the field and add it to this note.")}</p>
                 </div>
                 <label>
-                  Name
+                  {t("Name")}
                   <input
                     ref={nameInputRef}
                     value={name}
@@ -155,9 +166,9 @@ export function AddPropertyRow({
                   />
                 </label>
                 <label>
-                  Type
+                  {t("Type")}
                   <select
-                    aria-label="Property type"
+                    aria-label={t("Property type")}
                     value={type}
                     onChange={(event) => setType(event.target.value as CustomFieldType)}
                   >
@@ -169,20 +180,20 @@ export function AddPropertyRow({
                   </select>
                 </label>
                 <label>
-                  Parent section
+                  {t("Parent section")}
                   <select
-                    aria-label="Parent section"
+                    aria-label={t("Parent section")}
                     value={parentId}
                     onChange={(event) => setParentId(event.target.value)}
                   >
-                    <option value="">Top level</option>
+                    <option value="">{t("Top level")}</option>
                     {parentProperties.map((property) => (
                       <option key={property.id} value={property.id}>
                         {property.label || property.id}
                       </option>
                     ))}
                   </select>
-                  <small>Choose a section only when this property belongs inside it.</small>
+                  <small>{t("Choose a section only when this property belongs inside it.")}</small>
                 </label>
                 {createError ? (
                   <p className="property-create-error" role="alert">
@@ -191,15 +202,15 @@ export function AddPropertyRow({
                 ) : null}
                 <div className="property-create-actions">
                   <button type="button" onClick={closeCreate} disabled={submitting}>
-                    Cancel
+                    {t("Cancel")}
                   </button>
                   <button type="submit" disabled={!name.trim() || submitting}>
-                    {submitting ? "Adding…" : "Add property"}
+                    {t(submitting ? "Adding…" : "Add property")}
                   </button>
                 </div>
               </form>
             </div>,
-            document.body,
+            pickerAnchorRef.current?.closest(".forge-worldnotion") ?? document.body,
           )
         : null}
     </div>

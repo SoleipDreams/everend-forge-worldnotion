@@ -44,6 +44,7 @@ function tab(path: string, dirty = false): OpenTab {
     isTemplate: false,
     rawMarkdown: dirty ? "unsaved" : "saved",
     savedMarkdown: "saved",
+    modifiedMs: 1,
   };
 }
 
@@ -68,7 +69,7 @@ describe("universe apply planner", () => {
       title: "Ada",
       rawMarkdown: "unsaved",
       absolutePath: "C:/Vault/People/Ada.md",
-      modifiedMs: 2,
+      modifiedMs: 1,
     });
     expect(plan.tabs[1]).toMatchObject({
       dirty: false,
@@ -187,6 +188,56 @@ describe("universe apply planner", () => {
 
     expect(plan.tabs).toEqual([]);
     expect(plan.nextPath).toBeUndefined();
-    expect(plan.layout.version).toBe(1);
+    expect(plan.layout.version).toBe(2);
+  });
+});
+
+describe("universe session ownership", () => {
+  it("does not carry a same-named active document into a universe without a session", () => {
+    const incoming = index([
+      { ...file("Mara.md"), absolutePath: "C:/New/Mara.md", content: "New universe" },
+    ]);
+    incoming.rootPath = "C:/New";
+    const plan = planUniverseWorkspaceState({
+      nextIndex: incoming,
+      readRootPath: "C:/New",
+      currentRootPath: "C:/Old",
+      tabs: [{ ...tab("Mara.md"), absolutePath: "C:/Old/Mara.md" }],
+      activeTabPath: "Mara.md",
+      selectedPath: "Mara.md",
+      sessions: {},
+      persistTabs: true,
+    });
+    expect(plan.tabs).toEqual([]);
+    expect(plan.nextPath).toBeUndefined();
+    expect(documentPathsInLayout(plan.layout)).toEqual([]);
+  });
+  it("restores matching filenames from the incoming disk and its own session", () => {
+    const incoming = index([
+      { ...file("Mara.md"), absolutePath: "C:/New/Mara.md", content: "Incoming content" },
+    ]);
+    incoming.rootPath = "C:/New";
+    const plan = planUniverseWorkspaceState({
+      nextIndex: incoming,
+      readRootPath: "C:/New",
+      currentRootPath: "C:/Old",
+      tabs: [{ ...tab("Mara.md"), absolutePath: "C:/Old/Mara.md" }],
+      activeTabPath: "Mara.md",
+      sessions: {
+        "C:/New": {
+          rootPath: "C:/New",
+          activePath: "Mara.md",
+          tabs: [{ path: "Mara.md", title: "Mara", mode: "source", isTemplate: false }],
+        },
+      },
+      persistTabs: true,
+    });
+    expect(plan.tabs[0]).toMatchObject({
+      absolutePath: "C:/New/Mara.md",
+      rawMarkdown: "Incoming content",
+      savedMarkdown: "Incoming content",
+      dirty: false,
+    });
+    expect(plan.nextPath).toBe("Mara.md");
   });
 });

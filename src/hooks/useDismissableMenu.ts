@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAppIsActive } from "./useAppInteraction";
 
 /**
  * Estado de un menú contextual anclado que se cierra automáticamente con
@@ -7,12 +8,13 @@ import { useCallback, useEffect, useState } from "react";
  * que los puntos de apertura no cambien.
  */
 export function useDismissableMenu<T>() {
+  const appActive = useAppIsActive();
   const [menu, setMenu] = useState<T | null>(null);
 
   const close = useCallback(() => setMenu(null), []);
 
   useEffect(() => {
-    if (!menu) return;
+    if (!menu || !appActive) return;
 
     function closeMenu() {
       setMenu(null);
@@ -28,7 +30,7 @@ export function useDismissableMenu<T>() {
       document.removeEventListener("mousedown", closeMenu);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [menu]);
+  }, [menu, appActive]);
 
   return { menu, setMenu, close };
 }

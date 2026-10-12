@@ -1,4 +1,6 @@
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useEffect, useRef } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import "../App.css";
 import { useWorldnotionUi } from "../i18n";
 
@@ -19,15 +21,18 @@ export function InputDialog({
   onConfirm,
   onCancel,
 }: InputDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, isOpen);
+  const appActive = useAppIsActive();
   const ui = useWorldnotionUi();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen && appActive && inputRef.current) {
+      focusAppElement(inputRef.current);
       inputRef.current.select();
     }
-  }, [isOpen]);
+  }, [isOpen, appActive]);
 
   function handleConfirm() {
     const value = inputRef.current?.value || "";
@@ -51,6 +56,8 @@ export function InputDialog({
   return (
     <div className="modal-overlay" onClick={handleCancel}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-dialog"
         role="dialog"
         aria-modal="true"

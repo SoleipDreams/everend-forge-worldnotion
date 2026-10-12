@@ -246,7 +246,8 @@ describe("MetadataEditor inspector", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Upload image from computer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pick image" }));
+    fireEvent.click(screen.getByRole("button", { name: "Upload from computer" }));
 
     await waitFor(() => expect(onRequestImage).toHaveBeenCalledTimes(1));
     expect(parseFrontmatterRaw(onUpdateRawYaml.mock.calls[0]?.[0])).toMatchObject({

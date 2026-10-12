@@ -4,6 +4,7 @@ import { parseMarkdownFrontmatter, slugify, splitMarkdown } from "./markdownFron
 import { createEntityFrontmatter } from "./contentTemplates";
 import { isHiddenMetadata } from "./treeBuilder";
 import { pathName } from "./pathUtils";
+import { hasVisualDocumentMarker } from "../visualDocuments/marker";
 
 export type FrontmatterNormalizationKind = "note" | "folder-description";
 export type FrontmatterNormalizationReason = "missing_frontmatter" | "invalid_frontmatter";
@@ -81,6 +82,7 @@ export function planFrontmatterNormalization({
 
   return files
     .filter((file) => file.relativePath.endsWith(".md"))
+    .filter((file) => !hasVisualDocumentMarker(file.content))
     .filter((file) => !isHiddenMetadata(file.relativePath))
     .filter((file) => file.relativePath !== hiddenRootFile)
     .filter((file) => !hasValidFrontmatter(file.content))

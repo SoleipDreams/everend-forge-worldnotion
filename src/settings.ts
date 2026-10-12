@@ -1,3 +1,4 @@
+import { normalizeBackgroundScene } from "./backgroundScenes";
 import {
   AppSettingsV4,
   DEFAULT_EDITOR_SETTINGS,
@@ -109,6 +110,9 @@ export function loadSettings(): AppSettingsV4 {
     return {
       localePreference: normalizeLocalePreference(parsed.localePreference),
       theme: normalizeThemeId(parsed.theme),
+      interfaceFont: parsed.interfaceFont === "serif" || parsed.interfaceFont === "humanist" ? parsed.interfaceFont : "sans",
+      ambientBackground: parsed.ambientBackground !== false,
+      backgroundScene: normalizeBackgroundScene(parsed.backgroundScene),
       recentUniverse: parsed.recentUniverse,
       recentUniverses,
       recentUniverseProfiles: parsed.recentUniverseProfiles ?? {},
@@ -117,6 +121,7 @@ export function loadSettings(): AppSettingsV4 {
         ...DEFAULT_EXPLORER_SETTINGS,
         ...parsedExplorer,
         activeSection,
+        ecosystemView: parsedExplorer.ecosystemView === "list" ? "list" : "gallery",
         folderNotesEnabled,
         showImagesInAllFiles,
       },
@@ -130,6 +135,8 @@ export function loadSettings(): AppSettingsV4 {
     return {
       localePreference: "system",
       theme: "worldnotion-light",
+      ambientBackground: true,
+      backgroundScene: "original",
       recentUniverses: [],
       recentUniverseProfiles: {},
       editor: DEFAULT_EDITOR_SETTINGS,

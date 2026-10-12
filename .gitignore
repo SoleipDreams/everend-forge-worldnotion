@@ -46,3 +46,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Native WebView2 debugging captures and isolated profiles
+output/playwright/
+.playwright-cli/

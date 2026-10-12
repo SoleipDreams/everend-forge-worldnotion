@@ -1,0 +1,97 @@
+.forge-worldnotion .visual-document-shell {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.forge-worldnotion .visual-document-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  flex-wrap: wrap;
+  background: var(--ef-panel);
+  border-bottom: 1px solid var(--ef-border);
+}
+.forge-worldnotion .visual-document-controls strong {
+  flex: 1;
+  min-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forge-worldnotion .visual-document-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--ef-border);
+  background: var(--ef-panel-soft);
+  color: var(--ef-text);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.forge-worldnotion .document-save-error {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ef-border);
+  background: var(--ef-panel-soft);
+  color: var(--ef-text);
+}
+.forge-worldnotion .document-save-error > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.forge-worldnotion .document-save-error p {
+  margin: 4px 0 0;
+  color: var(--ef-muted);
+}
+.forge-worldnotion .document-save-error button {
+  border: 1px solid var(--ef-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--ef-panel);
+  color: var(--ef-text);
+}
+.forge-worldnotion .visual-recovery-banner {
+  overflow: auto;
+  max-height: 50%;
+}
+.forge-worldnotion .visual-recovery-banner:only-child {
+  max-height: 100%;
+}
+.forge-worldnotion .document-save-error pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.5 var(--wn-monospace-font, ui-monospace, monospace);
+}
+.forge-worldnotion .visual-documents-discovery {
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+  border-top: 1px solid var(--ef-border);
+}
+.forge-worldnotion .visual-documents-discovery button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px;
+  background: transparent;
+  color: var(--ef-text);
+}
+.forge-worldnotion .visual-documents-discovery button[aria-current],
+.forge-worldnotion .visual-documents-discovery button:hover {
+  background: var(--ef-accent-soft);
+}

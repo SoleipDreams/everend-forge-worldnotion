@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useWorldnotionSurfaceText } from "../i18n";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import { X, ChevronDown, ChevronRight } from "lucide-react";
 import type { EditorView } from "@codemirror/view";
 import { findNext, findPrevious } from "@codemirror/search";
@@ -9,6 +11,9 @@ interface SearchPanelProps {
 }
 
 export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
+  const t = useWorldnotionSurfaceText();
+  const appActive = useAppIsActive();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQueryLocal] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [showReplace, setShowReplace] = useState(false);
@@ -64,12 +69,12 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
 
   useEffect(() => {
     // Auto-focus search input when panel opens
-    const input = document.querySelector(".search-panel-input") as HTMLInputElement;
-    if (input) {
-      input.focus();
+    const input = searchInputRef.current;
+    if (input && appActive) {
+      focusAppElement(input);
       input.select();
     }
-  }, []);
+  }, [appActive]);
 
   return (
     <div className="search-panel">
@@ -84,6 +89,7 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             {showReplace ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           <input
+            ref={searchInputRef}
             type="text"
             className="search-panel-input"
             placeholder="Find"
@@ -92,13 +98,13 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             onKeyDown={handleKeyDown}
           />
           <div className="search-panel-options">
-            <button type="button" className="search-option-btn" title="Match case (Aa)">
+            <button type="button" className="search-option-btn" disabled title={t("Match case (Aa)")}>
               Aa
             </button>
-            <button type="button" className="search-option-btn" title="Match whole word (Ab)">
+            <button type="button" className="search-option-btn" disabled title={t("Match whole word (Ab)")}>
               Ab
             </button>
-            <button type="button" className="search-option-btn" title="Use regex (.*)">
+            <button type="button" className="search-option-btn" disabled title={t("Use regex (.*)")}>
               .*
             </button>
           </div>
@@ -106,7 +112,7 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             type="button"
             className="search-panel-close"
             onClick={onClose}
-            title="Close (Esc)"
+            title={t("Close (Esc)")}
           >
             <X size={14} />
           </button>
@@ -118,7 +124,7 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             <input
               type="text"
               className="search-panel-input"
-              placeholder="Replace"
+              placeholder={t("Replace")}
               value={replaceQuery}
               onChange={(e) => setReplaceQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -126,17 +132,17 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             <div className="search-panel-replace-actions">
               <button
                 type="button"
-                className="search-action-btn"
-                title="Replace next (implementation pending)"
+                className="search-action-btn" disabled
+                title={t("Replace next (implementation pending)")}
               >
-                Replace
+                {t("Replace")}
               </button>
               <button
                 type="button"
-                className="search-action-btn"
-                title="Replace all (implementation pending)"
+                className="search-action-btn" disabled
+                title={t("Replace all (implementation pending)")}
               >
-                All
+                {t("All")}
               </button>
             </div>
           </div>

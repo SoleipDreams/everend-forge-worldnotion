@@ -1,3 +1,4 @@
+import { useWorldnotionSurfaceText } from "../i18n";
 import {
   memo,
   useCallback,
@@ -8,6 +9,7 @@ import {
   type MouseEvent,
   type UIEvent,
 } from "react";
+import { useAppIsActive } from "../hooks/useAppInteraction";
 import {
   ChevronDown,
   ChevronRight,
@@ -23,7 +25,9 @@ import {
   Folder,
   FolderOpen,
   Image,
+  LayoutGrid,
   Layers,
+  List,
   Plus,
   Search,
   SlidersHorizontal,
@@ -31,7 +35,7 @@ import {
   X,
 } from "lucide-react";
 import type { Entity, VaultIndex, VaultTreeNode } from "../domain";
-import type { ExplorerSection, ExplorerFavorite } from "../editorTypes";
+import type { EcosystemView, ExplorerSection, ExplorerFavorite } from "../editorTypes";
 import {
   getFrontmatterPropertyValue,
   listAllProperties,
@@ -42,6 +46,8 @@ import type { VisibleExplorerRow } from "../utils/explorerSelectors";
 import { getTreeMaxDepth } from "../utils/explorerSelectors";
 import { getIconComponent } from "./IconPicker";
 import { isImagePath } from "../utils/vaultImages";
+import { EcosystemGalleryCard } from "./EcosystemGalleryCard";
+import "./EcosystemGallery.css";
 
 export type ExplorerTreeAction =
   | "collapseAll"
@@ -118,6 +124,8 @@ export type ExplorerPanelProps = {
   favoritePaths: Set<string>;
   favoriteItems: ExplorerFavorite[];
   ecosystemGroups: Map<string, Entity[]>;
+  ecosystemView?: EcosystemView;
+  onEcosystemViewChange?: (view: EcosystemView) => void;
   ecosystemEntityColors: Map<string, string>;
   entityTagColors: Map<string, string>;
   folderNotesEnabled: boolean;
@@ -166,6 +174,8 @@ export function ExplorerPanel({
   favoritePaths,
   favoriteItems,
   ecosystemGroups,
+  ecosystemView = "gallery",
+  onEcosystemViewChange,
   ecosystemEntityColors,
   entityTagColors,
   folderNotesEnabled,
@@ -189,6 +199,8 @@ export function ExplorerPanel({
   onPointerDragStart,
   isPointerClickSuppressed,
 }: ExplorerPanelProps) {
+  const t = useWorldnotionSurfaceText();
+  const appActive = useAppIsActive();
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(680);
   const [ecosystemTypeFilter, setEcosystemTypeFilter] = useState("all");
@@ -315,7 +327,7 @@ export function ExplorerPanel({
   }, []);
 
   useEffect(() => {
-    if (!depthMenuOpen) return;
+    if (!depthMenuOpen || !appActive) return;
     const handleClickOutside = (event: Event) => {
       if (depthMenuRef.current && !depthMenuRef.current.contains(event.target as Node)) {
         setDepthMenuOpen(false);
@@ -323,7 +335,7 @@ export function ExplorerPanel({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [depthMenuOpen]);
+  }, [depthMenuOpen, appActive]);
 
   const handleSidebarScroll = useCallback(
     (event: UIEvent<HTMLDivElement>) => {
@@ -357,7 +369,7 @@ export function ExplorerPanel({
   }, [scrollTop, shouldVirtualize, viewportHeight, visibleRows]);
 
   return (
-    <aside className="sidebar dock-panel-body">
+    <aside data-onboarding-target="worldnotion.explorer" className="sidebar dock-panel-body">
       <div className="explorer-search-panel">
         <label className="search-box">
           <Search size={15} />
@@ -365,7 +377,7 @@ export function ExplorerPanel({
             data-onboarding-target="worldnotion.search-files"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search files"
+            placeholder={t("Search files")}
           />
         </label>
       </div>
@@ -375,7 +387,7 @@ export function ExplorerPanel({
           type="button"
           className={activeSection === "allFiles" ? "active" : ""}
           onClick={() => onSectionChange("allFiles")}
-          title="All Files"
+          title={t("All Files")}
         >
           <Files size={16} />
         </button>
@@ -383,7 +395,7 @@ export function ExplorerPanel({
           type="button"
           className={activeSection === "favorites" ? "active" : ""}
           onClick={() => onSectionChange("favorites")}
-          title="Favorites"
+          title={t("Favorites")}
         >
           <Star size={16} />
         </button>
@@ -391,7 +403,7 @@ export function ExplorerPanel({
           type="button"
           className={activeSection === "ecosystem" ? "active" : ""}
           onClick={() => onSectionChange("ecosystem")}
-          title="Ecosystem"
+          title={t("Ecosystem")}
         >
           <SlidersHorizontal size={16} />
         </button>
@@ -399,13 +411,13 @@ export function ExplorerPanel({
           type="button"
           className={activeSection === "images" ? "active" : ""}
           onClick={() => onSectionChange("images")}
-          title="Images"
+          title={t("Images")}
         >
           <Image size={16} />
         </button>
       </nav>
 
-      <nav className="explorer-tree-actions" aria-label="Explorer expansion actions">
+      <nav className="explorer-tree-actions" aria-label={t("Explorer expansion actions")}>
         {(() => {
           const relevantRows = focusedFolderPath
             ? visibleRows.filter((row) => row.path.startsWith(focusedFolderPath))
@@ -414,7 +426,10 @@ export function ExplorerPanel({
           // since those must always be expanded. Only count expansions within the focus folder.
           const hasExpandedFolders = relevantRows.some((row) => {
             if (row.kind !== "folder") return false;
-            if (focusedFolderPath && (row.path === focusedFolderPath || focusedFolderPath.startsWith(row.path + "/"))) {
+            if (
+              focusedFolderPath &&
+              (row.path === focusedFolderPath || focusedFolderPath.startsWith(row.path + "/"))
+            ) {
               return false;
             }
             return expandedPaths.has(row.path);
@@ -440,21 +455,17 @@ export function ExplorerPanel({
             <button
               type="button"
               onClick={handleToggle}
-              title={hasExpandedFolders ? "Collapse all folders" : "Expand all folders"}
+              title={t(hasExpandedFolders ? "Collapse all folders" : "Expand all folders")}
               className="explorer-action-button"
             >
-              {hasExpandedFolders ? (
-                <ChevronsUp size={16} />
-              ) : (
-                <ChevronsDown size={16} />
-              )}
+              {hasExpandedFolders ? <ChevronsUp size={16} /> : <ChevronsDown size={16} />}
             </button>
           );
         })()}
         <button
           type="button"
           onClick={() => scrollToSelected()}
-          title="Show active file in explorer"
+          title={t("Show active file in explorer")}
           className="explorer-action-button"
           disabled={!activeTabPath}
         >
@@ -464,7 +475,7 @@ export function ExplorerPanel({
           <button
             type="button"
             onClick={() => setDepthMenuOpen(!depthMenuOpen)}
-            title="Expand by depth"
+            title={t("Expand by depth")}
             className="explorer-action-button explorer-depth-button"
           >
             <span className="depth-label">⋯</span>
@@ -541,7 +552,7 @@ export function ExplorerPanel({
       >
         {activeSection === "favorites" ? (
           <section className="sidebar-section">
-            <h2>Favorites</h2>
+            <h2>{t("Favorites")}</h2>
             <div className="template-list">
               {favoriteItems.length ? (
                 favoriteItems.map((favorite) => (
@@ -573,11 +584,31 @@ export function ExplorerPanel({
           <section className="sidebar-section ecosystem-view">
             <div className="ecosystem-view-heading">
               <div>
-                <h2>Ecosystem</h2>
+                <h2>{t("Ecosystem")}</h2>
                 <span className="ecosystem-result-summary">
                   {ecosystemEntities.length} of {Array.from(ecosystemGroups.values()).flat().length}{" "}
                   notes
                 </span>
+              </div>
+              <div className="ecosystem-view-switch" role="group" aria-label={t("Ecosystem view")}>
+                <button
+                  type="button"
+                  aria-label={t("Gallery view")}
+                  aria-pressed={ecosystemView === "gallery"}
+                  onClick={() => onEcosystemViewChange?.("gallery")}
+                  title={t("Gallery view")}
+                >
+                  <LayoutGrid size={15} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("List view")}
+                  aria-pressed={ecosystemView === "list"}
+                  onClick={() => onEcosystemViewChange?.("list")}
+                  title={t("List view")}
+                >
+                  <List size={15} />
+                </button>
               </div>
               {ecosystemFilters.length || ecosystemTypeFilter !== "all" || query.trim() ? (
                 <button
@@ -589,134 +620,139 @@ export function ExplorerPanel({
                     setEcosystemMatchMode("all");
                     onQueryChange("");
                   }}
-                  title="Clear ecosystem filters"
+                  title={t("Clear ecosystem filters")}
                 >
                   <X size={13} />
                   Clear
                 </button>
               ) : null}
             </div>
-            <div className="ecosystem-filter-panel">
-              <div className="ecosystem-filter-controls">
-                <label className="ecosystem-filter-control">
-                  <span>Type</span>
-                  <select
-                    aria-label="Ecosystem type filter"
-                    value={ecosystemTypeFilter}
-                    onChange={(event) => setEcosystemTypeFilter(event.target.value)}
-                  >
-                    <option value="all">All types</option>
-                    {Array.from(entityTypesById.entries())
-                      .sort(([, first], [, second]) => first.label.localeCompare(second.label))
-                      .map(([typeId, type]) => (
-                        <option key={typeId} value={typeId}>
-                          {type.label}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="ecosystem-filter-control">
-                  <span>Group by</span>
-                  <select
-                    aria-label="Ecosystem group by"
-                    value={ecosystemGroupBy}
-                    onChange={(event) => setEcosystemGroupBy(event.target.value)}
-                  >
-                    <option value="type">Type</option>
-                    {ecosystemPropertyOptions
-                      .filter((property) => property.id !== "type")
-                      .map((property) => (
-                        <option key={property.id} value={property.id}>
-                          {property.label ?? property.id}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                {ecosystemFilters.length > 1 ? (
+            <details className="ecosystem-filter-disclosure">
+              <summary>
+                Filters{ecosystemFilters.length ? ` (${ecosystemFilters.length})` : ""}
+              </summary>
+              <div className="ecosystem-filter-panel">
+                <div className="ecosystem-filter-controls">
                   <label className="ecosystem-filter-control">
-                    <span>Match</span>
+                    <span>Type</span>
                     <select
-                      aria-label="Ecosystem filter match"
-                      value={ecosystemMatchMode}
-                      onChange={(event) =>
-                        setEcosystemMatchMode(event.target.value as "all" | "any")
-                      }
+                      aria-label={t("Ecosystem type filter")}
+                      value={ecosystemTypeFilter}
+                      onChange={(event) => setEcosystemTypeFilter(event.target.value)}
                     >
-                      <option value="all">All filters</option>
-                      <option value="any">Any filter</option>
+                      <option value="all">All types</option>
+                      {Array.from(entityTypesById.entries())
+                        .sort(([, first], [, second]) => first.label.localeCompare(second.label))
+                        .map(([typeId, type]) => (
+                          <option key={typeId} value={typeId}>
+                            {type.label}
+                          </option>
+                        ))}
                     </select>
                   </label>
-                ) : null}
-              </div>
-              <div className="ecosystem-filter-list">
-                {ecosystemFilters.map((filter) => (
-                  <div className="ecosystem-filter-row" key={filter.id}>
-                    <Filter size={13} aria-hidden="true" />
+                  <label className="ecosystem-filter-control">
+                    <span>Group by</span>
                     <select
-                      aria-label={`Property filter ${filter.id}`}
-                      value={filter.propertyId}
-                      onChange={(event) =>
-                        setEcosystemFilters((current) =>
-                          current.map((candidate) =>
-                            candidate.id === filter.id
-                              ? { ...candidate, propertyId: event.target.value }
-                              : candidate,
-                          ),
-                        )
-                      }
+                      aria-label={t("Ecosystem group by")}
+                      value={ecosystemGroupBy}
+                      onChange={(event) => setEcosystemGroupBy(event.target.value)}
                     >
-                      <option value="all">Any property</option>
-                      {ecosystemPropertyOptions.map((property) => (
-                        <option key={property.id} value={property.id}>
-                          {property.label ?? property.id}
-                        </option>
-                      ))}
+                      <option value="type">Type</option>
+                      {ecosystemPropertyOptions
+                        .filter((property) => property.id !== "type")
+                        .map((property) => (
+                          <option key={property.id} value={property.id}>
+                            {property.label ?? property.id}
+                          </option>
+                        ))}
                     </select>
-                    <input
-                      aria-label={`Property value ${filter.id}`}
-                      value={filter.value}
-                      onChange={(event) =>
-                        setEcosystemFilters((current) =>
-                          current.map((candidate) =>
-                            candidate.id === filter.id
-                              ? { ...candidate, value: event.target.value }
-                              : candidate,
-                          ),
-                        )
-                      }
-                      placeholder="contains..."
-                    />
-                    <button
-                      type="button"
-                      className="ecosystem-filter-remove"
-                      aria-label={`Remove property filter ${filter.id}`}
-                      onClick={() =>
-                        setEcosystemFilters((current) =>
-                          current.filter((candidate) => candidate.id !== filter.id),
-                        )
-                      }
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="ecosystem-add-filter-button"
-                  onClick={() => {
-                    const id = nextEcosystemFilterId.current;
-                    nextEcosystemFilterId.current += 1;
-                    setEcosystemFilters((current) => [
-                      ...current,
-                      { id, propertyId: "all", value: "" },
-                    ]);
-                  }}
-                >
-                  <Plus size={13} />
-                  Add property filter
-                </button>
+                  </label>
+                  {ecosystemFilters.length > 1 ? (
+                    <label className="ecosystem-filter-control">
+                      <span>Match</span>
+                      <select
+                        aria-label={t("Ecosystem filter match")}
+                        value={ecosystemMatchMode}
+                        onChange={(event) =>
+                          setEcosystemMatchMode(event.target.value as "all" | "any")
+                        }
+                      >
+                        <option value="all">All filters</option>
+                        <option value="any">Any filter</option>
+                      </select>
+                    </label>
+                  ) : null}
+                </div>
+                <div className="ecosystem-filter-list">
+                  {ecosystemFilters.map((filter) => (
+                    <div className="ecosystem-filter-row" key={filter.id}>
+                      <Filter size={13} aria-hidden="true" />
+                      <select
+                        aria-label={`Property filter ${filter.id}`}
+                        value={filter.propertyId}
+                        onChange={(event) =>
+                          setEcosystemFilters((current) =>
+                            current.map((candidate) =>
+                              candidate.id === filter.id
+                                ? { ...candidate, propertyId: event.target.value }
+                                : candidate,
+                            ),
+                          )
+                        }
+                      >
+                        <option value="all">Any property</option>
+                        {ecosystemPropertyOptions.map((property) => (
+                          <option key={property.id} value={property.id}>
+                            {property.label ?? property.id}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        aria-label={`Property value ${filter.id}`}
+                        value={filter.value}
+                        onChange={(event) =>
+                          setEcosystemFilters((current) =>
+                            current.map((candidate) =>
+                              candidate.id === filter.id
+                                ? { ...candidate, value: event.target.value }
+                                : candidate,
+                            ),
+                          )
+                        }
+                        placeholder="contains..."
+                      />
+                      <button
+                        type="button"
+                        className="ecosystem-filter-remove"
+                        aria-label={`Remove property filter ${filter.id}`}
+                        onClick={() =>
+                          setEcosystemFilters((current) =>
+                            current.filter((candidate) => candidate.id !== filter.id),
+                          )
+                        }
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="ecosystem-add-filter-button"
+                    onClick={() => {
+                      const id = nextEcosystemFilterId.current;
+                      nextEcosystemFilterId.current += 1;
+                      setEcosystemFilters((current) => [
+                        ...current,
+                        { id, propertyId: "all", value: "" },
+                      ]);
+                    }}
+                  >
+                    <Plus size={13} />
+                    Add property filter
+                  </button>
+                </div>
               </div>
-            </div>
+            </details>
             <div className="ecosystem-groups">
               {filteredEcosystemGroups.size > 0 ? (
                 Array.from(filteredEcosystemGroups.entries())
@@ -747,27 +783,46 @@ export function ExplorerPanel({
                           <span className="ecosystem-group-name">{groupLabel}</span>
                           <span className="ecosystem-group-count">{entities.length}</span>
                         </div>
-                        <div className="ecosystem-group-items">
-                          {entities.map((entity) => (
-                            <button
-                              key={entity.path}
-                              type="button"
-                              className={`ecosystem-item ${selectedPath === entity.path ? "active" : ""}`}
-                              onClick={() => onSelectPath(entity.path)}
-                              onContextMenu={(event) => onContextMenu(event, entity.path, "file")}
-                            >
-                              {ecosystemEntityColors.get(entity.path) ? (
-                                <span
-                                  className="ecosystem-item-color"
-                                  style={{
-                                    backgroundColor: ecosystemEntityColors.get(entity.path),
-                                  }}
-                                />
-                              ) : null}
-                              <FileText size={14} />
-                              <span className="ecosystem-item-name">{entity.name}</span>
-                            </button>
-                          ))}
+                        <div
+                          className={
+                            ecosystemView === "gallery"
+                              ? "ecosystem-gallery"
+                              : "ecosystem-group-items"
+                          }
+                        >
+                          {entities.map((entity) =>
+                            ecosystemView === "gallery" ? (
+                              <EcosystemGalleryCard
+                                key={entity.path}
+                                index={index}
+                                entity={entity}
+                                typeLabel={entityTypesById.get(entity.type)?.label ?? entity.type}
+                                color={ecosystemEntityColors.get(entity.path)}
+                                selected={selectedPath === entity.path}
+                                onSelectPath={onSelectPath}
+                                onContextMenu={onContextMenu}
+                              />
+                            ) : (
+                              <button
+                                key={entity.path}
+                                type="button"
+                                className={`ecosystem-item ${selectedPath === entity.path ? "active" : ""}`}
+                                onClick={() => onSelectPath(entity.path)}
+                                onContextMenu={(event) => onContextMenu(event, entity.path, "file")}
+                              >
+                                {ecosystemEntityColors.get(entity.path) ? (
+                                  <span
+                                    className="ecosystem-item-color"
+                                    style={{
+                                      backgroundColor: ecosystemEntityColors.get(entity.path),
+                                    }}
+                                  />
+                                ) : null}
+                                <FileText size={14} />
+                                <span className="ecosystem-item-name">{entity.name}</span>
+                              </button>
+                            ),
+                          )}
                         </div>
                       </div>
                     );
@@ -783,7 +838,7 @@ export function ExplorerPanel({
 
         {activeSection === "allFiles" || activeSection === "images" ? (
           <section className="sidebar-section">
-            {activeSection === "images" ? <h2>Images</h2> : null}
+            {activeSection === "images" ? <h2>{t("Images")}</h2> : null}
             <div
               className={`explorer-tree-surface ${visibleRows.length ? "has-items" : "is-empty"}`}
             >
@@ -791,8 +846,8 @@ export function ExplorerPanel({
                 <button
                   type="button"
                   className="explorer-create-item-button"
-                  aria-label="Create a folder or note"
-                  title="Create a folder or note"
+                  aria-label={t("Create a folder or note")}
+                  title={t("Create a folder or note")}
                   onClick={(event) => {
                     const rect = event.currentTarget.getBoundingClientRect();
                     onOpenCreateMenu?.(rect.left, rect.bottom + 4);
@@ -849,7 +904,9 @@ export function ExplorerPanel({
                         customIcons={customIcons}
                       />
                     ))}
-                    {virtualWindow.after > 0 ? <div style={{ height: virtualWindow.after }} /> : null}
+                    {virtualWindow.after > 0 ? (
+                      <div style={{ height: virtualWindow.after }} />
+                    ) : null}
                   </>
                 ) : (
                   <p className="explorer-empty-state">
@@ -862,6 +919,7 @@ export function ExplorerPanel({
         ) : null}
       </div>
 
+      {(index.visualDocuments?.length ?? 0) > 0 ? <section className="visual-documents-discovery" aria-label={t("Visual documents")}><strong>{t("Documents")}</strong>{index.visualDocuments?.filter(document => !query || document.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())).map(document => <button type="button" key={document.path} onClick={() => onSelectPath(document.path)} aria-current={document.path === activeTabPath ? "page" : undefined}><span>{document.kind === "timeline" ? "◷" : "◇"}</span>{document.name}</button>)}</section> : null}
       <section className={`templates-dock ${templatesExpanded ? "expanded" : ""}`}>
         <div className="templates-dock-header">
           <button
@@ -870,14 +928,14 @@ export function ExplorerPanel({
             onClick={onToggleTemplatesExpanded}
           >
             {templatesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span>Templates</span>
+            <span>{t("Templates")}</span>
             <small>{index.templates.length}</small>
           </button>
           <button
             type="button"
             className="templates-dock-action"
             onClick={onCreateTemplate}
-            title="New template"
+            title={t("New template")}
           >
             <Plus size={13} />
           </button>
@@ -967,9 +1025,7 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
   const isDirty = dirtyTabPaths.has(row.path);
   const descriptionIsOpen = Boolean(row.descriptionPath && openTabPaths.has(row.descriptionPath));
   const hasPersistentActions =
-    isFocused ||
-    isFavorite ||
-    (row.kind === "folder" && folderNotesEnabled && row.hasDescription);
+    isFocused || isFavorite || (row.kind === "folder" && folderNotesEnabled && row.hasDescription);
   const tagColor = entityTagColors?.get(row.path);
   const customIcon = customIcons?.[row.path];
   const IconComponent = customIcon ? getIconComponent(customIcon) : undefined;
