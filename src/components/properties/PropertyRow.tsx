@@ -125,6 +125,7 @@ export function PropertyRow({
     >
       <div
         className={`property-row property-row-depth-${node.depth} ${isGroup ? "property-row-group" : ""}`}
+        data-property-id={property.id}
         onContextMenu={(event) => handlers.onContextMenu(event, property)}
       >
         <button

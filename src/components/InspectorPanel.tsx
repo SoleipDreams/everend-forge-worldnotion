@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { PanelsTopLeft, SlidersHorizontal, Sparkles } from "lucide-react";
 import type { Entity, EntityTemplate, VaultIndex } from "../domain";
 import type { OpenTab, PropertiesConfig } from "../editorTypes";
@@ -19,6 +19,7 @@ const PresentationEditor = lazy(() =>
   import("./PresentationEditor").then((module) => ({ default: module.PresentationEditor })),
 );
 export type InspectorPanelProps = {
+  focusPropertyId?: string;
   entity?: Entity;
   template?: EntityTemplate;
   index?: VaultIndex;
@@ -43,6 +44,7 @@ export type InspectorPanelProps = {
 };
 
 export function InspectorPanel({
+  focusPropertyId,
   entity,
   template,
   index,
@@ -67,6 +69,7 @@ export function InspectorPanel({
 }: InspectorPanelProps) {
   const ui = useWorldnotionUi();
   const [activeView, setActiveView] = useState<"properties" | "presentation">("properties");
+  useEffect(() => { if (focusPropertyId) setActiveView('properties'); }, [focusPropertyId]);
   const [moveTarget, setMoveTarget] = useState("");
   if (!index) {
     return (
@@ -248,6 +251,7 @@ export function InspectorPanel({
                 <Suspense fallback={<LazyPanelFallback label={ui.loadingInspector} />}>
                   {activeView === "properties" ? (
                     <MetadataEditor
+                      focusPropertyId={focusPropertyId}
                       entity={entity}
                       propertiesConfig={propertiesConfig}
                       rawYaml={editableFrontmatter || "---\n\n---"}

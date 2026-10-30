@@ -33,7 +33,7 @@ import {
 } from "../editorTypes";
 import type { UniverseProfile } from "../domain";
 import { createDefaultTaxonomyConfig } from "../domain";
-import { applyPropertyTemplate, WORLDBUILDING_TEMPLATE } from "../utils/propertyTemplates";
+import { applyPropertyTemplate, GENERAL_TEMPLATE } from "../utils/propertyTemplates";
 import type { FrontmatterNormalizationItem } from "../utils/frontmatterNormalizer";
 import type { PropertyNormalizationItem } from "../utils/propertyNormalizer";
 import type { PropertyStructureMigrationPlan } from "../utils/propertyStructureMigration";
@@ -111,7 +111,7 @@ type SettingsModalProps = {
 
 function createStarterPropertiesConfig(mode: "template" | "blank" = "template") {
   const baseConfig = createDefaultTaxonomyConfig();
-  return mode === "blank" ? baseConfig : applyPropertyTemplate(baseConfig, WORLDBUILDING_TEMPLATE);
+  return mode === "blank" ? baseConfig : applyPropertyTemplate(baseConfig, GENERAL_TEMPLATE);
 }
 
 function UniverseLanguageSettings({

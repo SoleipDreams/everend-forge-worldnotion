@@ -146,7 +146,7 @@ import {
 } from "./utils/propertiesConfig";
 import { serializePropertiesConfig, validatePropertiesConfig } from "./utils/propertiesSerializer";
 import { addCustomFieldToSchema } from "./utils/propertiesSerializer";
-import { applyPropertyTemplate, WORLDBUILDING_TEMPLATE } from "./utils/propertyTemplates";
+import { applyPropertyTemplate, GENERAL_TEMPLATE } from "./utils/propertyTemplates";
 import { normalizeCoreBaseProperties } from "./utils/taxonomyConfig";
 import { recordFileAccessInSettings } from "./utils/fileAccessStats";
 import { loadSettings, saveSettings } from "./settings";
@@ -699,6 +699,7 @@ function WorldnotionWorkbench({
   async function saveVaultFile(...args: Parameters<typeof writeVaultFile>) {
     return saveCoordinatorRef.current.run(`file:${args[1]}`, () => writeVaultFile(...args));
   }
+  const [canonFocusPropertyId, setCanonFocusPropertyId] = useState<string>();
 
   // Font detection hook
   const { fonts } = useFonts();
@@ -2638,6 +2639,7 @@ function WorldnotionWorkbench({
       );
       await reindexUniverseMetadata();
       showToast("Properties configuration saved.", "success");
+      suiteChrome?.onCanonSaved?.(index.rootPath);
     } catch (error) {
       setIndex((current) =>
         current?.propertiesConfig === normalizedProperties
@@ -2684,7 +2686,7 @@ function WorldnotionWorkbench({
   async function handleConserveField(fieldName: string, value: unknown) {
     const currentConfig =
       index?.propertiesConfig ??
-      applyPropertyTemplate(createDefaultTaxonomyConfig(), WORLDBUILDING_TEMPLATE);
+      applyPropertyTemplate(createDefaultTaxonomyConfig(), GENERAL_TEMPLATE);
     // Infer type from value
     let inferredType = "text";
     if (typeof value === "boolean") inferredType = "boolean";
@@ -3217,6 +3219,28 @@ function WorldnotionWorkbench({
     openDocument(nextIndex, path);
     setSettings((current) => recordFileAccessInSettings(current, nextIndex.rootPath, path));
   }
+  useEffect(() => suiteChrome?.registerCanonEntityOpener?.(async target => {
+    if (!index) return false;
+    const entity = index.entities.find(item => item.id === target.entityId);
+    if (!entity) { showToast(interfaceLocale === 'es' ? 'No se encontró el personaje en este universo.' : 'Character not found in this universe.', 'warning'); return true; }
+    const currentRaw = tabsRef.current.find(tab => tab.path === entity.path)?.rawMarkdown ?? entity.file.content;
+    if (target.variantId && !readNoteVariants(parseFrontmatterRaw(rawToEditorParts(currentRaw).frontmatterRaw))[target.variantId]) {
+      showToast(interfaceLocale === 'es' ? 'La variante seleccionada ya no existe. Actualiza la ficha antes de editarla.' : 'The selected variant no longer exists. Refresh the sheet before editing it.', 'warning');
+      return true;
+    }
+    openOrCreateTab(entity.path);
+    setSelectedPath(entity.path);
+    setExplorerSelection([]);
+    setView('workspace');
+    if (!layoutHasPanel(workspaceLayout, 'inspector')) toggleDockPanel('inspector');
+    setCanonFocusPropertyId(target.propertyId);
+    setSettings(current => {
+      const session = current.sessions[index.rootPath] ?? { rootPath: index.rootPath, tabs: [] };
+      return { ...current, sessions: { ...current.sessions, [index.rootPath]: { ...session, variantSelections: { ...session.variantSelections, [entity.path]: target.variantId ?? BASE_VARIANT_ID } } } };
+    });
+    return true;
+  }), [suiteChrome?.registerCanonEntityOpener, index, tabs, workspaceLayout]);
+  useEffect(() => suiteChrome?.registerCanonPropertiesOpener?.(() => { openSettingsAt('utils', 'blank'); }), [suiteChrome?.registerCanonPropertiesOpener, index]);
 
   const resolveWikilink = (label: string) => resolveWikilinkInIndex(index, label);
 
@@ -3685,6 +3709,7 @@ function WorldnotionWorkbench({
         const modifiedMs = await writeBrowserFile(browserRoot, tab.path, content);
         setTabs((current) => markSavedTabInList(current, path, modifiedMs, content));
         reportLearning("note-saved", path);
+        if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
         return true;
       }
 
@@ -3697,6 +3722,7 @@ function WorldnotionWorkbench({
       if (!result.ok) throw new Error(result.message ?? "Could not save metadata.");
       setTabs((current) => markSavedTabInList(current, path, result.modifiedMs, content));
       reportLearning("note-saved", path);
+      if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
       return true;
     } catch (error) {
       setTabs((current) =>
@@ -3897,6 +3923,7 @@ function WorldnotionWorkbench({
     }
     clearSaveState();
     reportLearning("note-saved", path);
+    if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
     showToast(interfaceLocale === "es" ? "Guardado." : "Saved.", "success");
     // A metadata refresh failure cannot turn a completed file write into a
     // failed save or put its error in a neighboring document pane.
@@ -6014,7 +6041,7 @@ function WorldnotionWorkbench({
         onRequestPropertyPathChange={requestPropertyPathChange}
         onApplyPropertiesTemplate={() =>
           initializeUniverseProperties(
-            applyPropertyTemplate(createDefaultTaxonomyConfig(), WORLDBUILDING_TEMPLATE),
+            applyPropertyTemplate(createDefaultTaxonomyConfig(), GENERAL_TEMPLATE),
           )
         }
         onOpenPropertiesSettings={() => {
@@ -6028,6 +6055,7 @@ function WorldnotionWorkbench({
         onDeleteField={handleDeleteField}
         onRequestImage={requestImageInsertion}
         activeVariantId={activeVariantId}
+        focusPropertyId={canonFocusPropertyId}
         onSelectVariant={selectActiveVariant}
         onInsertVariantBlock={insertActiveVariantBlock}
         onDeleteVariant={deleteActiveVariant}

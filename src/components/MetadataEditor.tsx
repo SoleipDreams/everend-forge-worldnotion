@@ -69,6 +69,7 @@ import {
 } from "../utils/noteVariants";
 
 type MetadataEditorProps = {
+  focusPropertyId?: string;
   entity: Entity;
   propertiesConfig?: PropertiesConfig;
   rawYaml: string;
@@ -106,6 +107,7 @@ function formatPreviewValue(value: unknown): string {
 }
 
 export function MetadataEditor({
+  focusPropertyId,
   entity,
   propertiesConfig: incomingPropertiesConfig,
   rawYaml,
@@ -142,6 +144,18 @@ export function MetadataEditor({
   const [showHiddenProperties, setShowHiddenProperties] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!focusPropertyId) return;
+    setCollapsedGroups(new Set());
+    setCollapsedSections(new Set());
+    setShowHiddenProperties(true);
+    const frame = requestAnimationFrame(() => requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-property-id="${CSS.escape(focusPropertyId)}"]`);
+      target?.scrollIntoView({ block: 'nearest' });
+      target?.querySelector<HTMLElement>('input,button,select,textarea')?.focus({ preventScroll: true });
+    }));
+    return () => cancelAnimationFrame(frame);
+  }, [focusPropertyId, entity.id]);
 
   const entityTypes = propertiesConfig?.entityTypes.definitions ?? [];
   const statuses = propertiesConfig?.statuses.definitions ?? [];

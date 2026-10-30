@@ -15,14 +15,18 @@ export type PropertyTemplate = {
    * IDs of base properties to show/order by default.
    */
   visibleBaseProperties: string[];
+  /** Optional complete display order for base properties. */
+  basePropertiesOrder?: string[];
   /**
    * Custom field definitions to add.
    */
   customFields: CustomFieldDefinition[];
-  /**
-   * Optional starter entity types to merge into the universe taxonomy.
-   */
+  /** Optional starter entity types to add to or replace in the universe taxonomy. */
   entityTypes?: EntityTypeDefinition[];
+  /** Replace the starter entity type list instead of merging into it. */
+  replaceEntityTypes?: boolean;
+  /** Optional custom fields that remain globally available. */
+  globalFields?: string[];
   /**
    * Optional per-type property visibility and order.
    */
@@ -562,6 +566,287 @@ export const WORLDBUILDING_TEMPLATE: PropertyTemplate = {
 };
 
 /**
+ * General template based on the properties model currently used by Estrellas
+ * Corruptas. Keep the older Worldbuilding template exported for existing
+ * callers, while making this the default model for new universes.
+ */
+const ESTRELLAS_CORRUPTAS_ENTITY_TYPES: EntityTypeDefinition[] = [
+  {
+    id: "character",
+    label: "Character",
+    description: "Person, creature, or viewpoint actor",
+    icon: "user",
+    color: "#3b82f6",
+    customFields: ["lore-level", "identity", "portrait", "attributes"],
+    visibleProperties: ["type", "status", "aliases"],
+    propertyOrder: [
+      "type",
+      "status",
+      "aliases",
+      "lore-level",
+      "identity",
+      "portrait",
+      "attributes",
+    ],
+    presentation: { portraitPropertyId: "portrait" },
+    hiddenProperties: ["status", "aliases", "lore-level"],
+  },
+  {
+    id: "location",
+    label: "Location",
+    description: "Place, region, settlement, or site",
+    icon: "map-pin",
+    color: "#10b981",
+    customFields: ["lore-level", "scale"],
+    visibleProperties: ["type", "status", "aliases", "parentId", "childrenIds"],
+    propertyOrder: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "scale",
+    ],
+    hiddenProperties: ["status"],
+  },
+  {
+    id: "organization",
+    label: "Organization",
+    description: "Faction, institution, house, or guild",
+    icon: "users",
+    color: "#f59e0b",
+    customFields: ["lore-level", "identity"],
+    visibleProperties: ["type", "status", "aliases", "parentId", "childrenIds"],
+    propertyOrder: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "identity",
+    ],
+    hiddenProperties: ["status", "identity", "aliases", "lore-level"],
+  },
+  {
+    id: "concept",
+    label: "Concept",
+    description: "Idea, law, magic rule, or abstract note",
+    icon: "lightbulb",
+    color: "#8b5cf6",
+    customFields: ["lore-level"],
+    visibleProperties: ["type", "status", "parentId", "childrenIds", "lore-level"],
+    propertyOrder: [
+      "type",
+      "status",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+    ],
+    hiddenProperties: ["aliases", "lore-level", "status"],
+  },
+  {
+    id: "item",
+    label: "Item",
+    description: "Object, relic, tool, or artifact",
+    icon: "package",
+    color: "#ec4899",
+    customFields: ["lore-level", "identity", "item-details"],
+    visibleProperties: ["type", "status", "aliases", "parentId", "childrenIds"],
+    propertyOrder: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "identity",
+      "item-details",
+    ],
+  },
+  {
+    id: "cycle",
+    label: "Cycle",
+    description: "Era, cycle, age, or large continuity span",
+    icon: "refresh-cw",
+    color: "#14b8a6",
+    customFields: ["lore-level"],
+    visibleProperties: ["type", "status", "aliases", "parentId", "childrenIds"],
+    propertyOrder: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+    ],
+  },
+  {
+    id: "scene",
+    label: "Scene",
+    color: "#f97316",
+    customFields: [],
+    hiddenProperties: ["aliases"],
+  },
+];
+
+const worldbuildingFields = WORLDBUILDING_TEMPLATE.customFields;
+const estrellasLoreLevel: CustomFieldDefinition = {
+  ...worldbuildingFields.find((field) => field.id === "lore-level")!,
+  appliesTo: ["location", "item", "cycle"],
+};
+const estrellasItemDetails = worldbuildingFields.find((field) => field.id === "item-details")!;
+
+export const GENERAL_TEMPLATE: PropertyTemplate = {
+  id: "general",
+  label: "General",
+  description: "Modelo general de propiedades basado en Estrellas Corruptas",
+  visibleBaseProperties: ["type", "status", "aliases", ...EVEREND_HIERARCHY_BASE],
+  basePropertiesOrder: [
+    "id",
+    "name",
+    "type",
+    "status",
+    "tags",
+    "aliases",
+    ...EVEREND_HIERARCHY_BASE,
+  ],
+  entityTypes: ESTRELLAS_CORRUPTAS_ENTITY_TYPES,
+  replaceEntityTypes: true,
+  globalFields: ["lore-level"],
+  customFields: [
+    estrellasLoreLevel,
+    {
+      id: "identity",
+      label: "Identity",
+      type: "group",
+      description: "Roles, homes, affiliations, ownership, and identity relationships",
+      required: false,
+      appliesTo: ["character", "item"],
+      visibleWhen: { status: ["draft", "in-progress"] },
+      children: [
+        {
+          id: "affiliation",
+          label: "Affiliation",
+          type: "entity-ref-list",
+          description: "Organization, faction, house, or group connected to this note",
+          required: false,
+          targetTypes: ["organization"],
+          appliesTo: ["character"],
+        },
+        {
+          id: "home",
+          label: "Home",
+          type: "entity-ref",
+          description: "Primary place connected to this entity",
+          required: false,
+          targetTypes: ["location", "world"],
+          appliesTo: ["character"],
+        },
+        {
+          id: "owner",
+          label: "Owner",
+          type: "entity-ref",
+          description: "Current or notable owner",
+          required: false,
+          targetTypes: ["character", "organization"],
+          appliesTo: ["item"],
+        },
+        {
+          id: "portrait",
+          label: "Portrait",
+          type: "image",
+          required: false,
+          appliesTo: ["character"],
+        },
+      ],
+    },
+    {
+      id: "attributes",
+      label: "Atributos",
+      type: "group",
+      description: "Atributos de personaje de SINPO; cada valor va de 0 a 9",
+      required: false,
+      appliesTo: ["character"],
+      children: [
+        { id: "strength", label: "Fuerza", type: "number", min: 0, max: 9 },
+        { id: "agility", label: "Agilidad", type: "number", min: 0, max: 9 },
+        { id: "vitality", label: "Vitalidad", type: "number", min: 0, max: 9 },
+        { id: "intellect", label: "Intelecto", type: "number", min: 0, max: 9 },
+        { id: "memory", label: "Memoria", type: "number", min: 0, max: 9 },
+        { id: "charisma", label: "Carisma", type: "number", min: 0, max: 9 },
+        { id: "intuition", label: "Intuición", type: "number", min: 0, max: 9 },
+        { id: "willpower", label: "Voluntad", type: "number", min: 0, max: 9 },
+        { id: "wisdom", label: "Sabiduría", type: "number", min: 0, max: 9 },
+      ],
+    },
+    estrellasItemDetails,
+    {
+      id: "scale",
+      label: "Scale",
+      type: "select",
+      description: "Physical or social scale",
+      required: false,
+      appliesTo: ["location"],
+      options: [
+        { value: "room", label: "Room", color: "#94a3b8" },
+        { value: "building", label: "Building", color: "#64748b" },
+        { value: "settlement", label: "Settlement", color: "#10b981" },
+        { value: "region", label: "Region", color: "#0ea5e9" },
+        { value: "world", label: "World", color: "#8b5cf6" },
+        { value: "continent", label: "Continent" },
+        { value: "country", label: "Country" },
+        { value: "geographical", label: "Geographical" },
+        { value: "city", label: "City" },
+        { value: "universe", label: "Universe" },
+      ],
+    },
+  ],
+  typeProperties: {
+    character: [
+      "type",
+      "status",
+      "aliases",
+      "lore-level",
+      "identity",
+      "portrait",
+      "attributes",
+    ],
+    location: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "scale",
+    ],
+    organization: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "identity",
+    ],
+    concept: ["type", "status", "parentId", "childrenIds", "lore-level"],
+    item: [
+      "type",
+      "status",
+      "aliases",
+      "parentId",
+      "childrenIds",
+      "lore-level",
+      "identity",
+      "item-details",
+    ],
+    cycle: ["type", "status", "aliases", "parentId", "childrenIds", "lore-level"],
+  },
+};
+
+/**
  * Task Management template - for project/task tracking.
  */
 export const TASK_MANAGEMENT_TEMPLATE: PropertyTemplate = {
@@ -603,7 +888,7 @@ export const TASK_MANAGEMENT_TEMPLATE: PropertyTemplate = {
 /**
  * All available property templates.
  */
-export const PROPERTY_TEMPLATES: PropertyTemplate[] = [WORLDBUILDING_TEMPLATE];
+export const PROPERTY_TEMPLATES: PropertyTemplate[] = [GENERAL_TEMPLATE];
 
 function propertyTreeIds(properties: CustomFieldDefinition[]): string[] {
   const ids: string[] = [];
@@ -673,19 +958,35 @@ export function applyPropertyTemplate(
   const existingEntityTypeIds = new Set(
     taxonomyConfig.entityTypes.definitions.map((definition) => definition.id),
   );
-  const mergedEntityTypes = [
-    ...taxonomyConfig.entityTypes.definitions,
-    ...(template.entityTypes ?? []).filter(
-      (definition) => !existingEntityTypeIds.has(definition.id),
-    ),
-  ];
+  const mergedEntityTypes = template.replaceEntityTypes
+    ? [...(template.entityTypes ?? [])]
+    : [
+        ...taxonomyConfig.entityTypes.definitions,
+        ...(template.entityTypes ?? []).filter(
+          (definition) => !existingEntityTypeIds.has(definition.id),
+        ),
+      ];
 
   return unwrapWorldbuildingDetailsGroup({
     ...taxonomyConfig,
     baseProperties: {
       ...taxonomyConfig.baseProperties,
+      definitions: template.replaceEntityTypes
+        ? taxonomyConfig.baseProperties.definitions.map((definition) =>
+            definition.id === "type"
+              ? {
+                  ...definition,
+                  options: mergedEntityTypes.map((entityType) => ({
+                    value: entityType.id,
+                    label: entityType.label,
+                    ...(entityType.color ? { color: entityType.color } : {}),
+                  })),
+                }
+              : definition,
+          )
+        : taxonomyConfig.baseProperties.definitions,
       visibleByDefault: newVisibleByDefault,
-      order: [...newVisibleByDefault],
+      order: [...(template.basePropertiesOrder ?? newVisibleByDefault)],
     },
     entityTypes: template.typeProperties
       ? {
@@ -715,7 +1016,8 @@ export function applyPropertyTemplate(
           ...(taxonomyConfig.customFields?.globalFields || []).filter(
             (id) => !baseFieldIds.has(id),
           ),
-          ...(template.typeProperties ? globalTemplateFieldIds : templateRootFieldIds),
+          ...(template.globalFields ??
+            (template.typeProperties ? globalTemplateFieldIds : templateRootFieldIds)),
         ]),
       ].filter(
         (id) => templateKnownFieldIds.has(id) || newCustomFields.some((field) => field.id === id),
