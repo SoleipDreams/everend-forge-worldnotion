@@ -48,7 +48,11 @@ import {
   upsertInspectorProperty,
   type VisiblePropertyDefinition,
 } from "../utils/propertiesConfig";
-import { propertyAppliesToEntityType } from "../utils/entityPresentation";
+import {
+  listPresentationImageProperties,
+  propertyAppliesToEntityType,
+  updateEntityTypePresentation,
+} from "../utils/entityPresentation";
 import { getPropertyPath } from "../utils/propertyTreeUtils";
 import { listPropertyPathEntries } from "../utils/propertyPaths";
 import { coercePropertyValue } from "../utils/propertyValueCoercion";
@@ -891,6 +895,18 @@ export function MetadataEditor({
     const optionSets = Object.fromEntries(
       allInspectableProperties.map((candidate) => [candidate.id, getEditableOptions(candidate)]),
     );
+    const presentationTypes = propertiesConfig.entityTypes.definitions.map((type) => ({
+      id: type.id,
+      label: type.label,
+      portraitPropertyId: type.presentation?.portraitPropertyId,
+      coverPropertyId: type.presentation?.coverPropertyId,
+      imageProperties: listPresentationImageProperties(propertiesConfig, type.id).map(
+        (imageProperty) => ({
+          id: imageProperty.id,
+          label: imageProperty.label ?? imageProperty.id,
+        }),
+      ),
+    }));
     return (
       <PropertyEditorPopover
         key={property.id}
@@ -904,12 +920,16 @@ export function MetadataEditor({
         parentId={parentIdOf(property.id)}
         propertyPaths={propertyPaths}
         entityTypes={entityTypes.map((type) => ({ id: type.id, label: type.label }))}
+        presentationTypes={presentationTypes}
         optionSets={optionSets}
         onClose={closePropertyEditor}
         onRename={(label) => renameProperty(property.id, label)}
         onChangeType={(type) => changeType(property.id, type)}
         onUpdate={(patch) => updatePropertyDefinition(property.id, patch)}
         onUpdateOptions={(options) => updatePropertyOptions(property, options)}
+        onSetPresentationRole={(typeId, role, propertyId) =>
+          saveConfig(updateEntityTypePresentation(propertiesConfig, typeId, role, propertyId))
+        }
         onSetConditions={(conditions) => setPropertyConditions(property.id, conditions)}
         onSetAppliesTo={(appliesTo) =>
           saveConfig(setInspectorPropertyAppliesTo(propertiesConfig, property.id, appliesTo))

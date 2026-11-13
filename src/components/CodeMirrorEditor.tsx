@@ -19,6 +19,7 @@ import { footnotePlugin } from "./footnotePlugin";
 import { tablePlugin } from "./tablePlugin";
 import { fontFamilyPlugin } from "./fontFamilyPlugin";
 import { imagePlugin, type ImageResolver } from "./imagePlugin";
+import { presentationPortraitPlugin } from "./presentationPortraitPlugin";
 import { createDocumentHeaderPlugin } from "./documentHeaderPlugin";
 import { createVariantContentPlugin } from "./variantContentPlugin";
 import { StructureActionsMenu } from "./StructureActionsMenu";
@@ -60,6 +61,8 @@ export interface CodeMirrorEditorProps {
   documentName?: string;
   /** Suppresses the generic CodeMirror title when a visual presentation owns it. */
   showDocumentHeader?: boolean;
+  /** A type-mapped image rendered beside the opening writing text. */
+  presentationPortraitPath?: string;
   projectName?: string;
   resolveWikilink?: (label: string) => ResolvedWikilink;
   resolveImage?: ImageResolver;
@@ -156,6 +159,7 @@ export function CodeMirrorEditor({
   pluginSettings,
   documentName,
   showDocumentHeader = true,
+  presentationPortraitPath,
   projectName,
   resolveWikilink,
   resolveImage,
@@ -730,6 +734,15 @@ export function CodeMirrorEditor({
           ...(mode === "write" && activeVariantId
             ? [createVariantContentPlugin(activeVariantId, activeVariantLabel)]
             : []),
+          ...(mode === "write" && presentationPortraitPath && resolveImage
+            ? [
+                presentationPortraitPlugin({
+                  path: presentationPortraitPath,
+                  alt: `${documentName ?? "Document"} portrait`,
+                  resolve: resolveImage,
+                }),
+              ]
+            : []),
           ...(isPluginEnabled(pluginSettings, "document-header", settings.documentHeaderEnabled) &&
           documentName &&
           showDocumentHeader &&
@@ -779,7 +792,9 @@ export function CodeMirrorEditor({
           ...(writing && resolveImage && isPluginEnabled(pluginSettings, "image-rendering")
             ? [imagePlugin({ resolve: resolveImage, presentation: writingMode })]
             : []),
-          ...(settings.lineWrap ? [EditorView.lineWrapping] : []),
+          ...(settings.lineWrap || Boolean(presentationPortraitPath)
+            ? [EditorView.lineWrapping]
+            : []),
           CodeMirrorState.tabSize.of(settings.tabSize),
           ...(processedWriting
             ? [

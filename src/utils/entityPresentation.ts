@@ -121,8 +121,18 @@ export function updateEntityTypePresentation(
         const presentation = {
           ...type.presentation,
           ...(role === "portrait"
-            ? { portraitPropertyId: propertyId }
-            : { coverPropertyId: propertyId }),
+            ? {
+                portraitPropertyId: propertyId,
+                ...(propertyId && type.presentation?.coverPropertyId === propertyId
+                  ? { coverPropertyId: undefined }
+                  : {}),
+              }
+            : {
+                coverPropertyId: propertyId,
+                ...(propertyId && type.presentation?.portraitPropertyId === propertyId
+                  ? { portraitPropertyId: undefined }
+                  : {}),
+              }),
         };
         if (!presentation.portraitPropertyId && !presentation.coverPropertyId) {
           return { ...type, presentation: undefined };

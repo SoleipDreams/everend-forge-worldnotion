@@ -402,6 +402,7 @@ import {
   closeDockTab as closeDockLayoutTab,
   createWorkspaceLayoutPreset,
   documentDockTabId,
+  identifyWorkspaceLayoutPreset,
   isDockMoveAllowedAroundDocumentAnchor,
   layoutHasPanel,
   moveDockTab,
@@ -635,7 +636,7 @@ function WorldnotionWorkbench({
     );
   }, [settings.localePreference, suiteChrome?.suiteSettings?.localePreference]);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
-    "overview" | "utils" | "appearance-behavior" | "ai-advisor" | "suite"
+    "overview" | "properties" | "utils" | "appearance-behavior" | "ai-advisor" | "suite"
   >("appearance-behavior");
   const [settingsInitialPropertiesMode, setSettingsInitialPropertiesMode] = useState<
     "template" | "blank"
@@ -1903,6 +1904,7 @@ function WorldnotionWorkbench({
         await refreshUniverse();
         setExpandedPaths((prev) => new Set(prev).add(folderPath));
         selectFolder(folderPath);
+        reportLearning("folder-created", folderPath);
         showToast(`Created folder: ${name}`, "success");
       } else if (action === "rename" && targetKind !== "empty") {
         const currentName = pathName(targetPath);
@@ -2361,6 +2363,7 @@ function WorldnotionWorkbench({
 
       const nextIndex = await refreshUniverse(descriptionPath);
       selectPathAfterRefresh(descriptionPath, nextIndex);
+      reportLearning("folder-note-created", folderPath);
       showToast(`Created folder description: ${folderName}.md`, "success");
     } catch (error) {
       setLoadState("error");
@@ -2640,6 +2643,10 @@ function WorldnotionWorkbench({
       await reindexUniverseMetadata();
       showToast("Properties configuration saved.", "success");
       suiteChrome?.onCanonSaved?.(index.rootPath);
+      const pathBranchingTypes = new Set(normalizedProperties.entityTypes.definitions.map((type) => type.id));
+      if (pathBranchingTypes.has("character") && pathBranchingTypes.has("location")) {
+        reportLearning("pathbranching-properties-ready");
+      }
     } catch (error) {
       setIndex((current) =>
         current?.propertiesConfig === normalizedProperties
@@ -3032,7 +3039,11 @@ function WorldnotionWorkbench({
 
     setWorkspaceLayout(workspacePlan.layout);
     setDocumentTabGroups(workspacePlan.documentTabGroups);
-    setActiveWorkspacePreset("custom");
+    setActiveWorkspacePreset(
+      identifyWorkspaceLayoutPreset(workspacePlan.layout, workspacePlan.tabs, {
+        activePath: workspacePlan.nextPath,
+      }),
+    );
     // Replace the outgoing session before opening a fallback document.
     // openDocument must never reuse a same-named tab from another universe.
     setTabs(workspacePlan.tabs);
@@ -3195,7 +3206,6 @@ function WorldnotionWorkbench({
       return [...current, createOpenTabFromFile(file, settings.editor.defaultMode)];
     });
     setActiveTabPath(path);
-    setActiveWorkspacePreset("custom");
     setWorkspaceLayout((current) => addDocumentToLayout(current, path, fileTitle(path)));
   }
 
@@ -3243,6 +3253,18 @@ function WorldnotionWorkbench({
   useEffect(() => suiteChrome?.registerCanonPropertiesOpener?.(() => { openSettingsAt('utils', 'blank'); }), [suiteChrome?.registerCanonPropertiesOpener, index]);
 
   const resolveWikilink = (label: string) => resolveWikilinkInIndex(index, label);
+
+  function reportSavedNoteLearningEvents(path: string, content: string) {
+    reportLearning("note-saved", path);
+    const frontmatter = parseFrontmatterRaw(rawToEditorParts(content).frontmatterRaw);
+    if (typeof frontmatter.type === "string") {
+      reportLearning(`entity-type-saved:${frontmatter.type.toLowerCase()}`, path);
+    }
+    const containsResolvedReference = Array.from(content.matchAll(/\[\[([^\]]+)\]\]/g)).some((match) =>
+      Boolean(resolveWikilink(match[1].split("|")[0].split("#")[0].trim())),
+    );
+    if (containsResolvedReference) reportLearning("reference-saved", path);
+  }
 
   // Persists a pasted/dropped/picked image into the attachments folder and
   // returns its vault-relative path (or null on failure).
@@ -3574,10 +3596,12 @@ function WorldnotionWorkbench({
       return;
     }
     openOrCreateTab(result.path);
-    if (originPath && originPath !== result.path)
+    if (originPath && originPath !== result.path) {
+      setActiveWorkspacePreset("custom");
       setWorkspaceLayout((current) => {
         return openDocumentBeside(current, result.path, originPath);
       });
+    }
     if (index)
       setSettings((current) => {
         const session = current.sessions[index.rootPath] ?? { rootPath: index.rootPath, tabs: [] };
@@ -3708,7 +3732,7 @@ function WorldnotionWorkbench({
         }
         const modifiedMs = await writeBrowserFile(browserRoot, tab.path, content);
         setTabs((current) => markSavedTabInList(current, path, modifiedMs, content));
-        reportLearning("note-saved", path);
+        reportSavedNoteLearningEvents(path, content);
         if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
         return true;
       }
@@ -3721,7 +3745,7 @@ function WorldnotionWorkbench({
       });
       if (!result.ok) throw new Error(result.message ?? "Could not save metadata.");
       setTabs((current) => markSavedTabInList(current, path, result.modifiedMs, content));
-      reportLearning("note-saved", path);
+      reportSavedNoteLearningEvents(path, content);
       if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
       return true;
     } catch (error) {
@@ -3922,7 +3946,7 @@ function WorldnotionWorkbench({
       return failed(error instanceof Error ? error.message : String(error));
     }
     clearSaveState();
-    reportLearning("note-saved", path);
+    reportSavedNoteLearningEvents(path, tabToSave.rawMarkdown);
     if (index?.rootPath) suiteChrome?.onCanonSaved?.(index.rootPath);
     showToast(interfaceLocale === "es" ? "Guardado." : "Saved.", "success");
     // A metadata refresh failure cannot turn a completed file write into a
@@ -4191,7 +4215,6 @@ function WorldnotionWorkbench({
       visualRecoveryRef.current.pending.add(path);
       setVisualRecoveryOffers((current) => ({ ...current, [path]: snapshot }));
     }
-    setActiveWorkspacePreset("custom");
     setWorkspaceLayout((current) => closeDockLayoutTab(current, documentDockTabId(path)));
     setDocumentTabGroups((current) => removeTabFromGroups(current, path));
     setTabs((current) => {
@@ -4914,10 +4937,19 @@ function WorldnotionWorkbench({
 
   useLearningAdapter(suiteChrome?.learning, {
     introduction: worldnotionIntroduction, lessons: worldnotionLessons,
-    available: Boolean(index && loadState !== "loading"), busy: showSettings || showFeedback,
+    available: Boolean(index && loadState !== "loading"), busy: showFeedback,
     section: learningSection, subjectId: activeTabPath,
     openSection: section => {
       if (!index) return;
+      if (section === "property-schema") {
+        const configuredTypes = new Set(index.propertiesConfig?.entityTypes.definitions.map((type) => type.id) ?? []);
+        if (configuredTypes.has("character") && configuredTypes.has("location")) {
+          reportLearning("pathbranching-properties-ready");
+        }
+        openSettingsAt("properties", "template");
+        return;
+      }
+      setShowSettings(false);
       setView("workspace");
       const kind = section === "properties" ? "inspector" : section === "references" ? "links" : "explorer";
       if (!layoutHasPanel(workspaceLayout, kind)) toggleDockPanel(kind);
@@ -5636,6 +5668,37 @@ function WorldnotionWorkbench({
     const activeVariantLabel = readNoteVariants(
       parseFrontmatterRaw(rawToEditorParts(documentTab.rawMarkdown).frontmatterRaw),
     )[documentVariantId]?.label;
+    const documentPresentation = (() => {
+      if (!index || documentTab.mode !== "write") return null;
+      const entity = selectLiveEntity(index, documentTab.path, tabs);
+      const type = entity && getEntityTypeDefinition(index.propertiesConfig, entity.type);
+      if (!entity || !type) return null;
+
+      const editorParts = rawToEditorParts(documentTab.rawMarkdown);
+      const liveFrontmatter = parseFrontmatterRaw(editorParts.frontmatterRaw);
+      const frontmatter =
+        Object.keys(liveFrontmatter).length > 0
+          ? liveFrontmatter
+          : { ...entity.customProperties, type: entity.type, name: entity.name };
+      const effectiveFrontmatter = resolveVariantFrontmatter(frontmatter, documentVariantId);
+      return {
+        entity,
+        type,
+        frontmatter: effectiveFrontmatter,
+        portraitPath: getPresentationRoleValue(
+          index.propertiesConfig,
+          entity.type,
+          effectiveFrontmatter,
+          "portrait",
+        ),
+        coverPath: getPresentationRoleValue(
+          index.propertiesConfig,
+          entity.type,
+          effectiveFrontmatter,
+          "cover",
+        ),
+      };
+    })();
 
     return (
       <section
@@ -5783,59 +5846,26 @@ function WorldnotionWorkbench({
             <XmlReader value={documentTab.rawMarkdown} />
           ) : (
             <Suspense fallback={<LazyPanelFallback label="Loading editor..." />}>
-              {(() => {
-                const entity = selectLiveEntity(index, documentTab.path, tabs);
-                const type =
-                  entity && getEntityTypeDefinition(index?.propertiesConfig, entity.type);
-                // Use live frontmatter from editor if available, not from stale index
-                const editorParts = rawToEditorParts(documentTab.rawMarkdown);
-                const liveFrontmatter = parseFrontmatterRaw(editorParts.frontmatterRaw);
-                const frontmatter =
-                  Object.keys(liveFrontmatter).length > 0
-                    ? liveFrontmatter
-                    : entity?.customProperties
-                      ? { ...entity.customProperties, type: entity.type, name: entity.name }
-                      : {};
-                const effectiveFrontmatter = resolveVariantFrontmatter(
-                  frontmatter,
-                  documentVariantId,
-                );
-                const portraitPath = entity
-                  ? getPresentationRoleValue(
-                      index?.propertiesConfig,
-                      entity.type,
-                      effectiveFrontmatter,
-                      "portrait",
-                    )
-                  : undefined;
-                const coverPath = entity
-                  ? getPresentationRoleValue(
-                      index?.propertiesConfig,
-                      entity.type,
-                      effectiveFrontmatter,
-                      "cover",
-                    )
-                  : undefined;
-                return documentTab.mode === "write" && index && entity && type ? (
-                  <DocumentPresentation
-                    vaultIndex={index}
-                    name={
-                      typeof effectiveFrontmatter.name === "string"
-                        ? effectiveFrontmatter.name
-                        : entity.name
-                    }
-                    typeLabel={type.label}
-                    portraitPath={portraitPath}
-                    coverPath={coverPath}
-                    onDocumentNameChange={
-                      canWrite
-                        ? (newName) =>
-                            handleDocumentNameChange(documentTab.path, documentTab.title, newName)
-                        : undefined
-                    }
-                  />
-                ) : null;
-              })()}
+              {documentPresentation &&
+              (documentPresentation.portraitPath || documentPresentation.coverPath) ? (
+                <DocumentPresentation
+                  vaultIndex={index!}
+                  name={
+                    typeof documentPresentation.frontmatter.name === "string"
+                      ? documentPresentation.frontmatter.name
+                      : documentPresentation.entity.name
+                  }
+                  typeLabel={documentPresentation.type.label}
+                  hasPortrait={Boolean(documentPresentation.portraitPath)}
+                  coverPath={documentPresentation.coverPath}
+                  onDocumentNameChange={
+                    canWrite
+                      ? (newName) =>
+                          handleDocumentNameChange(documentTab.path, documentTab.title, newName)
+                      : undefined
+                  }
+                />
+              ) : null}
               <CodeMirrorEditor
                 key={documentTab.path}
                 value={editorDisplayValue(documentTab)}
@@ -5849,34 +5879,9 @@ function WorldnotionWorkbench({
                 pluginSettings={settings.plugins}
                 documentName={documentTab.title}
                 showDocumentHeader={
-                  !(() => {
-                    const entity = selectLiveEntity(index, documentTab.path, tabs);
-                    if (documentTab.mode !== "write" || !entity || !index) return true;
-                    const frontmatter = {
-                      ...entity.customProperties,
-                      type: entity.type,
-                      name: entity.name,
-                    };
-                    const effectiveFrontmatter = resolveVariantFrontmatter(
-                      frontmatter,
-                      documentVariantId,
-                    );
-                    return Boolean(
-                      getPresentationRoleValue(
-                        index.propertiesConfig,
-                        entity.type,
-                        effectiveFrontmatter,
-                        "portrait",
-                      ) ||
-                      getPresentationRoleValue(
-                        index.propertiesConfig,
-                        entity.type,
-                        effectiveFrontmatter,
-                        "cover",
-                      ),
-                    );
-                  })()
+                  !(documentPresentation?.portraitPath || documentPresentation?.coverPath)
                 }
+                presentationPortraitPath={documentPresentation?.portraitPath}
                 projectName={
                   index?.universeProfile?.name ??
                   (index?.rootPath ? pathName(index.rootPath) : undefined)
@@ -5963,6 +5968,7 @@ function WorldnotionWorkbench({
             ) : (
               <button
                 type="button"
+                data-onboarding-target="worldnotion.create-folder-note"
                 onClick={() => createFolderDescription(selectedExplorerTarget.path)}
               >
                 <Plus size={15} />
@@ -6226,11 +6232,11 @@ function WorldnotionWorkbench({
   }
 
   function handleDockClose(tab: DockTabRef) {
-    setActiveWorkspacePreset("custom");
     if (tab.kind === "document" && tab.path) {
       void closeTab(tab.path);
       return;
     }
+    setActiveWorkspacePreset("custom");
     setWorkspaceLayout((current) => closeDockLayoutTab(current, tab.id));
   }
 
@@ -6313,7 +6319,7 @@ function WorldnotionWorkbench({
   }
 
   function openSettingsAt(
-    section: "overview" | "utils" | "appearance-behavior" | "ai-advisor",
+    section: "overview" | "properties" | "utils" | "appearance-behavior" | "ai-advisor",
     propertiesMode: "template" | "blank" = "template",
   ) {
     setSettingsInitialSection(section);
@@ -6398,8 +6404,8 @@ function WorldnotionWorkbench({
                   if (preset !== "custom") applyDockPreset(preset);
                 }}
               >
-                {activeWorkspacePreset === "custom" ? <option value="custom">{surfaceText("Custom")}</option> : null}
                 <option value="default">{surfaceText("Default")}</option>
+                {activeWorkspacePreset === "custom" ? <option value="custom">{surfaceText("Custom")}</option> : null}
                 <option value="writing">{surfaceText("Writing")}</option>
                 <option value="graph">{surfaceText("Flow Map")}</option>
                 <option value="focus">{surfaceText("Focus")}</option>

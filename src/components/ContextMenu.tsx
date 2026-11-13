@@ -218,7 +218,7 @@ export function ContextMenu({
 
       <div className="context-menu-separator" />
 
-      <button type="button" onClick={() => run("newFolder")} className="context-menu-item">
+      <button type="button" data-onboarding-target="worldnotion.create-folder" onClick={() => run("newFolder")} className="context-menu-item">
         <FolderPlus size={16} />
         <span>{ui.newFolder}</span>
       </button>
@@ -242,6 +242,7 @@ export function ContextMenu({
             <>
               <button
                 type="button"
+                data-onboarding-target={!hasFolderDescription ? "worldnotion.create-folder-note" : undefined}
                 onClick={() => run("editFolderDescription")}
                 className="context-menu-item"
               >

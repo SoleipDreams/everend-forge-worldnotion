@@ -11,12 +11,20 @@ import {
 import { ArrowLeft, ChevronRight, Copy, Plus, Trash2, X } from "lucide-react";
 import type { CustomFieldType } from "../../editorTypes";
 import type { VisiblePropertyDefinition } from "../../utils/propertiesConfig";
+import type { PresentationRole } from "../../utils/entityPresentation";
 import { PROPERTY_TYPE_LABELS } from "./propertyTypeIcons";
 import { useUniverseDraft } from "../../hooks/useUniverseDraft";
 import { useAppIsActive } from "../../hooks/useAppInteraction";
 
 export type EditableOption = { value: string; label: string; color?: string };
 type EditorPanel = "types" | "options" | "conditions" | "parent" | "yaml";
+type PresentationTypeOption = {
+  id: string;
+  label: string;
+  portraitPropertyId?: string;
+  coverPropertyId?: string;
+  imageProperties: Array<{ id: string; label: string }>;
+};
 
 const SELECTABLE_TYPES = (Object.keys(PROPERTY_TYPE_LABELS) as CustomFieldType[]).filter(
   (type) => type !== "group",
@@ -34,12 +42,18 @@ export type PropertyEditorPopoverProps = {
   parentId: string;
   propertyPaths?: Record<string, string[]>;
   entityTypes?: Array<{ id: string; label: string }>;
+  presentationTypes?: PresentationTypeOption[];
   optionSets?: Record<string, EditableOption[]>;
   onClose: () => void;
   onRename: (label: string) => void;
   onChangeType: (type: CustomFieldType) => void;
   onUpdate: (patch: { description?: string; required?: boolean }) => void;
   onUpdateOptions: (options: EditableOption[]) => void;
+  onSetPresentationRole?: (
+    typeId: string,
+    role: PresentationRole,
+    propertyId?: string,
+  ) => void;
   onSetConditions?: (conditions: Record<string, string[]>) => void;
   onSetAppliesTo?: (typeIds: string[] | undefined) => void;
   onMoveParent: (parentId: string | null) => void;
@@ -66,12 +80,14 @@ export function PropertyEditorPopover({
   parentId,
   propertyPaths = {},
   entityTypes = [],
+  presentationTypes = [],
   optionSets = {},
   onClose,
   onRename,
   onChangeType,
   onUpdate,
   onUpdateOptions,
+  onSetPresentationRole,
   onSetConditions = () => undefined,
   onSetAppliesTo = () => undefined,
   onMoveParent,
@@ -469,6 +485,59 @@ export function PropertyEditorPopover({
                     <Plus size={13} />
                     Add option
                   </button>
+                  {property.id === "type" ? (
+                    <section className="property-editor-presentation-settings">
+                      <div className="property-editor-presentation-heading">
+                        <strong>Writing images</strong>
+                        <p>Choose which image properties appear as a banner or portrait.</p>
+                      </div>
+                      {presentationTypes.map((type) => (
+                        <div className="property-editor-type-presentation" key={type.id}>
+                          <strong>{type.label}</strong>
+                          {(["portrait", "cover"] as PresentationRole[]).map((role) => {
+                            const roleLabel = role === "portrait" ? "Portrait" : "Banner";
+                            const currentPropertyId =
+                              role === "portrait"
+                                ? type.portraitPropertyId
+                                : type.coverPropertyId;
+                            return (
+                              <label key={role}>
+                                <span>{roleLabel}</span>
+                                <select
+                                  aria-label={`${type.label} ${roleLabel.toLowerCase()} image`}
+                                  value={currentPropertyId ?? ""}
+                                  disabled={!onSetPresentationRole || type.imageProperties.length === 0}
+                                  onChange={(event) =>
+                                    onSetPresentationRole?.(
+                                      type.id,
+                                      role,
+                                      event.target.value || undefined,
+                                    )
+                                  }
+                                >
+                                  <option value="">None</option>
+                                  {currentPropertyId &&
+                                  !type.imageProperties.some(
+                                    (imageProperty) => imageProperty.id === currentPropertyId,
+                                  ) ? (
+                                    <option value={currentPropertyId}>Unavailable image field</option>
+                                  ) : null}
+                                  {type.imageProperties.map((imageProperty) => (
+                                    <option key={imageProperty.id} value={imageProperty.id}>
+                                      {imageProperty.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            );
+                          })}
+                          {type.imageProperties.length === 0 ? (
+                            <small>No image properties are available for this type.</small>
+                          ) : null}
+                        </div>
+                      ))}
+                    </section>
+                  ) : null}
                 </>
               ) : null}
 

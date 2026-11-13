@@ -10,21 +10,20 @@ vi.mock("../utils/vaultImages", () => ({
 }));
 
 describe("DocumentPresentation", () => {
-  it("renders a clean cover, portrait, type, and title", () => {
+  it("renders a banner, type, and title", () => {
     const { container } = render(
       <DocumentPresentation
         vaultIndex={makeVaultIndex()}
         name="Mara Voss"
         typeLabel="Character"
-        portraitPath="mara"
+        hasPortrait
         coverPath="veil"
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Mara Voss" })).toBeInTheDocument();
-    expect(screen.getByAltText("Mara Voss portrait")).toBeInTheDocument();
     expect(screen.getByText("Character")).toBeInTheDocument();
-    expect(container.querySelectorAll("img")).toHaveLength(2);
+    expect(container.querySelectorAll("img")).toHaveLength(1);
   });
 
   it("does not reserve presentation space when no role has a value", () => {
@@ -34,16 +33,16 @@ describe("DocumentPresentation", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("supports portrait-only and cover-only headers", () => {
+  it("keeps the title above the writing area when only a portrait is configured", () => {
     const { rerender, container } = render(
       <DocumentPresentation
         vaultIndex={makeVaultIndex()}
         name="Mara"
         typeLabel="Character"
-        portraitPath="mara"
+        hasPortrait
       />,
     );
-    expect(screen.getByAltText("Mara portrait")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mara" })).toBeInTheDocument();
     expect(container.querySelector(".document-presentation-cover")).toBeNull();
 
     rerender(
@@ -54,7 +53,6 @@ describe("DocumentPresentation", () => {
         coverPath="veil"
       />,
     );
-    expect(screen.queryByAltText("Mara portrait")).not.toBeInTheDocument();
     expect(container.querySelector(".document-presentation-cover")).toBeInTheDocument();
   });
 
@@ -65,7 +63,7 @@ describe("DocumentPresentation", () => {
         vaultIndex={makeVaultIndex()}
         name="Mara"
         typeLabel="Character"
-        portraitPath="mara"
+        hasPortrait
         onDocumentNameChange={rename}
       />,
     );

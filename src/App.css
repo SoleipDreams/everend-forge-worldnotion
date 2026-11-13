@@ -4680,7 +4680,7 @@
 .forge-worldnotion
   .inspector
   section
-  > :is(.variant-selector-shell, .inspector-subviews, .metadata-editor) {
+  > :is(.variant-selector-shell, .metadata-editor) {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -13297,6 +13297,70 @@
   gap: 4px;
 }
 
+.forge-worldnotion .property-editor-presentation-settings {
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--wn-border) 72%, transparent);
+}
+
+.forge-worldnotion .property-editor-presentation-heading strong,
+.forge-worldnotion .property-editor-type-presentation > strong {
+  display: block;
+  color: var(--wn-text);
+  font-size: 0.78rem;
+}
+
+.forge-worldnotion .property-editor-presentation-heading p {
+  margin: 3px 0 0;
+  color: var(--wn-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.forge-worldnotion .property-editor-type-presentation {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--wn-border);
+  border-radius: 7px;
+  background: var(--wn-panel-2);
+}
+
+.forge-worldnotion .property-editor-type-presentation label {
+  display: grid;
+  grid-template-columns: minmax(60px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 7px;
+  color: var(--wn-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.forge-worldnotion .property-editor-type-presentation select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 29px;
+  padding: 4px 6px;
+  border: 1px solid var(--wn-border);
+  border-radius: 5px;
+  background: var(--wn-bg);
+  color: var(--wn-text);
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.forge-worldnotion .property-editor-type-presentation select:disabled {
+  opacity: 0.58;
+}
+
+.forge-worldnotion .property-editor-type-presentation small {
+  color: var(--wn-muted);
+  font-size: 0.68rem;
+}
+
 .forge-worldnotion .property-editor-choice-list label {
   display: flex;
   align-items: center;
@@ -13894,17 +13958,6 @@
 /* ===================== Inline image widget (editor) ===================== */
 
 /* ===================== Per-type note presentation ===================== */
-
-.forge-worldnotion .inspector-subviews {
-  display: flex;
-  gap: 4px;
-  margin: 0 0 12px;
-  padding: 3px;
-  border: 1px solid var(--wn-border, rgba(127, 127, 127, 0.22));
-  border-radius: 9px;
-  background: var(--wn-surface-muted, rgba(127, 127, 127, 0.08));
-}
-
 .forge-worldnotion .variant-selector {
   display: flex;
   align-items: center;
@@ -14029,124 +14082,19 @@
   background: color-mix(in srgb, var(--wn-accent, #3b82f6) 4%, transparent);
 }
 
-.forge-worldnotion .inspector-subviews button {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 28px;
-  border: 0;
-  border-radius: 6px;
-  color: var(--wn-text-muted, #718096);
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.forge-worldnotion .inspector-subviews button.active {
-  color: var(--wn-text, #1f2937);
-  background: var(--wn-editor-bg, #fff);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.forge-worldnotion .presentation-editor {
-  display: grid;
-  gap: 12px;
-}
-
-.forge-worldnotion .presentation-editor-heading {
-  display: grid;
-  gap: 6px;
-  padding: 4px 2px;
-}
-
-.forge-worldnotion .presentation-editor-heading h3,
-.forge-worldnotion .presentation-role-heading p,
-.forge-worldnotion .presentation-editor-heading p,
-.forge-worldnotion .presentation-empty-state p {
-  margin: 0;
-}
-
-.forge-worldnotion .presentation-editor-heading h3 {
-  font-size: 15px;
-}
-
-.forge-worldnotion .presentation-editor-heading > p,
-.forge-worldnotion .presentation-role-heading p,
-.forge-worldnotion .presentation-empty-state p {
-  color: var(--wn-text-muted, #718096);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.forge-worldnotion .presentation-editor-eyebrow {
-  color: var(--wn-accent, #3b82f6);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.forge-worldnotion .presentation-role-card,
-.forge-worldnotion .presentation-empty-state {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--wn-border, rgba(127, 127, 127, 0.22));
-  border-radius: 10px;
-  background: var(--wn-card, #ffffff);
-}
-
-.forge-worldnotion .presentation-role-heading {
-  display: flex;
-  gap: 8px;
-}
-
-.forge-worldnotion .presentation-role-heading > svg,
-.forge-worldnotion .presentation-empty-state > svg {
-  flex: 0 0 auto;
-  color: var(--wn-accent, #3b82f6);
-}
-
-.forge-worldnotion .presentation-role-heading strong,
-.forge-worldnotion .presentation-empty-state strong {
-  display: block;
-  margin-bottom: 2px;
-  font-size: 13px;
-}
-
-.forge-worldnotion .presentation-role-select {
-  display: grid;
-  gap: 4px;
-  color: var(--wn-text-muted, #718096);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.forge-worldnotion .presentation-role-select select {
-  width: 100%;
-  min-height: 30px;
-  border: 1px solid var(--wn-border, rgba(127, 127, 127, 0.28));
-  border-radius: 6px;
-  color: var(--wn-text, #1f2937);
-  background: var(--wn-editor-bg, #fff);
-  font: inherit;
-  font-size: 12px;
-}
-
-.forge-worldnotion .presentation-role-assignment {
-  display: grid;
-  gap: 8px;
-}
-
 .forge-worldnotion .document-presentation {
   overflow: hidden;
   margin: 0 0 14px;
   border: 1px solid var(--wn-border, rgba(127, 127, 127, 0.22));
   border-radius: 10px;
   background: var(--wn-card, #ffffff);
+}
+
+.forge-worldnotion .editor-surface.mode-write > .document-presentation {
+  box-sizing: border-box;
+  width: min(920px, 100%);
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .forge-worldnotion .document-presentation-cover {
@@ -14222,15 +14170,30 @@
   border-color: var(--wn-danger, #dc2626);
 }
 
-.forge-worldnotion .document-presentation-portrait {
-  width: 70px;
-  height: 92px;
-  flex: 0 0 auto;
-  border: 3px solid var(--wn-card, #fff);
+.forge-worldnotion .cm-presentation-portrait {
+  display: block;
+  float: left;
+  width: clamp(136px, 25%, 224px);
+  max-width: 38%;
+  margin: 0 26px 14px 0;
+  overflow: hidden;
+  border: 1px solid var(--wn-border);
   border-radius: 9px;
-  background: var(--wn-panel-2, rgba(127, 127, 127, 0.08));
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  background: var(--wn-panel-2);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+  line-height: 0;
+  shape-outside: margin-box;
+}
+
+.forge-worldnotion .cm-presentation-portrait img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
+}
+
+.forge-worldnotion .cm-presentation-portrait-unavailable {
+  display: none;
 }
 
 @media (max-width: 560px) {
@@ -14242,9 +14205,9 @@
     padding: 10px 12px;
   }
 
-  .forge-worldnotion .document-presentation-portrait {
-    width: 56px;
-    height: 74px;
+  .forge-worldnotion .cm-presentation-portrait {
+    width: clamp(112px, 34%, 156px);
+    margin-right: 16px;
   }
 }
 

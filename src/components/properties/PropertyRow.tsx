@@ -72,6 +72,7 @@ export function PropertyRow({
     return (
       <div
         className={`property-row property-row-locked property-row-depth-${node.depth}`}
+        data-onboarding-target={property.id === "type" ? "worldnotion.entity-type" : undefined}
         onContextMenu={(event) => handlers.onContextMenu(event, property)}
       >
         <span className="property-row-key">
@@ -126,6 +127,7 @@ export function PropertyRow({
       <div
         className={`property-row property-row-depth-${node.depth} ${isGroup ? "property-row-group" : ""}`}
         data-property-id={property.id}
+        data-onboarding-target={property.id === "type" ? "worldnotion.entity-type" : undefined}
         onContextMenu={(event) => handlers.onContextMenu(event, property)}
       >
         <button

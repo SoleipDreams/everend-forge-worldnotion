@@ -4,6 +4,7 @@ import {
   getPresentationRoleValue,
   listPresentationImageProperties,
   reconcileEntityPresentations,
+  updateEntityTypePresentation,
   validateEntityPresentations,
 } from "./entityPresentation";
 import { validatePropertiesConfig } from "./propertiesSerializer";
@@ -82,6 +83,15 @@ describe("entity presentation", () => {
       reconcileEntityPresentations(properties).entityTypes.definitions[0].presentation,
     ).toEqual({
       portraitPropertyId: "portrait",
+      coverPropertyId: undefined,
+    });
+  });
+
+  it("keeps one image property assigned to only one presentation role per type", () => {
+    const properties = config();
+    const next = updateEntityTypePresentation(properties, "character", "portrait", "cover");
+    expect(next.entityTypes.definitions[0].presentation).toEqual({
+      portraitPropertyId: "cover",
       coverPropertyId: undefined,
     });
   });

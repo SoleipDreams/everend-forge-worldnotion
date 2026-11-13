@@ -1644,7 +1644,7 @@ export function SettingsModal({
             ) : null}
 
             {universe ? (
-              <div className="settings-panel" hidden={activeSection !== "properties"}>
+              <div className="settings-panel" hidden={activeSection !== "properties"} data-onboarding-target="worldnotion.properties-settings">
                 <DialogProvider><PropertiesManager locale={interfaceLocale}
                   config={propertiesDraft}
                   onChange={(config) => {

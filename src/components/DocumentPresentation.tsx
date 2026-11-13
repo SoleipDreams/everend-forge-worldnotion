@@ -7,7 +7,7 @@ type DocumentPresentationProps = {
   vaultIndex: VaultIndex;
   name: string;
   typeLabel: string;
-  portraitPath?: string;
+  hasPortrait?: boolean;
   coverPath?: string;
   onDocumentNameChange?: (newName: string) => Promise<void> | void;
 };
@@ -132,15 +132,14 @@ export function DocumentPresentation({
   vaultIndex,
   name,
   typeLabel,
-  portraitPath,
+  hasPortrait = false,
   coverPath,
   onDocumentNameChange,
 }: DocumentPresentationProps) {
-  const portrait = useVaultImage(vaultIndex, portraitPath ?? "");
   const cover = useVaultImage(vaultIndex, coverPath ?? "");
   // A configured but unavailable file must not leave a blank media frame. The
   // title remains available, and the generic CodeMirror header stays suppressed.
-  if (!portraitPath && !coverPath) return null;
+  if (!hasPortrait && !coverPath) return null;
 
   return (
     <header className="document-presentation" aria-label={`${name} presentation`}>
@@ -150,13 +149,6 @@ export function DocumentPresentation({
         </div>
       ) : null}
       <div className={`document-presentation-title ${cover.url ? "has-cover" : ""}`}>
-        {portrait.url ? (
-          <img
-            className="document-presentation-portrait"
-            src={portrait.url}
-            alt={`${name} portrait`}
-          />
-        ) : null}
         <div>
           <p>{typeLabel}</p>
           <EditablePresentationTitle name={name} onDocumentNameChange={onDocumentNameChange} />

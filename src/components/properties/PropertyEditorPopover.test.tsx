@@ -28,6 +28,7 @@ function renderPopover(props: Partial<React.ComponentProps<typeof PropertyEditor
     onChangeType: vi.fn(),
     onUpdate: vi.fn(),
     onUpdateOptions: vi.fn(),
+    onSetPresentationRole: vi.fn(),
     onSetConditions: vi.fn(),
     onSetAppliesTo: vi.fn(),
     onMoveParent: vi.fn(),
@@ -128,6 +129,45 @@ describe("PropertyEditorPopover", () => {
     expect(handlers.onUpdateOptions).toHaveBeenCalled();
     const nextOptions = handlers.onUpdateOptions.mock.calls[0][0] as EditableOption[];
     expect(nextOptions.length).toBe(typeOptions.length + 1);
+  });
+
+  it("assigns banner and portrait image fields from the Type options panel", () => {
+    const typeProperty = selectProperty({ id: "type", label: "Type", options: undefined });
+    const handlers = renderPopover({
+      property: typeProperty,
+      editableOptions: [{ value: "character", label: "Character" }],
+      presentationTypes: [
+        {
+          id: "character",
+          label: "Character",
+          imageProperties: [
+            { id: "portrait", label: "Portrait image" },
+            { id: "banner", label: "Banner image" },
+          ],
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /options/i }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Character portrait image" }), {
+      target: { value: "portrait" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "Character banner image" }), {
+      target: { value: "banner" },
+    });
+
+    expect(handlers.onSetPresentationRole).toHaveBeenNthCalledWith(
+      1,
+      "character",
+      "portrait",
+      "portrait",
+    );
+    expect(handlers.onSetPresentationRole).toHaveBeenNthCalledWith(
+      2,
+      "character",
+      "cover",
+      "banner",
+    );
   });
 
   it("adds a condition immediately and commits its default selectable value", () => {

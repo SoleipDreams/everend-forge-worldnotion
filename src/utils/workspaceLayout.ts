@@ -172,6 +172,22 @@ export function createWorkspaceLayoutPreset(
   });
 }
 
+export function identifyWorkspaceLayoutPreset(
+  layout: WorkspaceLayoutV1,
+  tabs: Array<OpenTab | PersistedOpenTab> = [],
+  options: { activePath?: string } = {},
+): WorkspaceLayoutPreset | "custom" {
+  const presets: WorkspaceLayoutPreset[] = ["default", "writing", "graph", "focus"];
+  return (
+    presets.find((preset) =>
+      dockNodesHaveSameStructure(
+        layout.root,
+        createWorkspaceLayoutPreset(preset, tabs, options).root,
+      ),
+    ) ?? "custom"
+  );
+}
+
 export function layoutHasTab(layout: WorkspaceLayoutV1, tabId: string): boolean {
   return Boolean(findTab(layout.root, tabId));
 }
@@ -546,7 +562,10 @@ function removeTab(
 
 function pruneNode(node: DockNode): DockNode | undefined {
   if (node.type === "group") {
-    return node.tabs.length ? node : undefined;
+    // The empty document group is a positional anchor. Removing it when no
+    // notes are open makes ensureDocumentAnchor recreate it at the root and
+    // nests panels such as the Explorer in a much narrower split.
+    return node.tabs.length || node.id === DOCUMENT_GROUP_ID ? node : undefined;
   }
 
   const first = pruneNode(node.first);
@@ -701,4 +720,24 @@ function sanitizeId(value: string): string {
 function clampSplitRatio(ratio: number): number {
   if (!Number.isFinite(ratio)) return 0.5;
   return Math.min(0.82, Math.max(0.18, Number(ratio.toFixed(4))));
+}
+
+function dockNodesHaveSameStructure(left: DockNode, right: DockNode): boolean {
+  if (left.type !== right.type) return false;
+  if (left.type === "split" && right.type === "split") {
+    return (
+      left.id === right.id &&
+      left.direction === right.direction &&
+      left.ratio === right.ratio &&
+      dockNodesHaveSameStructure(left.first, right.first) &&
+      dockNodesHaveSameStructure(left.second, right.second)
+    );
+  }
+  if (left.type !== "group" || right.type !== "group") return false;
+  return (
+    left.id === right.id &&
+    left.role === right.role &&
+    left.tabs.length === right.tabs.length &&
+    left.tabs.every((tab, index) => tab.id === right.tabs[index]?.id)
+  );
 }
