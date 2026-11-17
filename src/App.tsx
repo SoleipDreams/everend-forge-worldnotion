@@ -106,6 +106,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { JsonReader } from "./components/JsonReader";
 import { XmlReader } from "./components/XmlReader";
 import { EditorModeSelector } from "./components/EditorModeSelector";
+import { EditorDocumentSurface } from "./components/EditorDocumentSurface";
 import { LazyPanelFallback } from "./components/LazyPanelFallback";
 import { UniverseIconFrame } from "./components/UniverseIconFrame";
 import { DockWorkspace, type DockMoveRequest } from "./components/DockWorkspace";
@@ -122,7 +123,6 @@ import {
   OpenTab,
   ThemeId,
   GraphSettings,
-  WritingMode,
 } from "./editorTypes";
 import {
   Entity,
@@ -190,7 +190,11 @@ import {
   serializeVaultAppearance,
   serializeVaultAppearanceSettings,
 } from "./utils/vaultAppearanceSettings";
-import { getEntityTypeDefinition, getPresentationRoleValue } from "./utils/entityPresentation";
+import {
+  getEntityTypeDefinition,
+  getPresentationRolePropertyId,
+  getPresentationRoleValue,
+} from "./utils/entityPresentation";
 import {
   BASE_VARIANT_ID,
   deleteVariant,
@@ -199,6 +203,7 @@ import {
   readNoteVariants,
   resolveVariantFrontmatter,
   resolveVariantId,
+  setVariantOverride,
   updateVariantsInRawYaml,
 } from "./utils/noteVariants";
 import {
@@ -208,7 +213,6 @@ import {
   buildTagResults,
 } from "./utils/commandResults";
 import {
-  bodyToRawMarkdown,
   contentFromTemplate,
   createEntityFrontmatter,
   folderDescriptionContent,
@@ -241,11 +245,11 @@ import {
   updateOpenTabsForPathChange,
   isJsonPath,
   isXmlPath,
-  withTabEditorMode,
 } from "./utils/tabUtils";
 import {
   DOCUMENT_TAB_GROUP_COLORS,
   createGroupFromTab,
+  groupDocumentTabs,
   moveDocumentTabInGroups,
   normalizeDocumentTabGroups,
   removeTabFromGroups,
@@ -376,6 +380,7 @@ import { planUniverseWorkspaceState } from "./utils/universeApply";
 import { markSavedTabInList, saveFilePayloadForTab } from "./utils/editorPersistence";
 import { UniverseSaveCoordinator } from "./utils/universeSaveCoordinator";
 import { UniverseDraftContext, UniverseDraftRegistry } from "./hooks/useUniverseDraft";
+import { useEditorDocumentController } from "./hooks/useEditorDocumentController";
 import { useAppKeyboard } from "./hooks/useAppKeyboard";
 import { AppInteractionContext } from "./hooks/useAppInteraction";
 import { resolveWikilinkInIndex } from "./utils/wikilinkResolver";
@@ -416,7 +421,6 @@ import {
 } from "./utils/workspaceLayout";
 import { isPluginEnabled } from "./utils/pluginRegistry";
 import { DocumentPresentation } from "./components/DocumentPresentation";
-import { paragraphLinePositions, paragraphSpacingEffect } from "./utils/paragraphSpacing";
 
 const CommandPalette = lazy(() =>
   import("./components/CommandPalette").then((module) => ({ default: module.CommandPalette })),
@@ -608,6 +612,7 @@ function WorldnotionWorkbench({
     setActiveTabPath,
     workspaceLayout,
     setWorkspaceLayout,
+    updateWorkspaceDocumentState,
     expandedPaths,
     setExpandedPaths,
   } = useWorkspaceState({
@@ -688,7 +693,7 @@ function WorldnotionWorkbench({
     visualHistoriesRef.current.clear();
     editorRootRef.current = index?.rootPath;
   }
-  const editorShellRef = useRef<HTMLDivElement | null>(null);
+  const editorShellRef = useRef<HTMLElement | null>(null);
   const forgeMenuRef = useRef<HTMLDivElement | null>(null);
   const saveCoordinatorRef = useRef(new UniverseSaveCoordinator());
   const propertiesOnboardingPromptedRef = useRef<Set<string>>(new Set());
@@ -1238,10 +1243,10 @@ function WorldnotionWorkbench({
   const folderDescriptionPaths = useMemo(() => {
     const paths = new Set<string>();
     if (!index) return paths;
+    const filePaths = new Set(index.files.map((file) => file.relativePath));
     index.directories.forEach((folderPath) => {
       const descriptionPath = folderDescriptionPath(folderPath);
-      if (index.files.some((file) => file.relativePath === descriptionPath))
-        paths.add(descriptionPath);
+      if (filePaths.has(descriptionPath)) paths.add(descriptionPath);
     });
     return paths;
   }, [index]);
@@ -1477,10 +1482,20 @@ function WorldnotionWorkbench({
   }
 
   function handleCreateItemMenu(x: number, y: number) {
+    if (!index) return;
+    const selectedFolderPath = selectedPath
+      ? pathExists(index, selectedPath, "folder")
+        ? selectedPath
+        : dirname(selectedPath)
+      : "";
     setContextMenu({
       x,
       y,
-      targetPath: focusedFolderPath ?? "",
+      targetPath:
+        focusedFolderPath ??
+        (selectedFolderPath && pathExists(index, selectedFolderPath, "folder")
+          ? selectedFolderPath
+          : ""),
       targetKind: "empty",
     });
   }
@@ -1605,12 +1620,22 @@ function WorldnotionWorkbench({
       ),
     );
     setVisualRecoveryOffers((current) => moveVisualRecovery(current, change));
-    setTabs((current) => {
-      const changed = updateOpenTabsForPathChange(current, change, index?.rootPath);
-      return updateChangedTab ? changed.map(updateChangedTab) : changed;
+    updateWorkspaceDocumentState((current) => {
+      const changed = updateOpenTabsForPathChange(current.tabs, change, index?.rootPath);
+      const nextTabs = updateChangedTab ? changed.map(updateChangedTab) : changed;
+      const nextLayout = updateLayoutForPathChange(current.workspaceLayout, change);
+      const nextActivePath =
+        current.activeTabPath && pathIsAffectedByChanges(current.activeTabPath, change)
+          ? pathAfterChanges(current.activeTabPath, change)
+          : current.activeTabPath;
+      return {
+        ...current,
+        tabs: nextTabs,
+        activeTabPath: nextActivePath,
+        workspaceLayout: nextLayout,
+        documentTabGroups: updateGroupsForPathChange(current.documentTabGroups, change),
+      };
     });
-    setWorkspaceLayout((current) => updateLayoutForPathChange(current, change));
-    setDocumentTabGroups((current) => updateGroupsForPathChange(current, change));
     setExpandedPaths((current) => {
       const next = new Set<string>();
       current.forEach((path) => {
@@ -1666,9 +1691,6 @@ function WorldnotionWorkbench({
           },
         };
       });
-    }
-    if (pathIsAffectedByChanges(activeTabPath, change) && activeTabPath) {
-      setActiveTabPath(pathAfterChanges(activeTabPath, change));
     }
     if (pathIsAffectedByChanges(selectedPath, change) && selectedPath) {
       setSelectedPath(pathAfterChanges(selectedPath, change));
@@ -3037,8 +3059,13 @@ function WorldnotionWorkbench({
       pathChange,
     });
 
-    setWorkspaceLayout(workspacePlan.layout);
-    setDocumentTabGroups(workspacePlan.documentTabGroups);
+    updateWorkspaceDocumentState((current) => ({
+      ...current,
+      tabs: workspacePlan.tabs,
+      activeTabPath: workspacePlan.tabs.length ? workspacePlan.nextPath : undefined,
+      workspaceLayout: workspacePlan.layout,
+      documentTabGroups: workspacePlan.documentTabGroups,
+    }));
     setActiveWorkspacePreset(
       identifyWorkspaceLayoutPreset(workspacePlan.layout, workspacePlan.tabs, {
         activePath: workspacePlan.nextPath,
@@ -3046,16 +3073,12 @@ function WorldnotionWorkbench({
     );
     // Replace the outgoing session before opening a fallback document.
     // openDocument must never reuse a same-named tab from another universe.
-    setTabs(workspacePlan.tabs);
     if (workspacePlan.tabs.length) {
-      setActiveTabPath(workspacePlan.nextPath);
       setSelectedPath(workspacePlan.nextPath);
     } else if (workspacePlan.nextPath) {
       openDocument(nextIndex, workspacePlan.nextPath);
     } else {
       setSelectedPath(undefined);
-      setActiveTabPath(undefined);
-      setTabs([]);
     }
     return nextIndex;
   }
@@ -3254,6 +3277,32 @@ function WorldnotionWorkbench({
 
   const resolveWikilink = (label: string) => resolveWikilinkInIndex(index, label);
 
+  const editorDocumentController = useEditorDocumentController({
+    getTabs: () => tabsRef.current,
+    setTabs,
+    persistDocument: saveTab,
+    onReferenceAdded: (path, previousMarkdown, nextMarkdown) => {
+      const oldLinks = new Set(
+        Array.from(previousMarkdown.matchAll(/\[\[([^\]]+)\]\]/g), (match) => match[1]),
+      );
+      const addedResolvedLink = Array.from(
+        nextMarkdown.matchAll(/\[\[([^\]]+)\]\]/g),
+        (match) => match[1],
+      ).some(
+        (link) =>
+          !oldLinks.has(link) && resolveWikilink(link.split("|")[0].split("#")[0]),
+      );
+      if (addedResolvedLink) reportLearning("reference-added", path);
+    },
+  });
+
+  function handleSettingsChange(nextSettings: typeof settings) {
+    if (nextSettings.editor.defaultMode !== settings.editor.defaultMode) {
+      editorDocumentController.applyModeToOpenTabs(nextSettings.editor.defaultMode);
+    }
+    setSettings(nextSettings);
+  }
+
   function reportSavedNoteLearningEvents(path: string, content: string) {
     reportLearning("note-saved", path);
     const frontmatter = parseFrontmatterRaw(rawToEditorParts(content).frontmatterRaw);
@@ -3301,6 +3350,73 @@ function WorldnotionWorkbench({
     if (!file) return null;
     const path = await persistImageFile(file);
     return path ? { path, alt: file.name.replace(/\.[^.]+$/, "") } : null;
+  }
+
+  function setPresentationImageValue(
+    path: string,
+    typeId: string,
+    role: "portrait" | "cover",
+    variantId: string,
+    imagePath: string | null,
+  ) {
+    if (!index) return;
+    const propertyId = getPresentationRolePropertyId(index.propertiesConfig, typeId, role);
+    const tab = tabsRef.current.find((entry) => entry.path === path);
+    if (!propertyId || !tab) return;
+
+    const parts = rawToEditorParts(tab.rawMarkdown);
+    const frontmatter = parseFrontmatterRaw(parts.frontmatterRaw);
+    const nextYaml =
+      variantId !== BASE_VARIANT_ID
+        ? updateVariantsInRawYaml(
+            parts.frontmatterRaw,
+            setVariantOverride(
+              frontmatter,
+              index.propertiesConfig,
+              variantId,
+              propertyId,
+              imagePath ?? null,
+            ),
+            index.propertiesConfig,
+            typeId,
+          )
+        : imagePath
+          ? updateFrontmatterProperties(
+              parts.frontmatterRaw,
+              { [propertyId]: imagePath },
+              index.propertiesConfig,
+              typeId,
+            )
+          : removeFrontmatterProperty(
+              parts.frontmatterRaw,
+              propertyId,
+              index.propertiesConfig,
+              typeId,
+            );
+    const nextMarkdown = joinMarkdown(nextYaml, parts.bodyMarkdown);
+    if (nextMarkdown === tab.rawMarkdown) return;
+
+    reportLearning("property-edited", path);
+    setTabs((current) =>
+      current.map((entry) =>
+        entry.path === path
+          ? { ...entry, rawMarkdown: nextMarkdown, dirty: nextMarkdown !== entry.savedMarkdown }
+          : entry,
+      ),
+    );
+    scheduleInspectorFrontmatterSave(path, nextMarkdown);
+  }
+
+  async function choosePresentationImage(
+    path: string,
+    typeId: string,
+    role: "portrait" | "cover",
+    variantId: string,
+  ) {
+    const file = await pickImageFile();
+    if (!file) return;
+    const imagePath = await persistImageFile(file);
+    if (imagePath) setPresentationImageValue(path, typeId, role, variantId, imagePath);
   }
 
   async function createTemplate() {
@@ -3513,26 +3629,6 @@ function WorldnotionWorkbench({
     }
   }
 
-  function updateRawMarkdownForPath(path: string, rawMarkdown: string) {
-    const previous = tabsRef.current.find(tab => tab.path === path);
-    if (previous) {
-      const oldLinks = new Set(Array.from(previous.rawMarkdown.matchAll(/\[\[([^\]]+)\]\]/g), match => match[1]));
-      if (Array.from(rawMarkdown.matchAll(/\[\[([^\]]+)\]\]/g), match => match[1]).some(link => !oldLinks.has(link) && resolveWikilink(link.split("|")[0].split("#")[0]))) reportLearning("reference-added", path);
-    }
-    setTabs((current) =>
-      current.map((tab) => {
-        if (tab.path !== path) return tab;
-        const nextRawMarkdown =
-          tab.mode === "write" ? bodyToRawMarkdown(tab, rawMarkdown) : rawMarkdown;
-        return {
-          ...tab,
-          rawMarkdown: nextRawMarkdown,
-          dirty: nextRawMarkdown !== tab.savedMarkdown,
-        };
-      }),
-    );
-  }
-
   function visualUndoRedo(path: string, redo: boolean) {
     const tab = tabsRef.current.find((tab) => tab.path === path);
     if (!tab) return;
@@ -3699,24 +3795,6 @@ function WorldnotionWorkbench({
     }
   }
 
-  function setTabMode(path: string, mode: OpenTab["mode"]) {
-    setTabs((current) =>
-      current.map((tab) => (tab.path === path ? withTabEditorMode(tab, mode) : tab)),
-    );
-  }
-
-  function setTabWritingMode(path: string, writingMode: WritingMode) {
-    setTabs((current) =>
-      current.map((tab) => (tab.path === path ? withTabEditorMode(tab, writingMode) : tab)),
-    );
-  }
-
-  function setTabSourceView(path: string, sourceView: NonNullable<OpenTab["sourceView"]>) {
-    setTabs((current) =>
-      current.map((tab) => (tab.path === path ? { ...tab, mode: "source", sourceView } : tab)),
-    );
-  }
-
   async function persistInspectorFrontmatter(path: string, content: string): Promise<boolean> {
     const tab = tabsRef.current.find((candidate) => candidate.path === path);
     if (!tab || tab.rawMarkdown !== content) return true;
@@ -3858,7 +3936,7 @@ function WorldnotionWorkbench({
 
   async function saveEditor() {
     if (!activeTabPath) return;
-    await saveTab(activeTabPath);
+    await editorDocumentController.save(activeTabPath);
   }
 
   async function saveTab(path: string): Promise<boolean> {
@@ -4215,17 +4293,25 @@ function WorldnotionWorkbench({
       visualRecoveryRef.current.pending.add(path);
       setVisualRecoveryOffers((current) => ({ ...current, [path]: snapshot }));
     }
-    setWorkspaceLayout((current) => closeDockLayoutTab(current, documentDockTabId(path)));
-    setDocumentTabGroups((current) => removeTabFromGroups(current, path));
-    setTabs((current) => {
-      const result = closeOpenTab(current, activeTabPath, path);
-      if (result.activePath !== activeTabPath) {
-        setActiveTabPath(result.activePath);
-        setSelectedPath(result.activePath);
-        setFloatingToolbarRect(undefined);
-      }
-      return result.tabs;
+    let nextActivePath: string | undefined;
+    updateWorkspaceDocumentState((current) => {
+      const result = closeOpenTab(current.tabs, current.activeTabPath, path);
+      nextActivePath = result.activePath;
+      return {
+        ...current,
+        tabs: result.tabs,
+        activeTabPath: result.activePath,
+        documentTabGroups: removeTabFromGroups(current.documentTabGroups, path),
+        workspaceLayout: closeDockLayoutTab(
+          current.workspaceLayout,
+          documentDockTabId(path),
+        ),
+      };
     });
+    if (nextActivePath !== activeTabPath) {
+      setSelectedPath(nextActivePath);
+      setFloatingToolbarRect(undefined);
+    }
   }
 
   async function closeTab(path = activeTabPath) {
@@ -4349,14 +4435,17 @@ function WorldnotionWorkbench({
 
   function closeSavedTabs() {
     if (blockCloseForVisualDrafts(tabs.filter((tab) => !tab.dirty).map((tab) => tab.path))) return;
-    setTabs((current) => {
-      const result = closeSavedOpenTabs(current, activeTabPath);
-      if (result.activePath !== activeTabPath) {
-        setActiveTabPath(result.activePath);
-        setSelectedPath(result.activePath);
-      }
-      return result.tabs;
+    let nextActivePath: string | undefined;
+    updateWorkspaceDocumentState((current) => {
+      const result = closeSavedOpenTabs(current.tabs, current.activeTabPath);
+      nextActivePath = result.activePath;
+      return {
+        ...current,
+        tabs: result.tabs,
+        activeTabPath: result.activePath,
+      };
     });
+    if (nextActivePath !== activeTabPath) setSelectedPath(nextActivePath);
     setTabContextMenu(null);
   }
 
@@ -4367,40 +4456,83 @@ function WorldnotionWorkbench({
     const targetIndex = input.targetPath
       ? remaining.findIndex((tab) => tab.path === input.targetPath)
       : remaining.length;
-    const insertIndex = targetIndex === -1 ? remaining.length : targetIndex;
+    const insertIndex = targetIndex === -1
+      ? remaining.length
+      : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
     return [...remaining.slice(0, insertIndex), movingTab, ...remaining.slice(insertIndex)];
   }
 
-  function moveDocumentTab(input: DocumentTabMoveInput) {
+  function moveDocumentTab(
+    input: DocumentTabMoveInput & {
+      targetDockGroupId?: string;
+      dockPosition?: DockMoveRequest["position"];
+      createGroupWithTarget?: string;
+    },
+  ) {
     setActiveWorkspacePreset("custom");
-    setTabs((current) => {
-      const nextTabs = reorderedTabsForDocumentMove(current, input);
-      setDocumentTabGroups((currentGroups) =>
-        normalizeDocumentTabGroups(moveDocumentTabInGroups(currentGroups, input), nextTabs),
-      );
-      return nextTabs;
-    });
-    setWorkspaceLayout((current) =>
-      moveDockTab(current, {
+    updateWorkspaceDocumentState((current) => {
+      const sourcePaneId =
+        documentGroupIdForPath(current.workspaceLayout, input.path) ?? "dock-documents";
+      const targetPaneId =
+        input.targetDockGroupId ??
+        (input.targetPath
+          ? documentGroupIdForPath(current.workspaceLayout, input.targetPath)
+          : input.targetGroupId
+            ? documentGroupIdForPath(
+                current.workspaceLayout,
+                current.documentTabGroups.find((group) => group.id === input.targetGroupId)?.tabPaths[0] ?? "",
+              )
+          : sourcePaneId) ??
+        sourcePaneId;
+      const dockPosition = input.dockPosition ?? "center";
+      const nextLayout = moveDockTab(current.workspaceLayout, {
         tabId: documentDockTabId(input.path),
-        sourceGroupId: documentGroupIdForPath(current, input.path) ?? "dock-documents",
-        targetGroupId:
-          (input.targetPath
-            ? documentGroupIdForPath(current, input.targetPath)
-            : documentGroupIdForPath(current, input.path)) ?? "dock-documents",
-        position: "center",
-        targetTabId: input.targetPath ? documentDockTabId(input.targetPath) : undefined,
-      }),
-    );
+        sourceGroupId: sourcePaneId,
+        targetGroupId: targetPaneId,
+        position: dockPosition,
+        targetTabId:
+          input.targetPath && dockPosition === "center"
+            ? documentDockTabId(input.targetPath)
+            : undefined,
+        targetSide: input.targetSide,
+      });
+      if (
+        nextLayout === current.workspaceLayout &&
+        sourcePaneId === targetPaneId &&
+        dockPosition !== "center"
+      ) {
+        return current;
+      }
+      const nextTabs = reorderedTabsForDocumentMove(current.tabs, input);
+      const movedGroups = input.createGroupWithTarget
+        ? groupDocumentTabs(
+            current.documentTabGroups,
+            input.targetSide === "before"
+              ? [input.path, input.createGroupWithTarget]
+              : [input.createGroupWithTarget, input.path],
+          )
+        : moveDocumentTabInGroups(current.documentTabGroups, input);
+
+      return {
+        ...current,
+        tabs: nextTabs,
+        documentTabGroups: normalizeDocumentTabGroups(movedGroups, nextTabs, nextLayout),
+        activeTabPath: input.path,
+        workspaceLayout: nextLayout,
+      };
+    });
+    setSelectedPath(input.path);
   }
 
   function createDocumentGroup(path: string) {
-    setDocumentTabGroups((current) =>
-      normalizeDocumentTabGroups(
-        [...removeTabFromGroups(current, path), createGroupFromTab(path, current)],
-        tabs,
+    updateWorkspaceDocumentState((current) => ({
+      ...current,
+      documentTabGroups: normalizeDocumentTabGroups(
+        [...removeTabFromGroups(current.documentTabGroups, path), createGroupFromTab(path, current.documentTabGroups)],
+        current.tabs,
+        current.workspaceLayout,
       ),
-    );
+    }));
     setTabContextMenu(null);
   }
 
@@ -4591,15 +4723,8 @@ function WorldnotionWorkbench({
         setExpandedPaths(new Set());
         break;
       case "switchMode":
-        if (activeTabPath) {
-          setTabs((current) =>
-            current.map((tab) =>
-              tab.path === activeTabPath
-                ? withTabEditorMode(tab, tab.mode === "write" ? "source" : "write")
-                : tab,
-            ),
-          );
-        }
+        if (settings.editor.showModeTabs && activeTabPath)
+          editorDocumentController.toggleMode(activeTabPath);
         break;
       case "closeTab":
         await closeTab();
@@ -4609,6 +4734,9 @@ function WorldnotionWorkbench({
         break;
       case "paragraphSpacing":
         if (editorViewRef.current) {
+          const { paragraphLinePositions, paragraphSpacingEffect } = await import(
+            "./utils/paragraphSpacing"
+          );
           const view = editorViewRef.current;
           const position = paragraphLinePositions(view.state.doc, view.state.selection.main.head);
           if (position) {
@@ -5007,7 +5135,7 @@ function WorldnotionWorkbench({
               universe={universeSettings}
               initialSection={settingsInitialSection}
               initialPropertiesMode={settingsInitialPropertiesMode}
-              onChange={setSettings}
+              onChange={handleSettingsChange}
               onSaveUniverseProfile={saveUniverseProfile}
               onSavePropertiesConfig={savePropertiesConfig}
               onInitializePropertiesWorkspace={initializeUniverseProperties}
@@ -5582,9 +5710,14 @@ function WorldnotionWorkbench({
             >
               {interfaceLocale === "es" ? "Escritura" : "Writing"}
             </button>
-            <button type="button" onClick={() => setTabMode(documentTab.path, "source")}>
-              {interfaceLocale === "es" ? "Fuente" : "Source"}
-            </button>
+            {settings.editor.showModeTabs ? (
+              <button
+                type="button"
+                onClick={() => editorDocumentController.setMode(documentTab.path, "source")}
+              >
+                {interfaceLocale === "es" ? "Fuente" : "Source"}
+              </button>
+            ) : null}
             <button type="button" onClick={() => visualUndoRedo(documentTab.path, false)}>
               {interfaceLocale === "es" ? "Deshacer" : "Undo"}
             </button>
@@ -5644,9 +5777,20 @@ function WorldnotionWorkbench({
                   : "Document source preserved"}
               </h2>
               <p>{visual.message}</p>
-              <button type="button" onClick={() => setTabMode(documentTab.path, "source")}>
-                {interfaceLocale === "es" ? "Abrir fuente" : "Open Source"}
-              </button>
+              {settings.editor.showModeTabs ? (
+                <button
+                  type="button"
+                  onClick={() => editorDocumentController.setMode(documentTab.path, "source")}
+                >
+                  {interfaceLocale === "es" ? "Abrir fuente" : "Open Source"}
+                </button>
+              ) : (
+                <p>
+                  {interfaceLocale === "es"
+                    ? "Activa los controles de modo en Ajustes del editor para abrir la fuente."
+                    : "Enable mode controls in Editor settings to open the source."}
+                </p>
+              )}
             </div>
           )}
         </section>
@@ -5663,8 +5807,13 @@ function WorldnotionWorkbench({
       documentTab.path === activeTabPath ? currentHeaderForLine(documentTab, cursorLine) : null;
     const isJsonDocument = isJsonPath(documentTab.path);
     const isXmlDocument = isXmlPath(documentTab.path);
-    const sourceView =
-      documentTab.sourceView ?? (isJsonDocument ? "json" : isXmlDocument ? "xml" : "raw");
+    const sourceView = settings.editor.showModeTabs
+      ? documentTab.sourceView ?? (isJsonDocument ? "json" : isXmlDocument ? "xml" : "raw")
+      : isJsonDocument
+        ? "json"
+        : isXmlDocument
+          ? "xml"
+          : "raw";
     const activeVariantLabel = readNoteVariants(
       parseFrontmatterRaw(rawToEditorParts(documentTab.rawMarkdown).frontmatterRaw),
     )[documentVariantId]?.label;
@@ -5681,10 +5830,23 @@ function WorldnotionWorkbench({
           ? liveFrontmatter
           : { ...entity.customProperties, type: entity.type, name: entity.name };
       const effectiveFrontmatter = resolveVariantFrontmatter(frontmatter, documentVariantId);
+      const portraitPropertyId = getPresentationRolePropertyId(
+        index.propertiesConfig,
+        entity.type,
+        "portrait",
+      );
+      const coverPropertyId = getPresentationRolePropertyId(
+        index.propertiesConfig,
+        entity.type,
+        "cover",
+      );
       return {
         entity,
         type,
         frontmatter: effectiveFrontmatter,
+        portraitPropertyId,
+        coverPropertyId,
+        hasPresentation: Boolean(portraitPropertyId || coverPropertyId),
         portraitPath: getPresentationRoleValue(
           index.propertiesConfig,
           entity.type,
@@ -5701,19 +5863,16 @@ function WorldnotionWorkbench({
     })();
 
     return (
-      <section
+      <EditorDocumentSurface
         key={`${index?.rootPath}:${documentTab.path}`}
-        data-onboarding-target="worldnotion.document" className="editor-shell dock-panel-body"
-        ref={documentTab.path === activeTabPath ? editorShellRef : undefined}
-        onMouseDownCapture={() => {
+        document={documentTab}
+        settings={settings.editor}
+        shellRef={documentTab.path === activeTabPath ? element => { editorShellRef.current = element; } : undefined}
+        onActivate={() => {
           if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
         }}
-        onFocusCapture={() => {
-          if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
-        }}
-      >
-        <div className="floating-control-panel">
-          {visual.status !== "none" ? (
+        visualAction={
+          visual.status !== "none" ? (
             <button
               type="button"
               onClick={() =>
@@ -5728,209 +5887,110 @@ function WorldnotionWorkbench({
             >
               Visual
             </button>
-          ) : null}
+          ) : null
+        }
+        modeSelector={
           <EditorModeSelector
             mode={documentTab.mode}
             writingMode={documentTab.writingMode}
             disabled={isJsonDocument || isXmlDocument}
             labels={editorModeText}
-            onWritingModeChange={(writingMode) => setTabWritingMode(documentTab.path, writingMode)}
-            onOpenWriting={() => setTabMode(documentTab.path, "write")}
-            onOpenSource={() => setTabMode(documentTab.path, "source")}
+            onWritingModeChange={(writingMode) =>
+              editorDocumentController.setWritingMode(documentTab.path, writingMode)
+            }
+            onOpenSource={() => editorDocumentController.setMode(documentTab.path, "source")}
           />
-          {documentTab.mode === "source" ? (
-            <label className="source-view-select-wrap">
-              <span className="sr-only">Source view</span>
-              <select
-                className="source-view-select"
-                aria-label={surfaceText("Source view")}
-                value={sourceView}
-                onChange={(event) =>
-                  setTabSourceView(
-                    documentTab.path,
-                    event.target.value as NonNullable<OpenTab["sourceView"]>,
-                  )
-                }
-              >
-                <option value="raw">Raw</option>
-                <option value="json">JSON</option>
-                <option value="xml">XML</option>
-              </select>
-            </label>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => saveTab(documentTab.path)}
-            disabled={!canWrite}
-            title={surfaceText("Save")}
-          >
-            <Save size={15} />
-          </button>
-        </div>
-
-        {documentTab.mode === "write" &&
-        documentTab.path === activeTabPath &&
-        settings.editor.floatingToolbarEnabled ? (
-          <div className="floating-format-toolbar-fixed">
-            <FontSelector availableFonts={fonts} onSelectFont={applyFontFamily} />
-            {TOOLBAR_INLINE_COMMANDS.filter((command) =>
-              ["bold", "italic", "link"].includes(command.id),
-            ).map((command) => renderToolbarButton(command))}
-            <details className="floating-format-group floating-format-more">
-              <summary title={surfaceText("More formatting")} aria-label={surfaceText("More formatting")}>
-                <MoreHorizontal size={14} />
-              </summary>
-              <div>
-                {[
-                  ...TOOLBAR_INLINE_COMMANDS.filter(
-                    (command) => !["bold", "italic", "link"].includes(command.id),
-                  ),
-                  ...TOOLBAR_BLOCK_COMMANDS,
-                  ...TOOLBAR_HEADING_COMMANDS,
-                  ...TOOLBAR_FIXED_EXTRA_COMMANDS,
-                ]
-                  .filter(
-                    (command) =>
-                      command.id !== "table" || isPluginEnabled(settings.plugins, "table-tools"),
-                  )
-                  .map((command) => renderToolbarButton(command))}
-              </div>
-            </details>
-          </div>
-        ) : null}
-
-        {floatingToolbarRect &&
-        documentTab.mode === "write" &&
-        documentTab.path === activeTabPath ? (
-          <div
-            className="floating-format-toolbar-selection"
-            style={(() => {
-              const shellRect = editorShellRef.current?.getBoundingClientRect();
-              const shellLeft = shellRect?.left ?? 0;
-              const shellTop = shellRect?.top ?? 0;
-              return {
-                left: Math.max(12, floatingToolbarRect.left - shellLeft),
-                top: Math.max(36, floatingToolbarRect.top - shellTop - 44),
-              };
-            })()}
-          >
-            {[...TOOLBAR_INLINE_COMMANDS, ...TOOLBAR_BLOCK_COMMANDS].map((command) =>
-              renderToolbarButton(command),
-            )}
-            <details className="floating-format-group">
-              <summary title={surfaceText("Headings")}>
-                <Heading size={14} />
-              </summary>
-              <div>{TOOLBAR_HEADING_COMMANDS.map((command) => renderToolbarButton(command))}</div>
-            </details>
-          </div>
-        ) : null}
-
-
-        {renderDocumentSaveError(documentTab.path)}
-        {renderVisualRecovery(documentTab.path)}
-        {loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null}
-        <div
-          className={`editor-surface page-style-${settings.editor.pageStyle} mode-${documentTab.mode}${
-            settings.editor.showPaperShadow && documentTab.mode === "write" ? " paper-shadow" : ""
-          }`}
-          style={
-            settings.editor.pageStyle === "custom"
-              ? ({ "--wn-custom-page": settings.editor.customPageColor } as CSSProperties)
-              : undefined
-          }
-        >
-          {documentTab.mode === "source" && sourceView === "json" ? (
-            <JsonReader value={documentTab.rawMarkdown} />
-          ) : documentTab.mode === "source" && sourceView === "xml" ? (
-            <XmlReader value={documentTab.rawMarkdown} />
-          ) : (
-            <Suspense fallback={<LazyPanelFallback label="Loading editor..." />}>
-              {documentPresentation &&
-              (documentPresentation.portraitPath || documentPresentation.coverPath) ? (
-                <DocumentPresentation
-                  vaultIndex={index!}
-                  name={
-                    typeof documentPresentation.frontmatter.name === "string"
-                      ? documentPresentation.frontmatter.name
-                      : documentPresentation.entity.name
-                  }
-                  typeLabel={documentPresentation.type.label}
-                  hasPortrait={Boolean(documentPresentation.portraitPath)}
-                  coverPath={documentPresentation.coverPath}
-                  onDocumentNameChange={
-                    canWrite
-                      ? (newName) =>
-                          handleDocumentNameChange(documentTab.path, documentTab.title, newName)
-                      : undefined
-                  }
-                />
-              ) : null}
-              <CodeMirrorEditor
-                key={documentTab.path}
-                value={editorDisplayValue(documentTab)}
-                onChange={(value) => updateRawMarkdownForPath(documentTab.path, value)}
-                activeVariantId={documentVariantId}
-                activeVariantLabel={activeVariantLabel}
-                theme={activeTheme}
-                mode={documentTab.mode}
-                writingMode={documentTab.writingMode}
-                settings={settings.editor}
-                pluginSettings={settings.plugins}
-                documentName={documentTab.title}
-                showDocumentHeader={
-                  !(documentPresentation?.portraitPath || documentPresentation?.coverPath)
-                }
-                presentationPortraitPath={documentPresentation?.portraitPath}
-                projectName={
-                  index?.universeProfile?.name ??
-                  (index?.rootPath ? pathName(index.rootPath) : undefined)
-                }
-                readOnly={!canWrite}
-                resolveWikilink={resolveWikilink}
-                resolveImage={(rawPath) =>
-                  index
-                    ? resolveNoteImageUrl(index, documentTab.path, rawPath)
-                    : Promise.resolve(null)
-                }
-                onInsertImageFile={persistImageFile}
-                onRequestImage={requestImageInsertion}
-                noteSuggestions={noteSuggestions}
-                onOpenWikilink={(targetPath) => openOrCreateTab(targetPath)}
-                onMissingWikilink={(label) => showToast(`Missing wikilink: ${label}`, "warning")}
-                onOpenUrl={(url) => {
-                  void openUrl(url);
-                }}
-                onRequestUrl={() => promptUser("Insert link", "https://example.com", "https://")}
-                onOpenSource={() => setTabMode(documentTab.path, "source")}
-                onDocumentNameChange={(newName) =>
-                  handleDocumentNameChange(documentTab.path, documentTab.title, newName)
-                }
-                onCursorMove={() => {
-                  if (documentTab.path !== activeTabPath) return;
-                  if (editorViewRef.current) {
-                    const pos = editorViewRef.current.state.selection.main.head;
-                    const line = editorViewRef.current.state.doc.lineAt(pos);
-                    setCursorLine(line.number - 1);
-                    setEditorFormats(activeFormats(editorViewRef.current.state));
-                  }
-                }}
-                onSelectionChange={(rect) => {
-                  if (documentTab.path === activeTabPath) setFloatingToolbarRect(rect);
-                }}
-                onEditorReady={(view) => {
-                  editorViewsRef.current.set(documentTab.path, view);
-                  if (documentTab.path === activeTabPath) editorViewRef.current = view;
-                }}
-              />
-            </Suspense>
-          )}
-
-          {settings.editor.outlineGuideEnabled ? (
+        }
+        sourceViewSelector={
+          <label className="source-view-select-wrap">
+            <span className="sr-only">Source view</span>
+            <select
+              className="source-view-select"
+              aria-label={surfaceText("Source view")}
+              value={sourceView}
+              onChange={(event) =>
+                editorDocumentController.setSourceView(
+                  documentTab.path,
+                  event.target.value as NonNullable<OpenTab["sourceView"]>,
+                )
+              }
+            >
+              <option value="raw">Raw</option>
+              <option value="json">JSON</option>
+              <option value="xml">XML</option>
+            </select>
+          </label>
+        }
+        floatingToolbar={
+          documentTab.mode === "write" &&
+          documentTab.path === activeTabPath &&
+          settings.editor.floatingToolbarEnabled ? (
+            <div className="floating-format-toolbar-fixed">
+              <FontSelector availableFonts={fonts} onSelectFont={applyFontFamily} />
+              {TOOLBAR_INLINE_COMMANDS.filter((command) =>
+                ["bold", "italic", "link"].includes(command.id),
+              ).map((command) => renderToolbarButton(command))}
+              <details className="floating-format-group floating-format-more">
+                <summary title={surfaceText("More formatting")} aria-label={surfaceText("More formatting")}>
+                  <MoreHorizontal size={14} />
+                </summary>
+                <div>
+                  {[
+                    ...TOOLBAR_INLINE_COMMANDS.filter(
+                      (command) => !["bold", "italic", "link"].includes(command.id),
+                    ),
+                    ...TOOLBAR_BLOCK_COMMANDS,
+                    ...TOOLBAR_HEADING_COMMANDS,
+                    ...TOOLBAR_FIXED_EXTRA_COMMANDS,
+                  ]
+                    .filter(
+                      (command) =>
+                        command.id !== "table" || isPluginEnabled(settings.plugins, "table-tools"),
+                    )
+                    .map((command) => renderToolbarButton(command))}
+                </div>
+              </details>
+            </div>
+          ) : null
+        }
+        selectionToolbar={
+          floatingToolbarRect &&
+          documentTab.mode === "write" &&
+          documentTab.path === activeTabPath ? (
+            <div
+              className="floating-format-toolbar-selection"
+              style={(() => {
+                const shellRect = editorShellRef.current?.getBoundingClientRect();
+                const shellLeft = shellRect?.left ?? 0;
+                const shellTop = shellRect?.top ?? 0;
+                return {
+                  left: Math.max(12, floatingToolbarRect.left - shellLeft),
+                  top: Math.max(36, floatingToolbarRect.top - shellTop - 44),
+                };
+              })()}
+            >
+              {[...TOOLBAR_INLINE_COMMANDS, ...TOOLBAR_BLOCK_COMMANDS].map((command) =>
+                renderToolbarButton(command),
+              )}
+              <details className="floating-format-group">
+                <summary title={surfaceText("Headings")}>
+                  <Heading size={14} />
+                </summary>
+                <div>{TOOLBAR_HEADING_COMMANDS.map((command) => renderToolbarButton(command))}</div>
+              </details>
+            </div>
+          ) : null
+        }
+        saveError={renderDocumentSaveError(documentTab.path)}
+        recovery={renderVisualRecovery(documentTab.path)}
+        loading={loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null}
+        outline={
+          settings.editor.outlineGuideEnabled && documentOutline.length ? (
             <OutlineGuide
               outline={documentOutline}
               currentHeader={documentCurrentHeader}
               position={settings.editor.outlinePosition}
+              ariaLabel={interfaceLocale === "es" ? "Índice del documento" : "Document outline"}
               onNavigate={(line) => {
                 const documentView = editorViewsRef.current.get(documentTab.path);
                 if (documentView) {
@@ -5941,9 +6001,166 @@ function WorldnotionWorkbench({
                 }
               }}
             />
-          ) : null}
-        </div>
-      </section>
+          ) : null
+        }
+      >
+        {documentTab.mode === "source" && sourceView === "json" ? (
+          <JsonReader value={documentTab.rawMarkdown} />
+        ) : documentTab.mode === "source" && sourceView === "xml" ? (
+          <XmlReader value={documentTab.rawMarkdown} />
+        ) : (
+          <Suspense fallback={<LazyPanelFallback label="Loading editor..." />}>
+            {documentPresentation &&
+            documentPresentation.hasPresentation ? (
+              <DocumentPresentation
+                vaultIndex={index!}
+                name={
+                  typeof documentPresentation.frontmatter.name === "string"
+                    ? documentPresentation.frontmatter.name
+                    : documentPresentation.entity.name
+                }
+                typeLabel={documentPresentation.type.label}
+                hasPortraitRole={Boolean(documentPresentation.portraitPropertyId)}
+                hasCoverRole={Boolean(documentPresentation.coverPropertyId)}
+                portraitPath={documentPresentation.portraitPath}
+                coverPath={documentPresentation.coverPath}
+                imageLabels={
+                  interfaceLocale === "es"
+                    ? {
+                        actions: "Imágenes del documento",
+                        addPortrait: "Elegir retrato",
+                        changePortrait: "Cambiar retrato",
+                        removePortrait: "Quitar retrato",
+                        addCover: "Elegir banner",
+                        changeCover: "Cambiar banner",
+                        removeCover: "Quitar banner",
+                      }
+                    : {
+                        actions: "Document images",
+                        addPortrait: "Choose portrait",
+                        changePortrait: "Change portrait",
+                        removePortrait: "Remove portrait",
+                        addCover: "Choose banner",
+                        changeCover: "Change banner",
+                        removeCover: "Remove banner",
+                      }
+                }
+                onChoosePortrait={
+                  canWrite && documentPresentation.portraitPropertyId
+                    ? () =>
+                        choosePresentationImage(
+                          documentTab.path,
+                          documentPresentation.entity.type,
+                          "portrait",
+                          documentVariantId,
+                        )
+                    : undefined
+                }
+                onRemovePortrait={
+                  canWrite && documentPresentation.portraitPath
+                    ? () =>
+                        setPresentationImageValue(
+                          documentTab.path,
+                          documentPresentation.entity.type,
+                          "portrait",
+                          documentVariantId,
+                          null,
+                        )
+                    : undefined
+                }
+                onChooseCover={
+                  canWrite && documentPresentation.coverPropertyId
+                    ? () =>
+                        choosePresentationImage(
+                          documentTab.path,
+                          documentPresentation.entity.type,
+                          "cover",
+                          documentVariantId,
+                        )
+                    : undefined
+                }
+                onRemoveCover={
+                  canWrite && documentPresentation.coverPath
+                    ? () =>
+                        setPresentationImageValue(
+                          documentTab.path,
+                          documentPresentation.entity.type,
+                          "cover",
+                          documentVariantId,
+                          null,
+                        )
+                    : undefined
+                }
+                onDocumentNameChange={
+                  canWrite
+                    ? (newName) =>
+                        handleDocumentNameChange(documentTab.path, documentTab.title, newName)
+                    : undefined
+                }
+              />
+            ) : null}
+            <CodeMirrorEditor
+              key={documentTab.path}
+              value={editorDisplayValue(documentTab)}
+              onChange={(value) => editorDocumentController.updateMarkdown(documentTab.path, value)}
+              activeVariantId={documentVariantId}
+              activeVariantLabel={activeVariantLabel}
+              theme={activeTheme}
+              mode={documentTab.mode}
+              writingMode={documentTab.writingMode}
+              settings={settings.editor}
+              pluginSettings={settings.plugins}
+              documentName={documentTab.title}
+              showDocumentHeader={!documentPresentation?.hasPresentation}
+              presentationPortraitPath={documentPresentation?.portraitPath}
+              projectName={
+                index?.universeProfile?.name ??
+                (index?.rootPath ? pathName(index.rootPath) : undefined)
+              }
+              readOnly={!canWrite}
+              resolveWikilink={resolveWikilink}
+              resolveImage={(rawPath) =>
+                index
+                  ? resolveNoteImageUrl(index, documentTab.path, rawPath)
+                  : Promise.resolve(null)
+              }
+              onInsertImageFile={persistImageFile}
+              onRequestImage={requestImageInsertion}
+              noteSuggestions={noteSuggestions}
+              onOpenWikilink={(targetPath) => openOrCreateTab(targetPath)}
+              onMissingWikilink={(label) => showToast(`Missing wikilink: ${label}`, "warning")}
+              onOpenUrl={(url) => {
+                void openUrl(url);
+              }}
+              onRequestUrl={() => promptUser("Insert link", "https://example.com", "https://")}
+              onOpenSource={
+                settings.editor.showModeTabs
+                  ? () => editorDocumentController.setMode(documentTab.path, "source")
+                  : undefined
+              }
+              onDocumentNameChange={(newName) =>
+                handleDocumentNameChange(documentTab.path, documentTab.title, newName)
+              }
+              onCursorMove={() => {
+                if (documentTab.path !== activeTabPath) return;
+                if (editorViewRef.current) {
+                  const pos = editorViewRef.current.state.selection.main.head;
+                  const line = editorViewRef.current.state.doc.lineAt(pos);
+                  setCursorLine(line.number - 1);
+                  setEditorFormats(activeFormats(editorViewRef.current.state));
+                }
+              }}
+              onSelectionChange={(rect) => {
+                if (documentTab.path === activeTabPath) setFloatingToolbarRect(rect);
+              }}
+              onEditorReady={(view) => {
+                editorViewsRef.current.set(documentTab.path, view);
+                if (documentTab.path === activeTabPath) editorViewRef.current = view;
+              }}
+            />
+          </Suspense>
+        )}
+      </EditorDocumentSurface>
     );
   }
 
@@ -6242,22 +6459,34 @@ function WorldnotionWorkbench({
 
   function handleDockMove(request: DockMoveRequest) {
     if (!isDockMoveAllowedAroundDocumentAnchor(request, workspaceLayout)) return;
-    if (
-      request.tabId.startsWith("document:") &&
-      request.position === "center" &&
-      request.sourceGroupId === request.targetGroupId
-    ) {
+    if (request.tabId.startsWith("document:")) {
       const path = request.tabId.slice("document:".length);
-      const targetPath = request.targetTabId?.startsWith("document:")
-        ? request.targetTabId.slice("document:".length)
-        : undefined;
-      const targetGroup = targetPath
-        ? documentTabGroups.find((group) => group.tabPaths.includes(targetPath))
-        : undefined;
+      if (request.documentDrop?.kind === "tab") {
+        moveDocumentTab({
+          path,
+          targetPath: request.documentDrop.targetPath,
+          targetSide: request.documentDrop.side,
+          targetGroupId: request.documentDrop.targetDocumentGroupId ?? null,
+          targetDockGroupId: request.targetGroupId,
+          createGroupWithTarget: request.documentDrop.targetDocumentGroupId
+            ? undefined
+            : request.documentDrop.targetPath,
+        });
+        return;
+      }
+      if (request.documentDrop?.kind === "group") {
+        moveDocumentTab({
+          path,
+          targetGroupId: request.documentDrop.targetDocumentGroupId,
+          targetDockGroupId: request.targetGroupId,
+        });
+        return;
+      }
       moveDocumentTab({
         path,
-        targetPath,
-        targetGroupId: targetGroup?.id ?? null,
+        targetGroupId: null,
+        targetDockGroupId: request.targetGroupId,
+        dockPosition: request.position,
       });
       return;
     }
@@ -6702,7 +6931,10 @@ function WorldnotionWorkbench({
               isOpen={showCommandPalette}
               onClose={() => setShowCommandPalette(false)}
               fileResults={buildFileResults(index)}
-              commandResults={buildCommandResults(settings.keybindings)}
+              commandResults={buildCommandResults(
+                settings.keybindings,
+                settings.editor.showModeTabs,
+              )}
               headerResults={buildHeaderResults(activeTab?.rawMarkdown || "")}
               tagResults={buildTagResults(index)}
               recentFiles={settings.explorer.recentFiles}

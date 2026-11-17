@@ -49,6 +49,7 @@ import {
   type VisiblePropertyDefinition,
 } from "../utils/propertiesConfig";
 import {
+  getPresentationRolePropertyId,
   listPresentationImageProperties,
   propertyAppliesToEntityType,
   updateEntityTypePresentation,
@@ -219,10 +220,25 @@ export function MetadataEditor({
     return null;
   }, [basePropertyDefs.length, entity.type, propertiesConfig]);
 
+  const presentationImagePropertyIds = useMemo(
+    () =>
+      new Set(
+        [
+          getPresentationRolePropertyId(propertiesConfig, entity.type, "portrait"),
+          getPresentationRolePropertyId(propertiesConfig, entity.type, "cover"),
+        ].filter((propertyId): propertyId is string => Boolean(propertyId)),
+      ),
+    [entity.type, propertiesConfig],
+  );
+
   const inspectorProperties = useMemo(
     () =>
-      visibleProperties?.filter((property) => !NON_INSPECTOR_PROPERTY_IDS.has(property.id)) ?? null,
-    [visibleProperties],
+      visibleProperties?.filter(
+        (property) =>
+          !NON_INSPECTOR_PROPERTY_IDS.has(property.id) &&
+          !presentationImagePropertyIds.has(property.id),
+      ) ?? null,
+    [presentationImagePropertyIds, visibleProperties],
   );
 
   const unconfiguredProperties = useMemo(
@@ -302,8 +318,11 @@ export function MetadataEditor({
   };
 
   const allInspectableProperties = useMemo(
-    () => listInspectableProperties(propertiesConfig),
-    [propertiesConfig],
+    () =>
+      listInspectableProperties(propertiesConfig).filter(
+        (property) => !presentationImagePropertyIds.has(property.id),
+      ),
+    [presentationImagePropertyIds, propertiesConfig],
   );
 
   const contextProperty = useMemo(
@@ -630,8 +649,16 @@ export function MetadataEditor({
       buildInspectorPropertySections(propertiesConfig, entity.type, getPropertyValues(), {
         includeHidden: showHiddenProperties,
         includeInactiveConditions: showHiddenProperties,
+        excludePropertyIds: presentationImagePropertyIds,
       }),
-    [entity.customProperties, entity.type, frontmatterData, propertiesConfig, showHiddenProperties],
+    [
+      entity.customProperties,
+      entity.type,
+      frontmatterData,
+      presentationImagePropertyIds,
+      propertiesConfig,
+      showHiddenProperties,
+    ],
   );
 
   const isProtectedProperty = (propertyId: string): boolean => {

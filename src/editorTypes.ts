@@ -122,6 +122,7 @@ export type EditorSettings = {
   fontSize: number;
   tabSize: number;
   defaultMode: DefaultEditorMode;
+  showModeTabs: boolean;
   pageStyle: EditorPageStyle;
   customPageColor: string;
   writeFontFamily: string;
@@ -589,6 +590,7 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
   fontSize: 14,
   tabSize: 2,
   defaultMode: "processed",
+  showModeTabs: false,
   pageStyle: "theme",
   customPageColor: "#ffffff",
   writeFontFamily:

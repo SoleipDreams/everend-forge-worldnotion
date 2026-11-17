@@ -84,7 +84,10 @@ const settingsCopy = {
     writeFont: "Write font",
     sourceFont: "Source font",
     tabSize: "Tab size",
-    defaultMode: "Default mode",
+    defaultMode: "Editor mode",
+    editorModeDescription: "Applies to all open text documents and newly opened documents.",
+    modeTabs: "Show mode tabs",
+    modeTabsDescription: "Show quick mode controls in the editor. Off by default.",
     write: "Write",
     source: "Source",
     navigation: "Navigation",
@@ -161,7 +164,10 @@ const settingsCopy = {
     writeFont: "Fuente de escritura",
     sourceFont: "Fuente de código",
     tabSize: "Tamaño de tabulación",
-    defaultMode: "Modo predeterminado",
+    defaultMode: "Modo del editor",
+    editorModeDescription: "Se aplica a todos los documentos de texto abiertos y a los nuevos.",
+    modeTabs: "Mostrar controles de modo",
+    modeTabsDescription: "Muestra controles rápidos de modo en el editor. Desactivados por defecto.",
     write: "Escritura",
     source: "Código",
     navigation: "Navegación",
@@ -190,8 +196,8 @@ export function worldnotionSettingsCopy(locale: Locale) {
 }
 
 const editorModeCopy = {
-  en: { writing: "Writing", processed: "Processed", semi: "Semi-processed", source: "Source" },
-  es: { writing: "Escritura", processed: "Procesado", semi: "Semi-procesado", source: "Source" },
+  en: { mode: "Editor mode", writing: "Writing", processed: "Processed", semi: "Semi-processed", source: "Source" },
+  es: { mode: "Modo del editor", writing: "Escritura", processed: "Procesado", semi: "Semi-procesado", source: "Source" },
 } as const;
 
 export function worldnotionEditorModeCopy(locale: Locale) {

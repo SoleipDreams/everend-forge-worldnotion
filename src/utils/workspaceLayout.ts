@@ -23,6 +23,7 @@ export type MoveDockTabInput = {
   targetGroupId: string;
   position: DockDropPosition;
   targetTabId?: string;
+  targetSide?: "before" | "after";
 };
 
 export type ResizeDockSplitInput = {
@@ -54,7 +55,7 @@ export function isDockMoveAllowedAroundDocumentAnchor(input: MoveDockTabInput, l
   if (!input.tabId.startsWith("document:")) return true;
   return (
     (layout ? groupCanHostDocument(findGroup(layout.root, input.targetGroupId)) : input.targetGroupId === DOCUMENT_GROUP_ID) &&
-    ["center", "left", "right"].includes(input.position)
+    ["center", "left", "right", "top", "bottom"].includes(input.position)
   );
 }
 
@@ -325,7 +326,7 @@ export function moveDockTab(layout: WorkspaceLayoutV1, input: MoveDockTabInput):
 
   const nextRoot =
     input.position === "center"
-      ? insertTabIntoGroup(removed.node, targetGroupId, removed.tab, input.targetTabId)
+      ? insertTabIntoGroup(removed.node, targetGroupId, removed.tab, input.targetTabId, input.targetSide)
       : splitGroupWithTab(removed.node, targetGroupId, removed.tab, input.position);
 
   return normalizeWorkspaceLayout({
@@ -493,7 +494,9 @@ function reorderTabWithinGroup(
       const targetIndex = input.targetTabId
         ? remaining.findIndex((tab) => tab.id === input.targetTabId)
         : remaining.length;
-      const insertIndex = targetIndex === -1 ? remaining.length : targetIndex;
+      const insertIndex = targetIndex === -1
+        ? remaining.length
+        : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
       return {
         ...group,
         tabs: [...remaining.slice(0, insertIndex), movingTab, ...remaining.slice(insertIndex)],
@@ -509,13 +512,16 @@ function insertTabIntoGroup(
   groupId: string,
   tab: DockTabRef,
   targetTabId?: string,
+  targetSide?: "before" | "after",
 ): DockNode {
   return updateGroup(node, groupId, (group) => {
     const existingTabs = group.tabs.filter((candidate) => candidate.id !== tab.id);
     const targetIndex = targetTabId
       ? existingTabs.findIndex((candidate) => candidate.id === targetTabId)
       : existingTabs.length;
-    const insertIndex = targetIndex === -1 ? existingTabs.length : targetIndex;
+    const insertIndex = targetIndex === -1
+      ? existingTabs.length
+      : Math.min(existingTabs.length, targetIndex + (targetSide === "after" ? 1 : 0));
     return {
       ...group,
       tabs: [...existingTabs.slice(0, insertIndex), tab, ...existingTabs.slice(insertIndex)],

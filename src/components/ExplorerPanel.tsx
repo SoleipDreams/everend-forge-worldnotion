@@ -24,6 +24,7 @@ import {
   Filter,
   Folder,
   FolderOpen,
+  FolderPlus,
   Image,
   LayoutGrid,
   Layers,
@@ -471,6 +472,21 @@ export function ExplorerPanel({
         >
           <Eye size={16} />
         </button>
+        {onOpenCreateMenu ? (
+          <button
+            type="button"
+            data-onboarding-target="worldnotion.create-folder-trigger worldnotion.create-note-trigger"
+            aria-label={t("Create a folder or note")}
+            title={t("Create a folder or note")}
+            className="explorer-action-button"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              onOpenCreateMenu(rect.left, rect.bottom + 4);
+            }}
+          >
+            <FolderPlus size={16} />
+          </button>
+        ) : null}
         <div className="explorer-depth-menu" ref={depthMenuRef}>
           <button
             type="button"
@@ -1023,6 +1039,8 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
   const isFocused = focusedFolderPath === row.path;
   const isOpen = openTabPaths.has(row.path);
   const isDirty = dirtyTabPaths.has(row.path);
+  const isFolderNoteOnboardingTarget =
+    row.kind === "folder" && selectedPath === row.path && !row.hasDescription;
   const descriptionIsOpen = Boolean(row.descriptionPath && openTabPaths.has(row.descriptionPath));
   const hasPersistentActions =
     isFocused || isFavorite || (row.kind === "folder" && folderNotesEnabled && row.hasDescription);
@@ -1162,7 +1180,7 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
         )}
         <span className="tree-label">{row.name}</span>
         {isDirty ? <strong className="tree-dirty">*</strong> : null}
-        <div className={`tree-node-buttons ${hasPersistentActions ? "has-persistent-state" : ""}`}>
+        <div className={`tree-node-buttons ${hasPersistentActions ? "has-persistent-state" : ""} ${isFolderNoteOnboardingTarget ? "has-onboarding-target" : ""}`}>
           {row.kind === "folder" ? (
             <button
               type="button"
@@ -1179,6 +1197,11 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
           {row.kind === "folder" && folderNotesEnabled ? (
             <button
               type="button"
+              data-onboarding-target={
+                selectedPath === row.path && !row.hasDescription
+                  ? "worldnotion.create-folder-note-trigger"
+                  : undefined
+              }
               className={`tree-inline-button folder-description-button ${descriptionIsOpen ? "active" : row.hasDescription ? "available" : "inactive"}`}
               onClick={(event) => {
                 event.stopPropagation();

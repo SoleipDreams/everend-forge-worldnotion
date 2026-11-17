@@ -472,14 +472,17 @@ function toTreeNode(
   allProperties: VisiblePropertyDefinition[],
   visibleIds: Set<string>,
   hiddenIds: Set<string>,
+  excludedPropertyIds: ReadonlySet<string>,
   values: Record<string, unknown>,
   depth: number,
   parentId: string | undefined,
   path: string[],
-): InspectorPropertyTreeNode {
+): InspectorPropertyTreeNode | null {
+  if (NON_INSPECTOR_PROPERTY_IDS.has(property.id) || excludedPropertyIds.has(property.id)) {
+    return null;
+  }
   const nextPath = [...path, property.id];
   const children = (property.children ?? [])
-    .filter((child) => !NON_INSPECTOR_PROPERTY_IDS.has(child.id))
     .map((child) => {
       const source =
         allProperties.find((candidate) => candidate.id === child.id)?.source ?? property.source;
@@ -488,12 +491,20 @@ function toTreeNode(
         allProperties,
         visibleIds,
         hiddenIds,
+        excludedPropertyIds,
         values,
         depth + 1,
         property.id,
         nextPath,
       );
-    });
+    })
+    .filter((child): child is InspectorPropertyTreeNode => Boolean(child));
+
+  // Do not leave an empty group behind when all of its children are editor-owned
+  // presentation fields.
+  if (property.type === "group" && property.children?.length && children.length === 0) {
+    return null;
+  }
 
   return {
     property,
@@ -511,7 +522,11 @@ export function buildInspectorPropertySections(
   config: PropertiesConfig | undefined,
   entityType: string | undefined,
   values: Record<string, unknown> = {},
-  options: { includeHidden?: boolean; includeInactiveConditions?: boolean } = {},
+  options: {
+    includeHidden?: boolean;
+    includeInactiveConditions?: boolean;
+    excludePropertyIds?: ReadonlySet<string>;
+  } = {},
 ): InspectorPropertySection[] {
   if (!config?.baseProperties) {
     return [
@@ -521,15 +536,29 @@ export function buildInspectorPropertySections(
   }
 
   const allProperties = listAllProperties(config);
-  const visibleRoots = listVisibleProperties(config, entityType);
+  const excludedPropertyIds = options.excludePropertyIds ?? new Set<string>();
+  const visibleRoots = listVisibleProperties(config, entityType).filter(
+    (property) => !excludedPropertyIds.has(property.id),
+  );
   const visibleIds = isNestedPropertiesConfig(config)
     ? collectApplicablePropertyIds(config, entityType)
     : collectDefinitionTreeIds(visibleRoots);
   const hiddenIds = new Set(getTypeDefinition(config, entityType)?.hiddenProperties ?? []);
   const visibleNodes = visibleRoots
     .map((property) =>
-      toTreeNode(property, allProperties, visibleIds, hiddenIds, values, 0, undefined, []),
+      toTreeNode(
+        property,
+        allProperties,
+        visibleIds,
+        hiddenIds,
+        excludedPropertyIds,
+        values,
+        0,
+        undefined,
+        [],
+      ),
     )
+    .filter((node): node is InspectorPropertyTreeNode => Boolean(node))
     .map((node) =>
       filterTreeNode(
         node,
@@ -543,11 +572,24 @@ export function buildInspectorPropertySections(
     ? allProperties
         .filter(
           (property) =>
-            !renderedIds.has(property.id) && !NON_INSPECTOR_PROPERTY_IDS.has(property.id),
+            !renderedIds.has(property.id) &&
+            !NON_INSPECTOR_PROPERTY_IDS.has(property.id) &&
+            !excludedPropertyIds.has(property.id),
         )
         .map((property) =>
-          toTreeNode(property, allProperties, visibleIds, hiddenIds, values, 0, undefined, []),
+          toTreeNode(
+            property,
+            allProperties,
+            visibleIds,
+            hiddenIds,
+            excludedPropertyIds,
+            values,
+            0,
+            undefined,
+            [],
+          ),
         )
+        .filter((node): node is InspectorPropertyTreeNode => Boolean(node))
     : [];
   const sections = splitRootSections(
     visibleNodes.map((node) =>

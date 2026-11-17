@@ -212,6 +212,12 @@ const catalog: Array<[string,string,string,string,string,boolean,Array<[string,s
         "defaultMode"
       ],
       [
+        "modeTabs",
+        "modeTabs",
+        "modeTabs",
+        ["Mode tabs", "Mode selector", "Tabs de modo", "Selector de modo"]
+      ],
+      [
         "breadcrumbs",
         "breadcrumbs",
         "breadcrumbs"

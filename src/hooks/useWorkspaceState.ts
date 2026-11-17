@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { AppSettingsV4, DocumentTabGroup, OpenTab } from "../editorTypes";
+import type {
+  AppSettingsV4,
+  DocumentTabGroup,
+  OpenTab,
+  WorkspaceLayoutV1,
+} from "../editorTypes";
 import { serializeWorkspaceSession } from "../utils/tabUtils";
 import { normalizeDocumentTabGroups } from "../utils/documentTabGroups";
 import { explorerAncestorsForPath } from "../utils/explorerSelectors";
@@ -8,9 +13,42 @@ import {
   closeDockTab as closeDockLayoutTab,
   createDefaultWorkspaceLayout,
   layoutHasPanel,
+  orderOpenTabsByLayout,
   panelDockTabId,
   syncLayoutWithOpenTabs,
 } from "../utils/workspaceLayout";
+
+export type WorkspaceDocumentState = {
+  tabs: OpenTab[];
+  documentTabGroups: DocumentTabGroup[];
+  activeTabPath?: string;
+  workspaceLayout: WorkspaceLayoutV1;
+};
+
+function normalizeWorkspaceDocumentState(
+  state: WorkspaceDocumentState,
+): WorkspaceDocumentState {
+  const workspaceLayout = syncLayoutWithOpenTabs(
+    state.workspaceLayout,
+    state.tabs,
+    state.activeTabPath,
+  );
+  const orderedTabs = orderOpenTabsByLayout(state.tabs, workspaceLayout);
+  const tabs = orderedTabs.every((tab, index) => tab === state.tabs[index]) &&
+    orderedTabs.length === state.tabs.length
+    ? state.tabs
+    : orderedTabs;
+  return {
+    ...state,
+    tabs,
+    workspaceLayout,
+    documentTabGroups: normalizeDocumentTabGroups(
+      state.documentTabGroups,
+      tabs,
+      workspaceLayout,
+    ),
+  };
+}
 
 interface UseWorkspaceStateParams {
   rootPath: string | undefined;
@@ -37,21 +75,71 @@ export function useWorkspaceState({
   setSettings,
   onTabsChange,
 }: UseWorkspaceStateParams) {
-  const [tabs, setTabsState] = useState<OpenTab[]>([]);
-  const [documentTabGroups, setDocumentTabGroups] = useState<DocumentTabGroup[]>([]);
-  const [activeTabPath, setActiveTabPath] = useState<string>();
-  const [workspaceLayout, setWorkspaceLayout] = useState(() => createDefaultWorkspaceLayout());
+  const [workspaceDocumentState, setWorkspaceDocumentState] = useState<WorkspaceDocumentState>(
+    () =>
+      normalizeWorkspaceDocumentState({
+        tabs: [],
+        documentTabGroups: [],
+        workspaceLayout: createDefaultWorkspaceLayout(),
+      }),
+  );
+  const { tabs, documentTabGroups, activeTabPath, workspaceLayout } = workspaceDocumentState;
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const tabsRef = useRef<OpenTab[]>([]);
+  const workspaceDocumentStateRef = useRef(workspaceDocumentState);
   const onTabsChangeRef = useRef(onTabsChange);
   onTabsChangeRef.current = onTabsChange;
-  // Save barriers need the latest edit even before React commits another render.
-  const setTabs = useCallback<Dispatch<SetStateAction<OpenTab[]>>>((update) => {
-    const next = typeof update === "function" ? update(tabsRef.current) : update;
-    onTabsChangeRef.current?.(next, tabsRef.current);
-    tabsRef.current = next;
-    setTabsState(next);
+
+  // Structural tab state is committed together so layout, order, active tab,
+  // and group membership cannot be persisted from different transitions.
+  const updateWorkspaceDocumentState = useCallback<
+    Dispatch<SetStateAction<WorkspaceDocumentState>>
+  >((update) => {
+    const previous = workspaceDocumentStateRef.current;
+    const updated = typeof update === "function" ? update(previous) : update;
+    const next = normalizeWorkspaceDocumentState(updated);
+    if (next.tabs !== previous.tabs) {
+      onTabsChangeRef.current?.(next.tabs, previous.tabs);
+    }
+    workspaceDocumentStateRef.current = next;
+    tabsRef.current = next.tabs;
+    setWorkspaceDocumentState(next);
   }, []);
+
+  const setTabs = useCallback<Dispatch<SetStateAction<OpenTab[]>>>((update) => {
+    updateWorkspaceDocumentState((current) => ({
+      ...current,
+      tabs: typeof update === "function" ? update(current.tabs) : update,
+    }));
+  }, [updateWorkspaceDocumentState]);
+  const setDocumentTabGroups = useCallback<Dispatch<SetStateAction<DocumentTabGroup[]>>>(
+    (update) => {
+      updateWorkspaceDocumentState((current) => ({
+        ...current,
+        documentTabGroups:
+          typeof update === "function" ? update(current.documentTabGroups) : update,
+      }));
+    },
+    [updateWorkspaceDocumentState],
+  );
+  const setActiveTabPath = useCallback<Dispatch<SetStateAction<string | undefined>>>(
+    (update) => {
+      updateWorkspaceDocumentState((current) => ({
+        ...current,
+        activeTabPath: typeof update === "function" ? update(current.activeTabPath) : update,
+      }));
+    },
+    [updateWorkspaceDocumentState],
+  );
+  const setWorkspaceLayout = useCallback<Dispatch<SetStateAction<WorkspaceLayoutV1>>>(
+    (update) => {
+      updateWorkspaceDocumentState((current) => ({
+        ...current,
+        workspaceLayout: typeof update === "function" ? update(current.workspaceLayout) : update,
+      }));
+    },
+    [updateWorkspaceDocumentState],
+  );
   const sessionsRef = useRef(sessions);
   const legacyExpandedPathsLoadedRef = useRef<Set<string>>(new Set());
 
@@ -112,14 +200,6 @@ export function useWorkspaceState({
     });
   }, [expandedPaths, rootPath, persistTabs, setSettings]);
 
-  useEffect(() => {
-    setWorkspaceLayout((current) => syncLayoutWithOpenTabs(current, tabs, activeTabPath));
-  }, [activeTabPath, tabs]);
-
-  useEffect(() => {
-    setDocumentTabGroups((current) => normalizeDocumentTabGroups(current, tabs));
-  }, [tabs]);
-
   // El outline se muestra dentro del editor, nunca como tab del dock.
   useEffect(() => {
     if (!layoutHasPanel(workspaceLayout, "outline")) return;
@@ -174,6 +254,7 @@ export function useWorkspaceState({
     setActiveTabPath,
     workspaceLayout,
     setWorkspaceLayout,
+    updateWorkspaceDocumentState,
     expandedPaths,
     setExpandedPaths,
   };

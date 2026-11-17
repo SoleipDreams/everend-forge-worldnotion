@@ -32,6 +32,11 @@ export type DockMoveRequest = {
   targetGroupId: string;
   position: DockDropPosition;
   targetTabId?: string;
+  targetSide?: "before" | "after";
+  documentDrop?:
+    | { kind: "tab"; targetPath: string; targetDocumentGroupId?: string; side: "before" | "after" }
+    | { kind: "group"; targetDocumentGroupId: string }
+    | { kind: "pane" };
 };
 
 export type DockWorkspaceProps = {
@@ -57,6 +62,7 @@ type DockDragHandleKind = "tab" | "group-header";
 type DraggedDockTab = {
   tabId: string;
   sourceGroupId: string;
+  kind: DockTabRef["kind"];
   title: string;
   handleKind: DockDragHandleKind;
 };
@@ -73,7 +79,10 @@ type DockPointerDragInput = {
 type DockDropTarget = {
   groupId: string;
   position: DockDropPosition;
+  surface: "tabs" | "content";
   targetTabId?: string;
+  targetSide?: "before" | "after";
+  documentDrop?: DockMoveRequest["documentDrop"];
 };
 
 type DockDragState = {
@@ -90,7 +99,8 @@ type DockDragState = {
 const DOCK_DRAG_THRESHOLD = 4;
 const DOCK_EDGE_ZONE_RATIO = 0.26;
 
-const INTERACTIVE_DOCK_SELECTOR = "button, input, textarea, select, a, [data-dock-no-drag='true']";
+const INTERACTIVE_DOCK_SELECTOR =
+  "button:not([data-dock-tab-select='true']), input, textarea, select, a, [data-dock-no-drag='true']";
 
 export function DockWorkspace({
   layout,
@@ -139,6 +149,7 @@ export function DockWorkspace({
         dirtyDocumentPaths={dirtyDocumentPaths}
         folderDescriptionPaths={folderDescriptionPaths}
         documentTabGroups={documentTabGroups}
+        dropTarget={dragController.dragState?.target}
         onPointerDragStart={dragController.startDrag}
       />
       {dragController.dragState?.active ? (
@@ -152,6 +163,7 @@ type DockNodeViewProps = Omit<DockWorkspaceProps, "layout"> & {
   node: DockNode;
   activeGroupId: string;
   dragState?: DockDragState;
+  dropTarget?: DockDropTarget;
   onPointerDragStart: (input: DockPointerDragInput) => void;
 };
 
@@ -269,11 +281,12 @@ function DockGroup({
 }: DockGroupProps) {
   const activeTab = group.tabs.find((tab) => tab.id === group.activeTabId) ?? group.tabs[0];
   const contentRef = useSurfaceMotion<HTMLDivElement>(activeTab?.id);
-  const isDragOver = dragState?.active && dragState.target?.groupId === group.id;
+  const dropTarget = dragState?.target?.groupId === group.id ? dragState.target : undefined;
+  const isContentDragOver = dragState?.active && dropTarget?.surface === "content";
 
   return (
     <section
-      className={`dock-group ${isDragOver ? "is-drag-over" : ""}`}
+      className={`dock-group ${isContentDragOver ? "is-drag-over" : ""}`}
       data-dock-group-id={group.id}
       data-active-group={group.id === activeGroupId ? "true" : "false"}
     >
@@ -286,6 +299,7 @@ function DockGroup({
         onGroupContextMenu={onGroupContextMenu}
         onDocumentGroupToggle={onDocumentGroupToggle}
         onDocumentGroupContextMenu={onDocumentGroupContextMenu}
+        dropTarget={dropTarget}
         onOpenDocument={onOpenDocument}
         onPointerDragStart={onPointerDragStart}
         dirtyDocumentPaths={dirtyDocumentPaths}
@@ -299,7 +313,7 @@ function DockGroup({
           <EmptyDockGroup groupId={group.id} renderEmptyDocuments={renderEmptyDocuments} />
         )}
       </div>
-      {isDragOver ? <DockDropOverlay target={dragState.target} /> : null}
+      {isContentDragOver ? <DockDropOverlay target={dropTarget} /> : null}
     </section>
   );
 }
@@ -310,6 +324,7 @@ type DockTabBarProps = {
   dirtyDocumentPaths?: Set<string>;
   folderDescriptionPaths?: Set<string>;
   documentTabGroups?: DocumentTabGroup[];
+  dropTarget?: DockDropTarget;
   onSelectTab: DockWorkspaceProps["onSelectTab"];
   onCloseTab: DockWorkspaceProps["onCloseTab"];
   onTabContextMenu?: DockWorkspaceProps["onTabContextMenu"];
@@ -326,6 +341,7 @@ function DockTabBar({
   dirtyDocumentPaths,
   folderDescriptionPaths,
   documentTabGroups = [],
+  dropTarget,
   onSelectTab,
   onCloseTab,
   onTabContextMenu,
@@ -366,16 +382,19 @@ function DockTabBar({
     return Boolean(tab.kind === "document" && tab.path && folderDescriptionPaths?.has(tab.path));
   }
 
-  function renderTabButton(tab: DockTabRef) {
+  function renderTabButton(tab: DockTabRef, tabGroup?: DocumentTabGroup) {
     const isFolderDescription = tabIsFolderDescription(tab);
+    const isDropTarget = dropTarget?.targetTabId === tab.id;
+    const dropSide = isDropTarget ? dropTarget?.targetSide : undefined;
     return (
       <div
         key={tab.id}
-        role="button"
-        tabIndex={0}
-        className={`dock-tab dock-tab-${tab.kind === "document" ? "document" : "panel"} ${isFolderDescription ? "dock-tab-folder-note" : ""} ${tab.id === group.activeTabId ? "active" : ""}`}
+        className={`dock-tab dock-tab-${tab.kind === "document" ? "document" : "panel"} ${isFolderDescription ? "dock-tab-folder-note" : ""} ${tab.id === group.activeTabId ? "active" : ""} ${isDropTarget ? "is-drop-target" : ""}`}
         data-dock-tab-id={tab.id}
         data-dock-tab-kind={tab.kind}
+        data-dock-tab-path={tab.path}
+        data-document-tab-group-id={tabGroup?.id}
+        data-drop-side={dropSide}
         data-dragging="false"
         onClick={() => onSelectTab(tab, group.id)}
         onContextMenu={(event) => {
@@ -400,15 +419,23 @@ function DockTabBar({
         }}
         title={tab.path ?? tab.title}
       >
-        {isFolderDescription ? (
-          <FileEdit className="dock-tab-kind-icon" size={10} aria-label={t("Folder note")} />
-        ) : null}
-        <span>{tab.kind === "document" ? tab.title : t(tab.title)}</span>
-        {tabIsDirty(tab) ? (
-          <strong className="dock-tab-dirty" aria-label={t("Unsaved changes")} title={t("Unsaved changes")}>
-            *
-          </strong>
-        ) : null}
+        <button
+          type="button"
+          className="dock-tab-select"
+          data-dock-tab-select="true"
+          role="tab"
+          aria-selected={tab.id === group.activeTabId}
+        >
+          {isFolderDescription ? (
+            <FileEdit className="dock-tab-kind-icon" size={10} aria-label={t("Folder note")} />
+          ) : null}
+          <span>{tab.kind === "document" ? tab.title : t(tab.title)}</span>
+          {tabIsDirty(tab) ? (
+            <strong className="dock-tab-dirty" aria-label={t("Unsaved changes")} title={t("Unsaved changes")}>
+              *
+            </strong>
+          ) : null}
+        </button>
         <button
           type="button"
           className="dock-tab-close"
@@ -451,11 +478,14 @@ function DockTabBar({
         <div
           key={tabGroup.id}
           className={`dock-document-tab-group ${tabGroup.collapsed ? "collapsed" : ""}`}
+          data-document-tab-group-id={tabGroup.id}
+          data-drop-target={dropTarget?.documentDrop?.kind === "group" && dropTarget.documentDrop.targetDocumentGroupId === tabGroup.id ? "true" : undefined}
           style={{ "--document-tab-group-color": tabGroup.color } as CSSProperties}
         >
           <button
             type="button"
             className="dock-document-tab-group-label"
+            data-document-tab-group-id={tabGroup.id}
             data-dock-no-drag="true"
             onClick={() => onDocumentGroupToggle?.(tabGroup)}
             onContextMenu={(event) => {
@@ -463,6 +493,7 @@ function DockTabBar({
               event.stopPropagation();
               onDocumentGroupContextMenu?.(tabGroup, event.clientX, event.clientY);
             }}
+            aria-expanded={!tabGroup.collapsed}
             title={tabGroup.name}
           >
             <ChevronRight size={10} />
@@ -472,7 +503,7 @@ function DockTabBar({
           </button>
           {!tabGroup.collapsed ? (
             <div className="dock-document-tab-group-tabs">
-              {groupTabs.map((groupTab) => renderTabButton(groupTab))}
+              {groupTabs.map((groupTab) => renderTabButton(groupTab, tabGroup))}
             </div>
           ) : null}
         </div>
@@ -498,7 +529,7 @@ function DockTabBar({
       title={activeTab ? `${t("Drag")} ${activeTab.kind === "document" ? activeTab.title : t(activeTab.title)}` : undefined}
     >
       <div className="dock-tab-strip">
-        <div className="dock-document-tabs">
+        <div className="dock-document-tabs" role="tablist" aria-label={isWritingGroup ? t("Open documents") : t("Dock tabs")}>
           {isWritingGroup ? renderDocumentTabs() : documentTabs.map((tab) => renderTabButton(tab))}
         </div>
         {isWritingGroup ? (
@@ -599,6 +630,7 @@ function useDockDragController({
       item: {
         tabId: input.tab.id,
         sourceGroupId: input.groupId,
+        kind: input.tab.kind,
         title: input.tab.title,
         handleKind: input.handleKind,
       },
@@ -632,6 +664,10 @@ function useDockDragController({
         targetGroupId: current.target.groupId,
         position: current.target.position,
         targetTabId: current.target.targetTabId,
+        ...(current.target.targetSide ? { targetSide: current.target.targetSide } : {}),
+        ...(current.target.documentDrop
+          ? { documentDrop: current.target.documentDrop }
+          : {}),
       });
     }
 
@@ -656,7 +692,12 @@ function useDockDragController({
           target: active
             ? getAllowedDockDropTarget(
                 current.item,
-                getDockDropTarget(workspaceRef.current, event.clientX, event.clientY),
+                getDockDropTarget(
+                  workspaceRef.current,
+                  event.clientX,
+                  event.clientY,
+                  current.item,
+                ),
                 layout,
               )
             : undefined,
@@ -695,8 +736,10 @@ function getDockDropTarget(
   workspaceElement: HTMLDivElement | null,
   x: number,
   y: number,
+  item: DraggedDockTab,
 ): DockDropTarget | undefined {
   if (!workspaceElement) return undefined;
+  const elementAtPoint = document.elementFromPoint?.(x, y) as HTMLElement | null | undefined;
   const groups = [...workspaceElement.querySelectorAll<HTMLElement>("[data-dock-group-id]")];
   let smallestArea = Number.POSITIVE_INFINITY;
   let targetGroup: HTMLElement | undefined;
@@ -712,17 +755,123 @@ function getDockDropTarget(
   }
 
   if (!targetGroup) return undefined;
-  const rect = targetGroup.getBoundingClientRect();
-  const position = getDropPosition(rect, x, y);
-  const elementAtPoint = document.elementFromPoint?.(x, y) as HTMLElement | null | undefined;
-  const tabElement = elementAtPoint?.closest<HTMLElement>("[data-dock-tab-id]") ?? null;
-  const targetTabId =
-    position === "center" && targetGroup.contains(tabElement)
-      ? tabElement?.dataset.dockTabId
-      : undefined;
   const groupId = targetGroup.dataset.dockGroupId;
+  if (!groupId) return undefined;
 
-  return groupId ? { groupId, position, targetTabId } : undefined;
+  const tabElement =
+    elementAtPoint?.closest<HTMLElement>("[data-dock-tab-id]") ??
+    [...targetGroup.querySelectorAll<HTMLElement>("[data-dock-tab-id]")].find((candidate) =>
+      isPointInsideRect(x, y, candidate.getBoundingClientRect()),
+    ) ??
+    null;
+  if (tabElement && targetGroup.contains(tabElement)) {
+    const targetTabId = tabElement.dataset.dockTabId;
+    if (targetTabId === item.tabId) return undefined;
+
+    if (item.kind === "document" && tabElement.dataset.dockTabKind === "document") {
+      const targetPath = tabElement.dataset.dockTabPath;
+      if (!targetPath) return undefined;
+      const rect = tabElement.getBoundingClientRect();
+      return {
+        groupId,
+        position: "center",
+        surface: "tabs",
+        targetTabId,
+        targetSide: x < rect.left + rect.width / 2 ? "before" : "after",
+        documentDrop: {
+          kind: "tab",
+          targetPath,
+          targetDocumentGroupId: tabElement.dataset.documentTabGroupId || undefined,
+          side: x < rect.left + rect.width / 2 ? "before" : "after",
+        },
+      };
+    }
+
+    const rect = tabElement.getBoundingClientRect();
+    return {
+      groupId,
+      position: "center",
+      surface: "tabs",
+      targetTabId,
+      targetSide: x < rect.left + rect.width / 2 ? "before" : "after",
+    };
+  }
+
+  if (item.kind === "document") {
+    const documentTabGroup =
+      elementAtPoint?.closest<HTMLElement>(".dock-document-tab-group, .dock-document-tab-group-label") ??
+      [...targetGroup.querySelectorAll<HTMLElement>(".dock-document-tab-group")].find((candidate) =>
+        isPointInsideRect(x, y, candidate.getBoundingClientRect()),
+      ) ??
+      null;
+    const documentGroupId = documentTabGroup?.dataset.documentTabGroupId;
+    if (documentGroupId && targetGroup.contains(documentTabGroup)) {
+      return {
+        groupId,
+        position: "center",
+        surface: "tabs",
+        documentDrop: { kind: "group", targetDocumentGroupId: documentGroupId },
+      };
+    }
+  }
+
+  const tabBar = targetGroup.querySelector<HTMLElement>(".dock-tab-bar");
+  const tabBarRect = tabBar?.getBoundingClientRect();
+  if (tabBarRect && isPointInsideRect(x, y, tabBarRect)) {
+    const tabCandidates = [...(tabBar?.querySelectorAll<HTMLElement>("[data-dock-tab-id]") ?? [])]
+      .filter((candidate) => candidate.dataset.dockTabId !== item.tabId)
+      .map((candidate) => ({ candidate, rect: candidate.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+      .sort((left, right) => left.rect.left - right.rect.left);
+    const nearbyTab = tabCandidates.find(({ rect }) => x < rect.left + rect.width / 2)
+      ?? tabCandidates[tabCandidates.length - 1];
+
+    if (nearbyTab) {
+      const { candidate, rect } = nearbyTab;
+      const side = x < rect.left + rect.width / 2 ? "before" : "after";
+      if (item.kind === "document" && candidate.dataset.dockTabKind === "document") {
+        const targetPath = candidate.dataset.dockTabPath;
+        if (targetPath) {
+          return {
+            groupId,
+            position: "center",
+            surface: "tabs",
+            targetTabId: candidate.dataset.dockTabId,
+            targetSide: side,
+            documentDrop: {
+              kind: "tab",
+              targetPath,
+              targetDocumentGroupId: candidate.dataset.documentTabGroupId || undefined,
+              side,
+            },
+          };
+        }
+      } else if (item.kind !== "document") {
+        return {
+          groupId,
+          position: "center",
+          surface: "tabs",
+          targetTabId: candidate.dataset.dockTabId,
+          targetSide: side,
+        };
+      }
+    }
+
+    return item.kind === "document"
+      ? { groupId, position: "center", surface: "tabs", documentDrop: { kind: "pane" } }
+      : { groupId, position: "center", surface: "tabs" };
+  }
+
+  const content = targetGroup.querySelector<HTMLElement>(".dock-group-content");
+  const rect = content?.getBoundingClientRect() ?? targetGroup.getBoundingClientRect();
+  const position = getDropPosition(rect, x, y);
+  const documentDrop = item.kind === "document" && position === "center" ? { kind: "pane" as const } : undefined;
+
+  return { groupId, position, surface: "content", documentDrop };
+}
+
+function isPointInsideRect(x: number, y: number, rect: DOMRect): boolean {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
 function getDropPosition(rect: DOMRect, x: number, y: number): DockDropPosition {

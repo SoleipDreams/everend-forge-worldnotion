@@ -58,36 +58,24 @@ describe("mounted WorldNotion overlay ownership", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("preserves the mode menu while hidden and prevents its pending animation from taking focus", async () => {
-    const menu = (
+  it("does not capture Escape or Tab for the editor mode selector while its app is inactive", () => {
+    const selector = (
       <EditorModeSelector
         mode="write"
         writingMode="processed"
-        labels={{ writing: "Writing", processed: "Processed", semi: "Semi", source: "Source" }}
+        labels={{ mode: "Editor mode", processed: "Processed", semi: "Semi", source: "Source" }}
         onWritingModeChange={vi.fn()}
-        onOpenWriting={vi.fn()}
         onOpenSource={vi.fn()}
       />
     );
-    const rendered = render(tool(true, menu));
-    fireEvent.click(screen.getByRole("button", { name: "Writing: Processed" }));
-    rendered.rerender(tool(false, menu));
+    render(tool(false, selector));
     const external = screen.getByRole("button", { name: "Other tool" });
     external.focus();
-    await animationFrame();
 
-    expect(external).toHaveFocus();
     expect(key("Escape").defaultPrevented).toBe(false);
     expect(key("Tab").defaultPrevented).toBe(false);
-    expect(screen.getByRole("menu", { name: "Writing" })).toBeInTheDocument();
-    fireEvent.mouseDown(external);
-    expect(screen.getByRole("menu", { name: "Writing" })).toBeInTheDocument();
-
-    rendered.rerender(tool(true, menu));
-    expect(key("Escape").defaultPrevented).toBe(true);
-    expect(screen.queryByRole("menu")).toBeNull();
-    await animationFrame();
-    expect(screen.getByRole("button", { name: "Processed" })).toHaveFocus();
+    expect(external).toHaveFocus();
+    expect(screen.getByRole("radiogroup", { name: "Editor mode" })).toBeInTheDocument();
   });
 
   it("keeps a property creation draft and its universe guard registered through hidden Escape", async () => {

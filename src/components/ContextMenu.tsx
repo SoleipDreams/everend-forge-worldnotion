@@ -167,7 +167,7 @@ export function ContextMenu({
         </>
       ) : null}
 
-      <button type="button" onClick={() => run("newBlankPage")} className="context-menu-item">
+      <button type="button" data-onboarding-target="worldnotion.create-note" onClick={() => run("newBlankPage")} className="context-menu-item">
         <FileText size={16} />
         <span>{ui.newBlankPage}</span>
       </button>

@@ -28,8 +28,9 @@ export function buildFileResults(index: VaultIndex | null): FileResult[] {
 
 export function buildCommandResults(
   keybindings: Array<{ commandId: EditorCommandId; shortcut: string }>,
+  showModeTabs = true,
 ): CommandResult[] {
-  return EDITOR_COMMANDS.map((command) => ({
+  return EDITOR_COMMANDS.filter((command) => showModeTabs || command.id !== "switchMode").map((command) => ({
     type: "command",
     id: command.id,
     commandId: command.id,

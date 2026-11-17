@@ -6,6 +6,7 @@ import {
   closeTabsToRightOf,
   createOpenTabFromFile,
   advancePendingCloseQueue,
+  applyEditorModeToOpenTabs,
   dirtyTabPaths,
   nextAdjacentTabPath,
   pendingCloseQueueFromDirtyPaths,
@@ -100,6 +101,30 @@ describe("tab utilities", () => {
     expect(restored).toMatchObject({ mode: "write", writingMode: "semi", dirty: true });
     expect(restored.rawMarkdown).toBe(original.rawMarkdown);
     expect(original).toMatchObject({ mode: "write", writingMode: "processed" });
+  });
+
+  it("applies a global editor mode to open tabs without changing document data", () => {
+    const dirty = {
+      ...tab("A.md", true),
+      rawMarkdown: "---\ntype: character\n---\n\n# Draft",
+      savedMarkdown: "---\ntype: character\n---\n\n# Saved",
+      writingMode: "semi" as const,
+    };
+    const json = { ...tab("data.json"), sourceView: "json" as const };
+    const next = applyEditorModeToOpenTabs([dirty, tab("B.md"), json], "source");
+
+    expect(next.map((item) => item.mode)).toEqual(["source", "source", "source"]);
+    expect(next[0]).toMatchObject({
+      rawMarkdown: dirty.rawMarkdown,
+      savedMarkdown: dirty.savedMarkdown,
+      dirty: true,
+      writingMode: "semi",
+    });
+    expect(next[2]).toMatchObject({ mode: "source", sourceView: "json" });
+
+    const processed = applyEditorModeToOpenTabs(next, "processed");
+    expect(processed[0]).toMatchObject({ mode: "write", writingMode: "processed", dirty: true });
+    expect(processed[2]).toMatchObject({ mode: "source", sourceView: "json" });
   });
 
   it("serializes only persisted session fields", () => {

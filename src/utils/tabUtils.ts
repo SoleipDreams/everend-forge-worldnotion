@@ -77,6 +77,14 @@ export function withTabEditorMode(tab: OpenTab, requestedMode: EditorMode | Writ
   };
 }
 
+/** Applies the Settings editor mode to every open tab without touching document content or save state. */
+export function applyEditorModeToOpenTabs(
+  tabs: OpenTab[],
+  requestedMode: DefaultEditorMode,
+): OpenTab[] {
+  return tabs.map((tab) => withTabEditorMode(tab, requestedMode));
+}
+
 export function serializeWorkspaceSession(
   rootPath: string,
   activePath: string | undefined,

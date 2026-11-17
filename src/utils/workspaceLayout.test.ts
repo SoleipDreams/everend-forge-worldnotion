@@ -161,6 +161,26 @@ describe("workspace layout utilities", () => {
     ).toBe(true);
   });
 
+  it("allows document panes to split vertically at their content edges", () => {
+    const layout = createDefaultWorkspaceLayout([tab("A.md"), tab("B.md")]);
+
+    expect(
+      isDockMoveAllowedAroundDocumentAnchor({
+        tabId: documentDockTabId("B.md"),
+        sourceGroupId: "dock-documents",
+        targetGroupId: "dock-documents",
+        position: "top",
+      }, layout),
+    ).toBe(true);
+    const split = moveDockTab(layout, {
+      tabId: documentDockTabId("B.md"),
+      sourceGroupId: "dock-documents",
+      targetGroupId: "dock-documents",
+      position: "bottom",
+    });
+    expect(documentGroupIdForPath(split, "A.md")).not.toBe(documentGroupIdForPath(split, "B.md"));
+  });
+
   it("keeps the moved tab active when moved to the center of another group", () => {
     const layout = createDefaultWorkspaceLayout([tab("A.md")], { showGraph: true });
     const next = moveDockTab(layout, {

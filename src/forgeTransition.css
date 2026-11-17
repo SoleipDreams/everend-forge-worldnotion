@@ -443,3 +443,17 @@
     padding-top: 12px;
   }
 }
+
+@container wn-editor (min-width: 521px) and (max-width: 640px) {
+  .forge-worldnotion .floating-format-toolbar-fixed {
+    margin-left: 12px;
+    margin-right: auto;
+    max-width: calc(100% - 260px);
+  }
+}
+
+@container wn-editor (max-width: 520px) {
+  .forge-worldnotion .editor-shell .editor-surface.mode-write {
+    padding-bottom: 84px;
+  }
+}

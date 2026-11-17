@@ -76,9 +76,11 @@ describe("ExplorerPanel virtualization", () => {
 
   it("opens the create menu from the explorer surface", () => {
     const onOpenCreateMenu = vi.fn();
-    renderPanel([], "", { onOpenCreateMenu });
+    const { container } = renderPanel([], "", { onOpenCreateMenu });
 
-    fireEvent.click(screen.getByRole("button", { name: "Create a folder or note" }));
+    const surfaceCreateButton = container.querySelector<HTMLButtonElement>(".explorer-create-item-button");
+    expect(surfaceCreateButton).not.toBeNull();
+    fireEvent.click(surfaceCreateButton!);
 
     expect(onOpenCreateMenu).toHaveBeenCalledOnce();
     expect(onOpenCreateMenu.mock.calls[0]).toHaveLength(2);

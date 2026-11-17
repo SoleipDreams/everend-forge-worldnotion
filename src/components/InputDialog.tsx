@@ -77,6 +77,13 @@ export function InputDialog({
           <input
             ref={inputRef}
             type="text"
+            data-onboarding-target={
+              title === "Enter page name:"
+                ? "worldnotion.create-note"
+                : title === "Enter folder name:"
+                  ? "worldnotion.create-folder-name"
+                  : undefined
+            }
             placeholder={placeholder ?? ui.enterValue}
             defaultValue={defaultValue}
             onKeyDown={handleKeyDown}

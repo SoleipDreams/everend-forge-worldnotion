@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { useRef } from "react";
+import type { KeyboardEvent } from "react";
 import type { EditorMode, WritingMode } from "../editorTypes";
-import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
+import { focusAppElement } from "../hooks/useAppInteraction";
+
+type ModeOption = "processed" | "semi" | "source";
 
 type EditorModeSelectorProps = {
   mode: EditorMode;
   writingMode: WritingMode;
   disabled?: boolean;
-  labels: { writing: string; processed: string; semi: string; source: string };
+  labels: { mode: string; processed: string; semi: string; source: string };
   onWritingModeChange: (mode: WritingMode) => void;
-  onOpenWriting: () => void;
   onOpenSource: () => void;
 };
 
@@ -19,143 +20,67 @@ export function EditorModeSelector({
   disabled = false,
   labels,
   onWritingModeChange,
-  onOpenWriting,
   onOpenSource,
 }: EditorModeSelectorProps) {
-  const appActive = useAppIsActive();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const writingLabel = writingMode === "processed" ? labels.processed : labels.semi;
+  const selected: ModeOption = mode === "source" ? "source" : writingMode;
+  const options: Array<{ id: ModeOption; label: string; disabled?: boolean }> = [
+    { id: "processed", label: labels.processed, disabled },
+    { id: "semi", label: labels.semi, disabled },
+    { id: "source", label: labels.source },
+  ];
 
-  const closeMenu = useCallback((restoreFocus = false) => {
-    setOpen(false);
-    if (restoreFocus) window.requestAnimationFrame(() => focusAppElement(triggerRef.current));
-  }, []);
+  function selectOption(id: ModeOption) {
+    if (id === "source") onOpenSource();
+    else onWritingModeChange(id);
+  }
 
-  const focusOption = useCallback((index: number) => {
-    const normalized = (index + optionRefs.current.length) % optionRefs.current.length;
-    focusAppElement(optionRefs.current[normalized]);
-  }, []);
-
-  useEffect(() => {
-    if (!open || !appActive) return;
-    const dismiss = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) closeMenu();
-    };
-    const dismissWithKeyboard = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeMenu(true);
-      }
-    };
-    document.addEventListener("mousedown", dismiss);
-    document.addEventListener("keydown", dismissWithKeyboard);
-    return () => {
-      document.removeEventListener("mousedown", dismiss);
-      document.removeEventListener("keydown", dismissWithKeyboard);
-    };
-  }, [closeMenu, open, appActive]);
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    const enabledIndexes = options.flatMap((option, index) => (option.disabled ? [] : [index]));
+    const position = enabledIndexes.indexOf(currentIndex);
+    const nextPosition =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? enabledIndexes.length - 1
+          : (position + (event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1) +
+              enabledIndexes.length) %
+            enabledIndexes.length;
+    const nextIndex = enabledIndexes[nextPosition];
+    const next = options[nextIndex];
+    if (!next) return;
+    focusAppElement(optionRefs.current[nextIndex]);
+    selectOption(next.id);
+  }
 
   return (
-    <div ref={rootRef} className="mode-toggle" aria-label="Editor mode">
-      <div className={`writing-mode-selector${mode === "write" ? " active" : ""}`}>
-        <button
-          ref={triggerRef}
-          type="button"
-          className="writing-mode-current"
-          aria-pressed={mode === "write"}
-          onClick={onOpenWriting}
-          disabled={disabled}
-        >
-          {writingLabel}
-        </button>
-        <button
-          type="button"
-          className="writing-mode-menu"
-          aria-label={`${labels.writing}: ${writingLabel}`}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => {
-            setOpen((current) => {
-              const next = !current;
-              if (next) {
-                window.requestAnimationFrame(() =>
-                  focusOption(writingMode === "processed" ? 0 : 1),
-                );
-              }
-              return next;
-            });
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-              event.preventDefault();
-              setOpen(true);
-              window.requestAnimationFrame(() => focusOption(event.key === "ArrowUp" ? 1 : 0));
-            }
-          }}
-          disabled={disabled}
-        >
-          {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-        </button>
-        {open ? (
-          <div
-            role="menu"
-            className="writing-mode-options"
-            aria-label={labels.writing}
-            onKeyDown={(event) => {
-              const current = optionRefs.current.indexOf(
-                document.activeElement as HTMLButtonElement,
-              );
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                focusOption(current + 1);
-              } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                focusOption(current - 1);
-              } else if (event.key === "Home") {
-                event.preventDefault();
-                focusOption(0);
-              } else if (event.key === "End") {
-                event.preventDefault();
-                focusOption(optionRefs.current.length - 1);
-              } else if (event.key === "Escape") {
-                event.preventDefault();
-                event.stopPropagation();
-                closeMenu(true);
-              }
+    <div className="mode-toggle" role="radiogroup" aria-label={labels.mode}>
+      {options.map((option, index) => {
+        const checked = selected === option.id;
+        return (
+          <button
+            ref={(element) => {
+              optionRefs.current[index] = element;
             }}
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            aria-label={option.label}
+            tabIndex={checked ? 0 : -1}
+            className={checked ? "active" : ""}
+            disabled={option.disabled}
+            onClick={() => selectOption(option.id)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
           >
-            {(["processed", "semi"] as const).map((nextMode, index) => (
-              <button
-                ref={(element) => {
-                  optionRefs.current[index] = element;
-                }}
-                key={nextMode}
-                type="button"
-                role="menuitemradio"
-                aria-checked={writingMode === nextMode}
-                onClick={() => {
-                  onWritingModeChange(nextMode);
-                  closeMenu(true);
-                }}
-              >
-                {nextMode === "processed" ? labels.processed : labels.semi}
-                {writingMode === nextMode ? <Check size={13} /> : null}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <button
-        type="button"
-        className={mode === "source" ? "active" : ""}
-        aria-pressed={mode === "source"}
-        onClick={onOpenSource}
-      >
-        {labels.source}
-      </button>
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

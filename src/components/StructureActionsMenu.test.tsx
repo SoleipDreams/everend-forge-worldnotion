@@ -112,4 +112,10 @@ describe("StructureActionsMenu (unified format panel)", () => {
     fireEvent.click(screen.getByRole("button", { name: "H1" }));
     expect(onReplace).toHaveBeenCalledWith(heading, "# Title");
   });
+
+  it("hides the direct Source action when the mode controls are disabled", () => {
+    renderPanel(wikilink, { onOpenSource: undefined });
+
+    expect(screen.queryByRole("menuitem", { name: "Open in Source" })).toBeNull();
+  });
 });

@@ -380,6 +380,7 @@ describe("visual documents in the real workspace", () => {
     files[0].content = files[0].content.replace("version: 1", "version: 99");
     const settings = loadSettings();
     settings.localePreference = "es";
+    settings.editor.showModeTabs = true;
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     render(<App suiteChrome={chrome()} />);
     await screen.findByRole(

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { OutlineHeader } from "../utils/outlineExtractor";
 
 interface OutlineGuideProps {
@@ -6,6 +5,7 @@ interface OutlineGuideProps {
   currentHeader: OutlineHeader | null;
   onNavigate: (line: number) => void;
   position?: "left" | "right";
+  ariaLabel?: string;
 }
 
 export function OutlineGuide({
@@ -13,22 +13,23 @@ export function OutlineGuide({
   currentHeader,
   onNavigate,
   position = "right",
+  ariaLabel = "Document outline",
 }: OutlineGuideProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const renderHeader = (header: OutlineHeader, depth = 0) => {
     const isCurrent = currentHeader?.id === header.id;
 
     return (
       <div key={header.id}>
-        <div
+        <button
+          type="button"
           className={`outline-item ${isCurrent ? "active" : ""}`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
           onClick={() => onNavigate(header.line)}
+          aria-current={isCurrent ? "location" : undefined}
           title={header.text}
         >
           <span className="outline-item-text">{header.text}</span>
-        </div>
+        </button>
         {header.children.map((child) => renderHeader(child, depth + 1))}
       </div>
     );
@@ -39,12 +40,8 @@ export function OutlineGuide({
   }
 
   return (
-    <div
-      className={`outline-guide-notion position-${position} ${isHovered ? "hovered" : ""}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <nav className={`outline-guide-notion position-${position}`} aria-label={ariaLabel}>
       {outline.map((header) => renderHeader(header, 0))}
-    </div>
+    </nav>
   );
 }

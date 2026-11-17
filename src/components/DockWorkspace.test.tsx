@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { DockTabRef } from "../editorTypes";
+import type { DockTabRef, DocumentTabGroup } from "../editorTypes";
 import {
   createDefaultWorkspaceLayout,
   documentDockTabId,
@@ -8,25 +8,20 @@ import {
 } from "../utils/workspaceLayout";
 import { DockWorkspace } from "./DockWorkspace";
 
-function renderDockWorkspace(options: { emptyDocuments?: boolean } = {}) {
-  const documentTabs = options.emptyDocuments
-    ? []
-    : [
-        {
-          path: "A.md",
-          title: "A",
-          mode: "write" as const,
-          modifiedMs: 1,
-          isTemplate: false,
-        },
-        {
-          path: "B.md",
-          title: "B",
-          mode: "write" as const,
-          modifiedMs: 1,
-          isTemplate: false,
-        },
-      ];
+function renderDockWorkspace(options: {
+  emptyDocuments?: boolean;
+  paths?: string[];
+  documentTabGroups?: DocumentTabGroup[];
+} = {}) {
+  const documentTabs = (options.emptyDocuments ? [] : (options.paths ?? ["A.md", "B.md"])).map(
+    (path) => ({
+      path,
+      title: path.replace(/\.md$/, ""),
+      mode: "write" as const,
+      modifiedMs: 1,
+      isTemplate: false,
+    }),
+  );
   const layout = createDefaultWorkspaceLayout(documentTabs);
   const handlers = {
     onSelectTab: vi.fn(),
@@ -41,6 +36,7 @@ function renderDockWorkspace(options: { emptyDocuments?: boolean } = {}) {
   render(
     <DockWorkspace
       layout={layout}
+      documentTabGroups={options.documentTabGroups}
       renderTab={(tab: DockTabRef) => <div data-testid="dock-panel">{tab.title}</div>}
       {...handlers}
     />,
@@ -55,13 +51,32 @@ function mockDockGroupRects() {
     const rect =
       group.dataset.dockGroupId === "dock-explorer"
         ? { left: 0, top: 0, right: 220, bottom: 600, width: 220, height: 600 }
-        : { left: 224, top: 0, right: 900, bottom: 600, width: 676, height: 600 };
+        : group.dataset.dockGroupId === "dock-tools"
+          ? { left: 704, top: 0, right: 900, bottom: 600, width: 196, height: 600 }
+          : { left: 224, top: 0, right: 700, bottom: 600, width: 476, height: 600 };
     group.getBoundingClientRect = vi.fn(() => ({
       ...rect,
       x: rect.left,
       y: rect.top,
       toJSON: () => rect,
     }));
+    const bar = group.querySelector<HTMLElement>(".dock-tab-bar");
+    const barRect = { left: rect.left, top: 0, right: rect.right, bottom: 40, width: rect.width, height: 40 };
+    if (bar) bar.getBoundingClientRect = vi.fn(() => ({ ...barRect, x: barRect.left, y: barRect.top, toJSON: () => barRect }));
+    const content = group.querySelector<HTMLElement>(".dock-group-content");
+    const contentRect = { left: rect.left, top: 40, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height - 40 };
+    if (content) content.getBoundingClientRect = vi.fn(() => ({ ...contentRect, x: contentRect.left, y: contentRect.top, toJSON: () => contentRect }));
+
+    [...group.querySelectorAll<HTMLElement>(".dock-tab-document")].forEach((tab, index) => {
+      const isGrouped = Boolean(tab.closest(".dock-document-tab-group"));
+      const left = isGrouped ? 310 + index * 90 : 240 + index * 100;
+      const tabRect = { left, top: 2, right: left + 92, bottom: 38, width: 92, height: 36 };
+      tab.getBoundingClientRect = vi.fn(() => ({ ...tabRect, x: tabRect.left, y: tabRect.top, toJSON: () => tabRect }));
+    });
+    [...group.querySelectorAll<HTMLElement>(".dock-document-tab-group")].forEach((tabGroup) => {
+      const groupRect = { left: 230, top: 1, right: 390, bottom: 39, width: 160, height: 38 };
+      tabGroup.getBoundingClientRect = vi.fn(() => ({ ...groupRect, x: groupRect.left, y: groupRect.top, toJSON: () => groupRect }));
+    });
   }
 }
 
@@ -138,6 +153,106 @@ describe("DockWorkspace", () => {
     pointerDrag(screen.getByText("B").closest(".dock-tab")!, { x: 520, y: 18 }, { x: 110, y: 300 });
 
     expect(handlers.onMoveTab).not.toHaveBeenCalled();
+  });
+
+  it("previews document tab insertion without showing dock zones over the tab rail", () => {
+    const { handlers } = renderDockWorkspace({ paths: ["A.md", "B.md", "C.md"] });
+    mockDockGroupRects();
+    const sourceTab = document.querySelector('[data-dock-tab-id="document:A.md"]')!;
+
+    fireEvent.pointerDown(sourceTab, { button: 0, pointerId: 1, clientX: 260, clientY: 18 });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 350, clientY: 18 });
+
+    const targetTab = document.querySelector<HTMLElement>('[data-dock-tab-id="document:B.md"]');
+    expect(targetTab?.classList.contains("is-drop-target")).toBe(true);
+    expect(targetTab?.dataset.dropSide).toBe("before");
+    expect(document.querySelector(".dock-drop-overlay")).toBeNull();
+
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 350, clientY: 18 });
+
+    expect(handlers.onMoveTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: documentDockTabId("A.md"),
+        sourceGroupId: "dock-documents",
+        targetGroupId: "dock-documents",
+        position: "center",
+        targetSide: "before",
+        documentDrop: expect.objectContaining({ kind: "tab", targetPath: "B.md", side: "before" }),
+      }),
+    );
+  });
+
+  it("joins an existing named group when a document is dropped on its label", () => {
+    const { handlers } = renderDockWorkspace({
+      paths: ["A.md", "B.md", "C.md"],
+      documentTabGroups: [
+        { id: "lore", name: "Lore", color: "#4f8cff", collapsed: false, tabPaths: ["A.md", "B.md"] },
+      ],
+    });
+    mockDockGroupRects();
+
+    pointerDrag(screen.getByText("C").closest(".dock-tab")!, { x: 460, y: 18 }, { x: 250, y: 18 });
+
+    expect(handlers.onMoveTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: documentDockTabId("C.md"),
+        documentDrop: { kind: "group", targetDocumentGroupId: "lore" },
+      }),
+    );
+  });
+
+  it("previews insertion next to the nearest tab when dropping on tab-bar whitespace", () => {
+    const { handlers } = renderDockWorkspace({ paths: ["A.md", "B.md", "C.md"] });
+    mockDockGroupRects();
+    const sourceTab = document.querySelector('[data-dock-tab-id="document:A.md"]')!;
+
+    fireEvent.pointerDown(sourceTab, { button: 0, pointerId: 1, clientX: 260, clientY: 18 });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 660, clientY: 18 });
+
+    const lastTab = document.querySelector<HTMLElement>('[data-dock-tab-id="document:C.md"]');
+    expect(lastTab?.classList.contains("is-drop-target")).toBe(true);
+    expect(lastTab?.dataset.dropSide).toBe("after");
+    expect(document.querySelector(".dock-drop-overlay")).toBeNull();
+
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 660, clientY: 18 });
+
+    expect(handlers.onMoveTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetTabId: documentDockTabId("C.md"),
+        targetSide: "after",
+        targetGroupId: "dock-documents",
+        position: "center",
+        documentDrop: expect.objectContaining({ kind: "tab", targetPath: "C.md", side: "after" }),
+      }),
+    );
+  });
+
+  it("shows dock zones when the pointer is over pane content", () => {
+    renderDockWorkspace();
+    mockDockGroupRects();
+    const sourceTab = document.querySelector('[data-dock-tab-id="document:B.md"]')!;
+
+    fireEvent.pointerDown(sourceTab, { button: 0, pointerId: 1, clientX: 340, clientY: 18 });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 230, clientY: 300 });
+
+    expect(document.querySelector(".dock-drop-overlay .dock-drop-left.is-target")).toBeTruthy();
+
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 230, clientY: 300 });
+  });
+
+  it("splits a document pane only when the drop lands on its content edge", () => {
+    const { handlers } = renderDockWorkspace();
+    mockDockGroupRects();
+
+    pointerDrag(screen.getByText("B").closest(".dock-tab")!, { x: 340, y: 18 }, { x: 230, y: 300 });
+
+    expect(handlers.onMoveTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: documentDockTabId("B.md"),
+        targetGroupId: "dock-documents",
+        position: "left",
+      }),
+    );
   });
 
   it("moves a panel tab to the center of another group with pointer drag", () => {

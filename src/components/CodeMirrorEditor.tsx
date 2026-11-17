@@ -1151,10 +1151,14 @@ export function CodeMirrorEditor({
                 : current,
             )
           }
-          onOpenSource={() => {
-            setStructureMenu(undefined);
-            onOpenSource?.();
-          }}
+          onOpenSource={
+            onOpenSource
+              ? () => {
+                  setStructureMenu(undefined);
+                  onOpenSource();
+                }
+              : undefined
+          }
           onOpenWikilink={(target) => {
             const resolved = resolveWikilink?.(target);
             if (resolved?.targetPath) onOpenWikilink?.(resolved.targetPath, target);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenTab, WorkspaceSession } from "../editorTypes";
+import type { DocumentTabGroup, OpenTab, WorkspaceSession } from "../editorTypes";
 import type { VaultFile, VaultIndex } from "../domain";
 import { planUniverseWorkspaceState } from "./universeApply";
 import {
@@ -110,6 +110,37 @@ describe("universe apply planner", () => {
       modifiedMs: 4,
     });
     expect(documentPathsInLayout(plan.layout)).toEqual(["Notes.md"]);
+  });
+
+  it("restores document groups together with their persisted tabs", () => {
+    const group: DocumentTabGroup = {
+      id: "research",
+      name: "Research",
+      color: "#4f8cff",
+      collapsed: false,
+      tabPaths: ["Notes.md", "Draft.md"],
+    };
+    const plan = planUniverseWorkspaceState({
+      nextIndex: index([file("Notes.md"), file("Draft.md")]),
+      readRootPath: "C:/Vault",
+      currentRootPath: undefined,
+      tabs: [],
+      sessions: {
+        "C:/Vault": {
+          rootPath: "C:/Vault",
+          activePath: "Notes.md",
+          tabs: [
+            { path: "Notes.md", title: "Notes", mode: "write", isTemplate: false },
+            { path: "Draft.md", title: "Draft", mode: "write", isTemplate: false },
+          ],
+          documentTabGroups: [group],
+        },
+      },
+      persistTabs: true,
+    });
+
+    expect(plan.tabs.map((item) => item.path)).toEqual(["Notes.md", "Draft.md"]);
+    expect(plan.documentTabGroups).toEqual([group]);
   });
 
   it("restores the inspector as the default tool tab for legacy sessions", () => {

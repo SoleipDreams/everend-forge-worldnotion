@@ -116,7 +116,12 @@ export function loadSettings(): AppSettingsV4 {
       recentUniverse: parsed.recentUniverse,
       recentUniverses,
       recentUniverseProfiles: parsed.recentUniverseProfiles ?? {},
-      editor: { ...DEFAULT_EDITOR_SETTINGS, ...editorSettings, defaultMode },
+      editor: {
+        ...DEFAULT_EDITOR_SETTINGS,
+        ...editorSettings,
+        defaultMode,
+        showModeTabs: legacyEditor.showModeTabs === true,
+      },
       explorer: {
         ...DEFAULT_EXPLORER_SETTINGS,
         ...parsedExplorer,

@@ -24,6 +24,8 @@ describe("settings persistence", () => {
     expect(settings.recentUniverses).toEqual([]);
     expect(settings.explorer.ecosystemView).toBe("gallery");
     expect(settings.ambientBackground).toBe(true);
+    expect(settings.editor.defaultMode).toBe("processed");
+    expect(settings.editor.showModeTabs).toBe(false);
   });
 
   it("keeps a disabled atmosphere across saves and accepts older settings", () => {
@@ -70,10 +72,19 @@ describe("settings persistence", () => {
     const settings = loadSettings();
 
     expect(settings.editor.defaultMode).toBe("processed");
+    expect(settings.editor.showModeTabs).toBe(false);
     expect(settings.plugins.enabled["ai-advisor"]).toBe(false);
     expect(settings.plugins.enabled["unity-adapter"]).toBe(false);
     expect(settings.aiAdvisor.activeProviderId).toBe("chatgpt");
     expect(settings.aiAdvisor.providers.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("preserves an explicit mode-tabs preference and normalizes invalid values to off", () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ editor: { showModeTabs: true } }));
+    expect(loadSettings().editor.showModeTabs).toBe(true);
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ editor: { showModeTabs: "yes" } }));
+    expect(loadSettings().editor.showModeTabs).toBe(false);
   });
 
   it("migrates a disabled legacy syntax setting to visible structures", () => {

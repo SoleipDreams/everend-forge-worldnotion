@@ -34,7 +34,7 @@ export type StructureActionsMenuProps = {
   onDismiss: () => void;
   onReplace: (element: StructuredElement, replacement: string) => void;
   onSelectElement?: (element: StructuredRange) => void;
-  onOpenSource: () => void;
+  onOpenSource?: () => void;
   onOpenWikilink?: (target: string) => void;
   onOpenUrl?: (url: string) => void;
   resolveWikilink?: (label: string) => ResolvedWikilink;
@@ -424,17 +424,19 @@ export function StructureActionsMenu({
           />
         ) : null}
 
-        <ActionChip
-          icon={FileText}
-          label="Open in Source"
-          onClick={() => {
-            if (hasFieldEdits) {
-              const markdown = buildMarkdown();
-              if (markdown) onReplace(element, markdown);
-            }
-            onOpenSource();
-          }}
-        />
+        {onOpenSource ? (
+          <ActionChip
+            icon={FileText}
+            label="Open in Source"
+            onClick={() => {
+              if (hasFieldEdits) {
+                const markdown = buildMarkdown();
+                if (markdown) onReplace(element, markdown);
+              }
+              onOpenSource();
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

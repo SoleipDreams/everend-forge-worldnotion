@@ -154,7 +154,7 @@ describe("SettingsModal", () => {
     expect(drafts.hasDrafts()).toBe(true);
   });
 
-  it("offers all three default modes without a duplicate structure setting", () => {
+  it("offers all editor modes and keeps optional mode tabs off by default", () => {
     const onChange = vi.fn();
     const settings = appSettings();
 
@@ -162,11 +162,19 @@ describe("SettingsModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Editor" }));
     expect(screen.queryByLabelText("Writing structures")).toBeNull();
-    fireEvent.change(screen.getByLabelText("Default mode"), { target: { value: "semi" } });
+    expect(screen.getByLabelText(/Editor mode/)).toHaveValue("processed");
+    expect(screen.getByLabelText("Show mode tabs")).not.toBeChecked();
+    fireEvent.change(screen.getByLabelText(/Editor mode/), { target: { value: "semi" } });
 
     expect(onChange).toHaveBeenCalledWith({
       ...settings,
       editor: { ...settings.editor, defaultMode: "semi" },
+    });
+
+    fireEvent.click(screen.getByLabelText("Show mode tabs"));
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...settings,
+      editor: { ...settings.editor, showModeTabs: true },
     });
   });
 

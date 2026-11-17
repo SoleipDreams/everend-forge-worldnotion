@@ -1,14 +1,33 @@
 import { useEffect, useRef } from "react";
 import type { ClipboardEvent, KeyboardEvent } from "react";
+import { ImagePlus, Trash2 } from "lucide-react";
 import type { VaultIndex } from "../domain";
 import { useVaultImage } from "../utils/vaultImages";
+
+export type PresentationImageLabels = {
+  addPortrait: string;
+  changePortrait: string;
+  removePortrait: string;
+  addCover: string;
+  changeCover: string;
+  removeCover: string;
+  actions: string;
+};
 
 type DocumentPresentationProps = {
   vaultIndex: VaultIndex;
   name: string;
   typeLabel: string;
   hasPortrait?: boolean;
+  hasPortraitRole?: boolean;
+  hasCoverRole?: boolean;
+  portraitPath?: string;
   coverPath?: string;
+  imageLabels?: PresentationImageLabels;
+  onChoosePortrait?: () => void | Promise<void>;
+  onRemovePortrait?: () => void;
+  onChooseCover?: () => void | Promise<void>;
+  onRemoveCover?: () => void;
   onDocumentNameChange?: (newName: string) => Promise<void> | void;
 };
 
@@ -133,13 +152,23 @@ export function DocumentPresentation({
   name,
   typeLabel,
   hasPortrait = false,
+  hasPortraitRole,
+  hasCoverRole,
+  portraitPath,
   coverPath,
+  imageLabels,
+  onChoosePortrait,
+  onRemovePortrait,
+  onChooseCover,
+  onRemoveCover,
   onDocumentNameChange,
 }: DocumentPresentationProps) {
   const cover = useVaultImage(vaultIndex, coverPath ?? "");
+  const showPortraitRole = hasPortraitRole ?? hasPortrait;
+  const showCoverRole = hasCoverRole ?? Boolean(coverPath);
   // A configured but unavailable file must not leave a blank media frame. The
   // title remains available, and the generic CodeMirror header stays suppressed.
-  if (!hasPortrait && !coverPath) return null;
+  if (!showPortraitRole && !showCoverRole && !hasPortrait && !coverPath) return null;
 
   return (
     <header className="document-presentation" aria-label={`${name} presentation`}>
@@ -149,10 +178,64 @@ export function DocumentPresentation({
         </div>
       ) : null}
       <div className={`document-presentation-title ${cover.url ? "has-cover" : ""}`}>
-        <div>
+        <div className="document-presentation-title-main">
           <p>{typeLabel}</p>
           <EditablePresentationTitle name={name} onDocumentNameChange={onDocumentNameChange} />
         </div>
+        {imageLabels && (onChoosePortrait || onChooseCover) ? (
+          <div className="document-presentation-image-actions" aria-label={imageLabels.actions}>
+            {showPortraitRole && onChoosePortrait ? (
+              <div className="document-presentation-image-action">
+                <button
+                  type="button"
+                  className="document-presentation-image-button"
+                  aria-label={portraitPath ? imageLabels.changePortrait : imageLabels.addPortrait}
+                  title={portraitPath ? imageLabels.changePortrait : imageLabels.addPortrait}
+                  onClick={() => void onChoosePortrait()}
+                >
+                  <ImagePlus size={15} />
+                  <span>{portraitPath ? imageLabels.changePortrait : imageLabels.addPortrait}</span>
+                </button>
+                {portraitPath && onRemovePortrait ? (
+                  <button
+                    type="button"
+                    className="document-presentation-image-remove"
+                    aria-label={imageLabels.removePortrait}
+                    title={imageLabels.removePortrait}
+                    onClick={onRemovePortrait}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {showCoverRole && onChooseCover ? (
+              <div className="document-presentation-image-action">
+                <button
+                  type="button"
+                  className="document-presentation-image-button"
+                  aria-label={coverPath ? imageLabels.changeCover : imageLabels.addCover}
+                  title={coverPath ? imageLabels.changeCover : imageLabels.addCover}
+                  onClick={() => void onChooseCover()}
+                >
+                  <ImagePlus size={15} />
+                  <span>{coverPath ? imageLabels.changeCover : imageLabels.addCover}</span>
+                </button>
+                {coverPath && onRemoveCover ? (
+                  <button
+                    type="button"
+                    className="document-presentation-image-remove"
+                    aria-label={imageLabels.removeCover}
+                    title={imageLabels.removeCover}
+                    onClick={onRemoveCover}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </header>
   );

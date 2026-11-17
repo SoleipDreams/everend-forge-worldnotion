@@ -1315,7 +1315,10 @@ export function SettingsModal({
                         />
                       </label>
                       <label>
-                        <span>{settingsText.defaultMode}</span>
+                        <span>
+                          {settingsText.defaultMode}
+                          <small>{settingsText.editorModeDescription}</small>
+                        </span>
                         <select
                           value={settings.editor.defaultMode}
                           onChange={(event) =>
@@ -1328,6 +1331,18 @@ export function SettingsModal({
                           <option value="semi">{editorModeText.semi}</option>
                           <option value="source">{editorModeText.source}</option>
                         </select>
+                      </label>
+                      <label>
+                        <span>
+                          {settingsText.modeTabs}
+                          <small>{settingsText.modeTabsDescription}</small>
+                        </span>
+                        <input
+                          type="checkbox"
+                          aria-label={settingsText.modeTabs}
+                          checked={settings.editor.showModeTabs}
+                          onChange={(event) => updateEditor({ showModeTabs: event.target.checked })}
+                        />
                       </label>
 
                       <h3
