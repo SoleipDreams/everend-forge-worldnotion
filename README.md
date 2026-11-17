@@ -4,26 +4,28 @@
 
 <h1 align="center">Everend WorldNotion</h1>
 <p align="center">
-  The desktop worldbuilding vault app for <a href="https://github.com/SoleipDreams/everend-forge">Everend Forge</a>.<br />
+  The desktop worldbuilding vault app for <a href="https://github.com/Everendforge/everend-forge">Everend Forge</a>.<br />
   Local Markdown vaults, portable canon, Everend Spec compatible.
 </p>
 
 <p align="center">
-  <a href="https://github.com/SoleipDreams/everend-forge-worldnotion/actions/workflows/ci.yml"><img src="https://github.com/SoleipDreams/everend-forge-worldnotion/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/Everendforge/ef-worldnotion/actions/workflows/ci.yml"><img src="https://github.com/Everendforge/ef-worldnotion/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/built%20with-Tauri%20%2B%20React%20%2B%20TypeScript-1e2a4a.svg" alt="Built with Tauri, React, TypeScript">
-  <a href="https://github.com/SoleipDreams/everend-forge"><img src="https://img.shields.io/badge/Everend%20Forge-open%20core%20suite-0a0e1a.svg" alt="Part of Everend Forge"></a>
+  <a href="https://github.com/Everendforge/everend-forge"><img src="https://img.shields.io/badge/Everend%20Forge-open%20core%20suite-0a0e1a.svg" alt="Part of Everend Forge"></a>
 </p>
+
+<p align="center"><a href="https://everend-forge-site.pages.dev/#access">Conoce y compra Everend Forge Suite →</a></p>
 
 ---
 
-This repository contains the Tauri + React + TypeScript app scaffold and the public MVP documentation.
+WorldNotion is a Tauri + React + TypeScript desktop app for local-first worldbuilding.
 
 ## Product direction
 
 WorldNotion is the canon and worldbuilding foundation of Everend Forge. Its longer-term direction covers connected story creation for video games, roleplaying, and literature, alongside PathBranching and Compendium. See [docs/PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md) for the milestones and WorldNotion's role in each one.
 
-## MVP Goals
+## Current capabilities
 
 - Open local vaults.
 - Browse Markdown file trees.
@@ -34,6 +36,8 @@ WorldNotion is the canon and worldbuilding foundation of Everend Forge. Its long
 - Search files and entities.
 - Report broken links and missing required metadata.
 - Edit and save Markdown files.
+- Organize entities, properties, tags, images, tables, and live references without moving the vault out of local storage.
+- Keep appearance preferences per universe and use the same vault from the standalone app or Everend Forge Suite.
 
 ## Development
 
@@ -64,9 +68,9 @@ Architecture and quality expectations are documented in [docs/ENGINEERING-PRINCI
 
 ## Everend Forge Suite Compatibility
 
-WorldNotion remains a standalone app and the owner of the canon Markdown vault experience. Future Everend Forge suite work should mount WorldNotion as the World workspace page through a public app export, while preserving the standalone desktop shell.
+WorldNotion remains a standalone app and the owner of the canon Markdown vault experience. Everend Forge Suite mounts it as the World workspace while preserving the standalone desktop shell.
 
-Suite integration should treat the vault files, frontmatter, wikilinks, taxonomy data, and `.everend` metadata as the durable contract. It should not depend on private React state or force WorldNotion to become the branching narrative editor.
+Suite integration treats vault files, frontmatter, wikilinks, taxonomy data, and `.everend` metadata as the durable contract. It does not depend on private React state or turn WorldNotion into the branching narrative editor.
 
 ## Fixture Vault
 
@@ -74,8 +78,8 @@ A deliberately empty placeholder vault lives in [examples/demo-vault](examples/d
 
 ## Related Repositories
 
-- [Everend Forge portal](https://github.com/SoleipDreams/everend-forge)
-- [Everend Spec](https://github.com/SoleipDreams/everend-forge-specs)
+- [Everend Forge portal](https://github.com/Everendforge/everend-forge)
+- [Everend Spec](https://github.com/Everendforge/specs)
 
 ## License
 
