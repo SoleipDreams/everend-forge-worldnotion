@@ -51,6 +51,82 @@ function enclosingFormatNode(
   return undefined;
 }
 
+type FormatSpan = {
+  from: number;
+  to: number;
+  contentFrom: number;
+  contentTo: number;
+  openFrom: number;
+  openTo: number;
+  closeFrom: number;
+  closeTo: number;
+};
+
+function formatSpan(node: SyntaxNode, format: InlineFormat): FormatSpan | undefined {
+  const marks = node.getChildren(INLINE_NODES[format].mark);
+  if (marks.length < 2) return undefined;
+  const first = marks[0];
+  const last = marks[marks.length - 1];
+  return {
+    from: node.from,
+    to: node.to,
+    contentFrom: first.to,
+    contentTo: last.from,
+    openFrom: node.from,
+    openTo: first.to,
+    closeFrom: last.from,
+    closeTo: node.to,
+  };
+}
+
+function allFormatSpans(state: EditorState, format: InlineFormat): FormatSpan[] {
+  const spans: FormatSpan[] = [];
+  const nodeName = INLINE_NODES[format].node;
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name !== nodeName) return;
+      const span = formatSpan(node.node, format);
+      if (span) spans.push(span);
+    },
+  });
+  return spans;
+}
+
+function selectionInDirection(from: number, to: number, forward: boolean) {
+  return forward ? { anchor: from, head: to } : { anchor: to, head: from };
+}
+
+function unwrapSelectedFormat(
+  view: EditorView,
+  span: FormatSpan,
+  range: { from: number; to: number },
+  forward: boolean,
+) {
+  const { state } = view;
+  const open = state.doc.sliceString(span.openFrom, span.openTo);
+  const close = state.doc.sliceString(span.closeFrom, span.closeTo);
+  const before = state.doc.sliceString(span.contentFrom, range.from);
+  const selected = state.doc.sliceString(range.from, range.to);
+  const after = state.doc.sliceString(range.to, span.contentTo);
+  const beforeSpace = /\s+$/.exec(before)?.[0] ?? "";
+  const afterSpace = /^\s+/.exec(after)?.[0] ?? "";
+  const beforeText = before.slice(0, before.length - beforeSpace.length);
+  const afterText = after.slice(afterSpace.length);
+  const beforeFragment = beforeText ? `${open}${beforeText}${close}` : "";
+  const afterFragment = afterText ? `${open}${afterText}${close}` : "";
+  const replacement = `${beforeFragment}${beforeSpace}${selected}${afterSpace}${afterFragment}`;
+  const selectionFrom =
+    span.from +
+    (beforeText ? open.length + beforeText.length + close.length : 0) +
+    beforeSpace.length;
+  view.dispatch({
+    changes: { from: span.from, to: span.to, insert: replacement },
+    selection: selectionInDirection(selectionFrom, selectionFrom + selected.length, forward),
+    userEvent: "format",
+  });
+  view.focus();
+}
+
 /** Trims whitespace off the edges of a selection before wrapping it. */
 function trimmedRange(state: EditorState, from: number, to: number) {
   let start = from;
@@ -72,8 +148,28 @@ export function toggleInlineFormat(view: EditorView, format: InlineFormat): bool
   const selection = state.selection.main;
   const { mark, delimiter } = INLINE_NODES[format];
 
-  const enclosing = enclosingFormatNode(state, format, selection.from, selection.to);
-  if (enclosing) {
+  const selectedRange = selection.empty
+    ? undefined
+    : trimmedRange(state, selection.from, selection.to);
+  const enclosing = enclosingFormatNode(
+    state,
+    format,
+    selectedRange?.from ?? selection.from,
+    selectedRange?.to ?? selection.to,
+  );
+  if (enclosing && selectedRange) {
+    const span = formatSpan(enclosing, format);
+    if (
+      span &&
+      selectedRange.from >= span.contentFrom &&
+      selectedRange.to <= span.contentTo
+    ) {
+      unwrapSelectedFormat(view, span, selectedRange, selection.anchor <= selection.head);
+      return true;
+    }
+  }
+
+  if (enclosing && selection.empty) {
     const delimiters = enclosing.getChildren(mark);
     if (delimiters.length >= 2) {
       const changes = state.changes(
@@ -114,17 +210,47 @@ export function toggleInlineFormat(view: EditorView, format: InlineFormat): bool
     return true;
   }
 
-  const range = trimmedRange(state, selection.from, selection.to);
-  const changes = state.changes([
-    { from: range.from, insert: delimiter },
-    { from: range.to, insert: delimiter },
-  ]);
+  const range = selectedRange ?? { from: selection.from, to: selection.to };
+  const spans = allFormatSpans(state, format).filter(
+    (span) => span.contentFrom < range.to && span.contentTo > range.from,
+  );
+  const targetFrom = Math.min(range.from, ...spans.map((span) => span.from));
+  const targetTo = Math.max(range.to, ...spans.map((span) => span.to));
+  const markers = spans
+    .flatMap((span) => [
+      { from: span.openFrom, to: span.openTo },
+      { from: span.closeFrom, to: span.closeTo },
+    ])
+    .sort((first, second) => first.from - second.from);
+  let content = state.doc.sliceString(targetFrom, targetTo);
+  for (const marker of [...markers].reverse()) {
+    const from = marker.from - targetFrom;
+    const to = marker.to - targetFrom;
+    content = `${content.slice(0, from)}${content.slice(to)}`;
+  }
+
+  const mapPosition = (position: number) => {
+    let offset = position - targetFrom;
+    for (const marker of markers) {
+      if (position >= marker.to) {
+        offset -= marker.to - marker.from;
+      } else if (position > marker.from) {
+        offset -= position - marker.from;
+        break;
+      }
+    }
+    return targetFrom + delimiter.length + offset;
+  };
+  const changes = state.changes({
+    from: targetFrom,
+    to: targetTo,
+    insert: `${delimiter}${content}${delimiter}`,
+  });
+  const mappedFrom = mapPosition(range.from);
+  const mappedTo = mapPosition(range.to);
   view.dispatch({
     changes,
-    selection: {
-      anchor: range.from + delimiter.length,
-      head: range.to + delimiter.length,
-    },
+    selection: selectionInDirection(mappedFrom, mappedTo, selection.anchor <= selection.head),
     userEvent: "format",
   });
   view.focus();

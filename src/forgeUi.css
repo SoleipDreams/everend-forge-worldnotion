@@ -240,12 +240,13 @@
   border-radius: var(--ef-radius-control);
 }
 .forge-worldnotion .floating-control-panel {
-  top: 8px;
-  bottom: auto;
+  top: auto;
+  bottom: 12px;
   right: 12px;
   gap: 4px;
-  border-radius: var(--ef-radius-control);
-  background: color-mix(in srgb, var(--ef-panel) 96%, transparent);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
   font-family: var(--ef-ui-font);
 }

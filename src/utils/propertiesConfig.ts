@@ -536,14 +536,27 @@ export function buildInspectorPropertySections(
   }
 
   const allProperties = listAllProperties(config);
-  const excludedPropertyIds = options.excludePropertyIds ?? new Set<string>();
+  const typeDefinition = getTypeDefinition(config, entityType);
+  const presentationPropertyIds = [
+    typeDefinition?.presentation?.portraitPropertyId,
+    typeDefinition?.presentation?.coverPropertyId,
+  ].filter((propertyId): propertyId is string => Boolean(propertyId));
+  const excludedPropertyIds = new Set(options.excludePropertyIds ?? []);
+  if (!options.includeHidden) {
+    presentationPropertyIds.forEach((propertyId) => excludedPropertyIds.add(propertyId));
+  }
   const visibleRoots = listVisibleProperties(config, entityType).filter(
     (property) => !excludedPropertyIds.has(property.id),
   );
   const visibleIds = isNestedPropertiesConfig(config)
     ? collectApplicablePropertyIds(config, entityType)
     : collectDefinitionTreeIds(visibleRoots);
-  const hiddenIds = new Set(getTypeDefinition(config, entityType)?.hiddenProperties ?? []);
+  // Presentation images are edited in the document surface. Keep them out of
+  // the everyday Inspector list, while allowing "Show hidden" to reveal them.
+  const hiddenIds = new Set([
+    ...(typeDefinition?.hiddenProperties ?? []),
+    ...presentationPropertyIds,
+  ]);
   const visibleNodes = visibleRoots
     .map((property) =>
       toTreeNode(

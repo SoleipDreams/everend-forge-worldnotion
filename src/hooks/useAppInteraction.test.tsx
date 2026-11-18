@@ -75,7 +75,7 @@ describe("mounted WorldNotion overlay ownership", () => {
     expect(key("Escape").defaultPrevented).toBe(false);
     expect(key("Tab").defaultPrevented).toBe(false);
     expect(external).toHaveFocus();
-    expect(screen.getByRole("radiogroup", { name: "Editor mode" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Editor mode" })).toBeInTheDocument();
   });
 
   it("keeps a property creation draft and its universe guard registered through hidden Escape", async () => {

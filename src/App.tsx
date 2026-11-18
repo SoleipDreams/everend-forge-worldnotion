@@ -84,7 +84,7 @@ import { FontSelector } from "./components/FontSelector";
 import { InputDialog } from "./components/InputDialog";
 import { InheritAppearanceDialog } from "./components/InheritAppearanceDialog";
 import { useToast, ToastProvider } from "./components/ToastProvider";
-import { NotificationProvider, NotificationBell, useNotificationMessage } from "./notifications";
+import { NotificationProvider, NotificationBell, useNotificationMessage, useNotify } from "./notifications";
 import { useAppDialogs, DialogProvider } from "./components/DialogProvider";
 import { useDismissableMenu } from "./hooks/useDismissableMenu";
 import { useInputDialog } from "./hooks/useInputDialog";
@@ -139,7 +139,9 @@ import {
 } from "./domain";
 import { isDarkTheme, themeById, themeForStyleCommand, toggledThemeMode } from "./themes";
 import {
+  createInspectorProperty,
   frontmatterDataToRaw,
+  listAllProperties,
   parseFrontmatterRaw,
   removeFrontmatterProperty,
   updateFrontmatterProperties,
@@ -194,6 +196,8 @@ import {
   getEntityTypeDefinition,
   getPresentationRolePropertyId,
   getPresentationRoleValue,
+  listPresentationImageProperties,
+  updateEntityTypePresentation,
 } from "./utils/entityPresentation";
 import {
   BASE_VARIANT_ID,
@@ -755,6 +759,7 @@ function WorldnotionWorkbench({
     useInheritAppearanceDialog();
 
   const { showToast } = useToast();
+  const notify = useNotify();
   useNotificationMessage(loadState === "error" ? errorMessage : undefined, "error");
   const { confirmDialog } = useAppDialogs();
 
@@ -3008,10 +3013,12 @@ function WorldnotionWorkbench({
     setView("workspace");
     setLoadState("ready");
     setErrorMessage("");
-    showToast(
-      "Esta carpeta será la raíz de tu universo. Todas las aplicaciones de Everend Forge trabajarán sobre ella.",
-      "success",
-    );
+    notify({
+      message: "Esta carpeta será la raíz de tu universo. Todas las aplicaciones de Everend Forge trabajarán sobre ella.",
+      kind: "success",
+      silent: true,
+      unread: false,
+    });
     setSettings((current) => {
       const remembered = rememberUniverse(
         current,
@@ -3358,11 +3365,13 @@ function WorldnotionWorkbench({
     role: "portrait" | "cover",
     variantId: string,
     imagePath: string | null,
+    propertiesConfigOverride?: import("./editorTypes").PropertiesConfig,
   ) {
     if (!index) return;
-    const propertyId = getPresentationRolePropertyId(index.propertiesConfig, typeId, role);
+    const propertiesConfig = propertiesConfigOverride ?? index.propertiesConfig;
+    const propertyId = getPresentationRolePropertyId(propertiesConfig, typeId, role);
     const tab = tabsRef.current.find((entry) => entry.path === path);
-    if (!propertyId || !tab) return;
+    if (!propertiesConfig || !propertyId || !tab) return;
 
     const parts = rawToEditorParts(tab.rawMarkdown);
     const frontmatter = parseFrontmatterRaw(parts.frontmatterRaw);
@@ -3372,25 +3381,25 @@ function WorldnotionWorkbench({
             parts.frontmatterRaw,
             setVariantOverride(
               frontmatter,
-              index.propertiesConfig,
+              propertiesConfig,
               variantId,
               propertyId,
               imagePath ?? null,
             ),
-            index.propertiesConfig,
+            propertiesConfig,
             typeId,
           )
         : imagePath
           ? updateFrontmatterProperties(
               parts.frontmatterRaw,
               { [propertyId]: imagePath },
-              index.propertiesConfig,
+              propertiesConfig,
               typeId,
             )
           : removeFrontmatterProperty(
               parts.frontmatterRaw,
               propertyId,
-              index.propertiesConfig,
+              propertiesConfig,
               typeId,
             );
     const nextMarkdown = joinMarkdown(nextYaml, parts.bodyMarkdown);
@@ -3415,8 +3424,63 @@ function WorldnotionWorkbench({
   ) {
     const file = await pickImageFile();
     if (!file) return;
+    if (!index?.propertiesConfig) return;
+
+    let propertiesConfig = index.propertiesConfig;
+    let propertyId = getPresentationRolePropertyId(propertiesConfig, typeId, role);
+    if (!propertyId) {
+      const otherRole = role === "portrait" ? "cover" : "portrait";
+      const otherRolePropertyId = getPresentationRolePropertyId(
+        propertiesConfig,
+        typeId,
+        otherRole,
+      );
+      const availableImage = listPresentationImageProperties(propertiesConfig, typeId).find(
+        (property) => property.id !== otherRolePropertyId,
+      );
+      let createdImageProperty = false;
+
+      if (availableImage) {
+        propertyId = availableImage.id;
+      } else {
+        const existingPropertyIds = new Set(listAllProperties(propertiesConfig).map((p) => p.id));
+        const withBannerField = createInspectorProperty(propertiesConfig, undefined, "Banner", "image");
+        propertyId = listAllProperties(withBannerField).find(
+          (property) => !existingPropertyIds.has(property.id),
+        )?.id;
+        if (!propertyId) throw new Error("Could not create a banner image property.");
+        propertiesConfig = withBannerField;
+        createdImageProperty = true;
+      }
+
+      propertiesConfig = {
+        ...propertiesConfig,
+        entityTypes: {
+          ...propertiesConfig.entityTypes,
+          definitions: propertiesConfig.entityTypes.definitions.map((definition) => {
+            if (!createdImageProperty && definition.id !== typeId) return definition;
+            return {
+              ...definition,
+              hiddenProperties: Array.from(
+                new Set([...(definition.hiddenProperties ?? []), propertyId!]),
+              ),
+            };
+          }),
+        },
+      };
+      propertiesConfig = updateEntityTypePresentation(
+        propertiesConfig,
+        typeId,
+        role,
+        propertyId,
+      );
+      await savePropertiesConfig(propertiesConfig);
+    }
+
     const imagePath = await persistImageFile(file);
-    if (imagePath) setPresentationImageValue(path, typeId, role, variantId, imagePath);
+    if (imagePath) {
+      setPresentationImageValue(path, typeId, role, variantId, imagePath, propertiesConfig);
+    }
   }
 
   async function createTemplate() {
@@ -4202,13 +4266,65 @@ function WorldnotionWorkbench({
     const view = editorViewRef.current;
     if (!view) return;
     const selection = view.state.selection.main;
+    const doc = view.state.doc;
     const startLine = view.state.doc.lineAt(selection.from);
-    const endLine = view.state.doc.lineAt(selection.to);
-    const selectedLines = view.state.doc.sliceString(startLine.from, endLine.to).split("\n");
-    const replacement = selectedLines.map(transform).join("\n");
+    const endLine = doc.lineAt(selection.to);
+    // A selection ending at the next line's start has not selected that line's
+    // content. Keep block formatting aligned with normal text-editor behavior.
+    const lastLine =
+      selection.to > selection.from && selection.to === endLine.from
+        ? doc.line(endLine.number - 1)
+        : endLine;
+    const affectedLines = Array.from(
+      { length: lastLine.number - startLine.number + 1 },
+      (_, index) => {
+        const line = doc.line(startLine.number + index);
+        return { line, text: transform(line.text, index) };
+      },
+    );
+    const replacement = affectedLines.map(({ text }) => text).join("\n");
+    const lineOffsets = new Map<number, number>();
+    let nextLineOffset = 0;
+    affectedLines.forEach(({ line, text }, index) => {
+      lineOffsets.set(line.number, nextLineOffset);
+      nextLineOffset += text.length + (index < affectedLines.length - 1 ? 1 : 0);
+    });
+    const mapLineOffset = (before: string, after: string, offset: number) => {
+      let prefix = 0;
+      while (prefix < before.length && prefix < after.length && before[prefix] === after[prefix]) {
+        prefix += 1;
+      }
+      let suffix = 0;
+      while (
+        suffix < before.length - prefix &&
+        suffix < after.length - prefix &&
+        before[before.length - suffix - 1] === after[after.length - suffix - 1]
+      ) {
+        suffix += 1;
+      }
+      if (offset >= before.length - suffix) return after.length - (before.length - offset);
+      if (offset <= prefix) return offset;
+      return prefix + Math.min(offset - prefix, after.length - prefix - suffix);
+    };
+    const changeTo = lastLine.to;
+    const changeDelta = replacement.length - (changeTo - startLine.from);
+    const mapPosition = (position: number) => {
+      if (position < startLine.from) return position;
+      if (position > changeTo) return position + changeDelta;
+      const originalLine = doc.lineAt(position);
+      const lineOffset = lineOffsets.get(originalLine.number);
+      const replacementLine = affectedLines[originalLine.number - startLine.number];
+      if (lineOffset === undefined || !replacementLine) return position + changeDelta;
+      return (
+        startLine.from +
+        lineOffset +
+        mapLineOffset(originalLine.text, replacementLine.text, position - originalLine.from)
+      );
+    };
     view.dispatch({
-      changes: { from: startLine.from, to: endLine.to, insert: replacement },
-      selection: { anchor: startLine.from, head: startLine.from + replacement.length },
+      changes: { from: startLine.from, to: changeTo, insert: replacement },
+      selection: { anchor: mapPosition(selection.anchor), head: mapPosition(selection.head) },
+      userEvent: "format",
     });
     view.focus();
   }
@@ -5840,13 +5956,15 @@ function WorldnotionWorkbench({
         entity.type,
         "cover",
       );
+      const canStartBanner = entity.type !== "character";
       return {
         entity,
         type,
         frontmatter: effectiveFrontmatter,
         portraitPropertyId,
         coverPropertyId,
-        hasPresentation: Boolean(portraitPropertyId || coverPropertyId),
+        canStartBanner,
+        hasPresentation: Boolean(portraitPropertyId || coverPropertyId || canStartBanner),
         portraitPath: getPresentationRoleValue(
           index.propertiesConfig,
           entity.type,
@@ -5861,6 +5979,71 @@ function WorldnotionWorkbench({
         ),
       };
     })();
+    const documentBanner =
+      documentPresentation &&
+      (documentPresentation.coverPath ||
+        (canWrite &&
+          (documentPresentation.coverPropertyId || documentPresentation.canStartBanner))) ? (
+        <DocumentPresentation
+          vaultIndex={index!}
+          name={
+            typeof documentPresentation.frontmatter.name === "string"
+              ? documentPresentation.frontmatter.name
+              : documentPresentation.entity.name
+          }
+          typeLabel={documentPresentation.type.label}
+          hasCoverRole={Boolean(
+            documentPresentation.coverPropertyId ||
+              (canWrite && documentPresentation.canStartBanner),
+          )}
+          coverPath={documentPresentation.coverPath}
+          imageLabels={
+            interfaceLocale === "es"
+              ? {
+                  actions: "Imágenes del documento",
+                  addPortrait: "Elegir retrato",
+                  changePortrait: "Cambiar retrato",
+                  removePortrait: "Quitar retrato",
+                  addCover: "Elegir banner",
+                  changeCover: "Cambiar banner",
+                  removeCover: "Quitar banner",
+                }
+              : {
+                  actions: "Document images",
+                  addPortrait: "Choose portrait",
+                  changePortrait: "Change portrait",
+                  removePortrait: "Remove portrait",
+                  addCover: "Choose banner",
+                  changeCover: "Change banner",
+                  removeCover: "Remove banner",
+                }
+          }
+          onChooseCover={
+            canWrite &&
+            (documentPresentation.coverPropertyId || documentPresentation.canStartBanner)
+              ? () =>
+                  choosePresentationImage(
+                    documentTab.path,
+                    documentPresentation.entity.type,
+                    "cover",
+                    documentVariantId,
+                  )
+              : undefined
+          }
+          onRemoveCover={
+            canWrite && documentPresentation.coverPath
+              ? () =>
+                  setPresentationImageValue(
+                    documentTab.path,
+                    documentPresentation.entity.type,
+                    "cover",
+                    documentVariantId,
+                    null,
+                  )
+              : undefined
+          }
+        />
+      ) : null;
 
     return (
       <EditorDocumentSurface
@@ -5963,9 +6146,22 @@ function WorldnotionWorkbench({
                 const shellRect = editorShellRef.current?.getBoundingClientRect();
                 const shellLeft = shellRect?.left ?? 0;
                 const shellTop = shellRect?.top ?? 0;
+                const toolbarWidth = 380;
+                const rightSpace = shellRect
+                  ? shellRect.right - floatingToolbarRect.right
+                  : 0;
+                const placeBesideSelection = rightSpace >= toolbarWidth + 12;
+                const naturalLeft = placeBesideSelection
+                  ? floatingToolbarRect.right - shellLeft + 8
+                  : floatingToolbarRect.left - shellLeft;
+                const maxLeft = shellRect
+                  ? Math.max(12, shellRect.width - toolbarWidth - 12)
+                  : naturalLeft;
                 return {
-                  left: Math.max(12, floatingToolbarRect.left - shellLeft),
-                  top: Math.max(36, floatingToolbarRect.top - shellTop - 44),
+                  left: Math.max(12, Math.min(naturalLeft, maxLeft)),
+                  // Use the empty side of the page when it fits; otherwise
+                  // place the popup above the selection with a clear line gap.
+                  top: Math.max(36, floatingToolbarRect.top - shellTop - 58),
                 };
               })()}
             >
@@ -5984,6 +6180,7 @@ function WorldnotionWorkbench({
         saveError={renderDocumentSaveError(documentTab.path)}
         recovery={renderVisualRecovery(documentTab.path)}
         loading={loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null}
+        banner={documentBanner}
         outline={
           settings.editor.outlineGuideEnabled && documentOutline.length ? (
             <OutlineGuide
@@ -6010,95 +6207,6 @@ function WorldnotionWorkbench({
           <XmlReader value={documentTab.rawMarkdown} />
         ) : (
           <Suspense fallback={<LazyPanelFallback label="Loading editor..." />}>
-            {documentPresentation &&
-            documentPresentation.hasPresentation ? (
-              <DocumentPresentation
-                vaultIndex={index!}
-                name={
-                  typeof documentPresentation.frontmatter.name === "string"
-                    ? documentPresentation.frontmatter.name
-                    : documentPresentation.entity.name
-                }
-                typeLabel={documentPresentation.type.label}
-                hasPortraitRole={Boolean(documentPresentation.portraitPropertyId)}
-                hasCoverRole={Boolean(documentPresentation.coverPropertyId)}
-                portraitPath={documentPresentation.portraitPath}
-                coverPath={documentPresentation.coverPath}
-                imageLabels={
-                  interfaceLocale === "es"
-                    ? {
-                        actions: "Imágenes del documento",
-                        addPortrait: "Elegir retrato",
-                        changePortrait: "Cambiar retrato",
-                        removePortrait: "Quitar retrato",
-                        addCover: "Elegir banner",
-                        changeCover: "Cambiar banner",
-                        removeCover: "Quitar banner",
-                      }
-                    : {
-                        actions: "Document images",
-                        addPortrait: "Choose portrait",
-                        changePortrait: "Change portrait",
-                        removePortrait: "Remove portrait",
-                        addCover: "Choose banner",
-                        changeCover: "Change banner",
-                        removeCover: "Remove banner",
-                      }
-                }
-                onChoosePortrait={
-                  canWrite && documentPresentation.portraitPropertyId
-                    ? () =>
-                        choosePresentationImage(
-                          documentTab.path,
-                          documentPresentation.entity.type,
-                          "portrait",
-                          documentVariantId,
-                        )
-                    : undefined
-                }
-                onRemovePortrait={
-                  canWrite && documentPresentation.portraitPath
-                    ? () =>
-                        setPresentationImageValue(
-                          documentTab.path,
-                          documentPresentation.entity.type,
-                          "portrait",
-                          documentVariantId,
-                          null,
-                        )
-                    : undefined
-                }
-                onChooseCover={
-                  canWrite && documentPresentation.coverPropertyId
-                    ? () =>
-                        choosePresentationImage(
-                          documentTab.path,
-                          documentPresentation.entity.type,
-                          "cover",
-                          documentVariantId,
-                        )
-                    : undefined
-                }
-                onRemoveCover={
-                  canWrite && documentPresentation.coverPath
-                    ? () =>
-                        setPresentationImageValue(
-                          documentTab.path,
-                          documentPresentation.entity.type,
-                          "cover",
-                          documentVariantId,
-                          null,
-                        )
-                    : undefined
-                }
-                onDocumentNameChange={
-                  canWrite
-                    ? (newName) =>
-                        handleDocumentNameChange(documentTab.path, documentTab.title, newName)
-                    : undefined
-                }
-              />
-            ) : null}
             <CodeMirrorEditor
               key={documentTab.path}
               value={editorDisplayValue(documentTab)}
@@ -6113,6 +6221,52 @@ function WorldnotionWorkbench({
               documentName={documentTab.title}
               showDocumentHeader={!documentPresentation?.hasPresentation}
               presentationPortraitPath={documentPresentation?.portraitPath}
+              presentationTitle={
+                documentPresentation?.hasPresentation
+                  ? typeof documentPresentation.frontmatter.name === "string"
+                    ? documentPresentation.frontmatter.name
+                    : documentPresentation.entity.name
+                  : undefined
+              }
+              presentationHasPortrait={Boolean(documentPresentation?.portraitPropertyId)}
+              presentationPortraitLabels={
+                interfaceLocale === "es"
+                  ? {
+                      add: "Elegir retrato",
+                      change: "Reemplazar retrato",
+                      remove: "Quitar retrato",
+                      actions: "Acciones del retrato",
+                    }
+                  : {
+                      add: "Choose portrait",
+                      change: "Replace portrait",
+                      remove: "Remove portrait",
+                      actions: "Portrait actions",
+                    }
+              }
+              onChoosePresentationPortrait={
+                canWrite && documentPresentation?.portraitPropertyId
+                  ? () =>
+                      choosePresentationImage(
+                        documentTab.path,
+                        documentPresentation.entity.type,
+                        "portrait",
+                        documentVariantId,
+                      )
+                  : undefined
+              }
+              onRemovePresentationPortrait={
+                canWrite && documentPresentation?.portraitPath
+                  ? () =>
+                      setPresentationImageValue(
+                        documentTab.path,
+                        documentPresentation.entity.type,
+                        "portrait",
+                        documentVariantId,
+                        null,
+                      )
+                  : undefined
+              }
               projectName={
                 index?.universeProfile?.name ??
                 (index?.rootPath ? pathName(index.rootPath) : undefined)

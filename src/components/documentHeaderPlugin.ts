@@ -6,6 +6,8 @@ export type DocumentHeaderConfig = {
   documentName?: string;
   projectName?: string;
   showProjectName: boolean;
+  presentationTitle?: boolean;
+  hasPortrait?: boolean;
   onDocumentNameChange?: (newName: string) => Promise<void> | void;
 };
 
@@ -31,6 +33,8 @@ class DocumentHeaderWidget extends WidgetType {
     readonly documentName: string,
     readonly projectName: string | undefined,
     readonly showProjectName: boolean,
+    readonly presentationTitle: boolean,
+    readonly hasPortrait: boolean,
     readonly onDocumentNameChange?: (newName: string) => Promise<void> | void,
   ) {
     super();
@@ -38,15 +42,17 @@ class DocumentHeaderWidget extends WidgetType {
 
   toDOM() {
     const header = document.createElement("div");
-    header.className = "document-header";
+    header.className = `document-header${this.presentationTitle ? " document-header-presentation" : ""}${this.hasPortrait ? " has-portrait" : ""}`;
 
-    const titleEl = document.createElement("span");
+    const titleEl: HTMLElement = document.createElement(this.presentationTitle ? "h1" : "span");
     titleEl.className = "document-header-title";
     titleEl.textContent = this.documentName;
-    titleEl.contentEditable = "true";
+    titleEl.contentEditable = String(Boolean(this.onDocumentNameChange));
     titleEl.spellcheck = false;
-    titleEl.setAttribute("role", "textbox");
-    titleEl.setAttribute("aria-label", "Document name");
+    if (!this.presentationTitle) {
+      titleEl.setAttribute("role", "textbox");
+      titleEl.setAttribute("aria-label", "Document name");
+    }
     let originalValue = this.documentName;
     let composing = false;
     let saving = false;
@@ -168,6 +174,8 @@ function createDecorations(config: DocumentHeaderConfig) {
     config.documentName,
     config.projectName,
     config.showProjectName,
+    Boolean(config.presentationTitle),
+    Boolean(config.hasPortrait),
     config.onDocumentNameChange,
   );
 

@@ -40,7 +40,9 @@ import { isImagePath } from "../utils/vaultImages";
 import { tableInsertion } from "../utils/markdownEditing";
 import type { StructuredElement } from "../utils/structuredMarkdown";
 import { buildStructuredRangeIndex, type StructuredRange } from "../utils/structuredRangeIndex";
-import { paragraphSpacingExtension } from "../utils/paragraphSpacing";
+import {
+  paragraphSpacingExtension,
+} from "../utils/paragraphSpacing";
 import { exitEmptyBlockLine, toggleInlineFormat } from "../utils/formatCommands";
 import { linkHoverTooltip } from "./linkHoverTooltip";
 
@@ -63,6 +65,12 @@ export interface CodeMirrorEditorProps {
   showDocumentHeader?: boolean;
   /** A type-mapped image rendered beside the opening writing text. */
   presentationPortraitPath?: string;
+  /** Entity title rendered at the start of the writing area. */
+  presentationTitle?: string;
+  presentationHasPortrait?: boolean;
+  presentationPortraitLabels?: { add: string; change: string; remove: string; actions?: string };
+  onChoosePresentationPortrait?: () => void | Promise<void>;
+  onRemovePresentationPortrait?: () => void;
   projectName?: string;
   resolveWikilink?: (label: string) => ResolvedWikilink;
   resolveImage?: ImageResolver;
@@ -160,6 +168,16 @@ export function CodeMirrorEditor({
   documentName,
   showDocumentHeader = true,
   presentationPortraitPath,
+  presentationTitle,
+  presentationHasPortrait = false,
+  presentationPortraitLabels = {
+    add: "Add portrait",
+    change: "Change portrait",
+    remove: "Remove portrait",
+    actions: "Portrait actions",
+  },
+  onChoosePresentationPortrait,
+  onRemovePresentationPortrait,
   projectName,
   resolveWikilink,
   resolveImage,
@@ -403,22 +421,12 @@ export function CodeMirrorEditor({
   }
 
   function openStructureMenu(view: EditorView, event: MouseEvent) {
-    if (!writing || (event.type !== "contextmenu" && !processedWriting)) return false;
+    // Left mouse gestures belong to CodeMirror so ordinary click, drag, and
+    // double/triple-click selection keep working on rendered structures.
+    if (!writing || event.type !== "contextmenu") return false;
     const next = structureAtEvent(view, event);
     if (!next) return false;
     event.preventDefault();
-    if (event.type !== "contextmenu") {
-      const position = view.posAtCoords({ x: event.clientX, y: event.clientY });
-      const visible = next.element.visibleRanges[0];
-      if (position !== null && visible) {
-        view.dispatch({
-          selection: {
-            anchor: Math.max(visible.from, Math.min(visible.to, position)),
-          },
-          userEvent: "select.pointer",
-        });
-      }
-    }
     setWikilinkMenu(undefined);
     setStructureMenu({
       ...next,
@@ -734,24 +742,34 @@ export function CodeMirrorEditor({
           ...(mode === "write" && activeVariantId
             ? [createVariantContentPlugin(activeVariantId, activeVariantLabel)]
             : []),
-          ...(mode === "write" && presentationPortraitPath && resolveImage
+          ...(mode === "write" && (presentationHasPortrait || presentationPortraitPath) && resolveImage
             ? [
                 presentationPortraitPlugin({
                   path: presentationPortraitPath,
                   alt: `${documentName ?? "Document"} portrait`,
                   resolve: resolveImage,
+                  labels: presentationPortraitLabels,
+                  onChoose: onChoosePresentationPortrait,
+                  onRemove: onRemovePresentationPortrait,
                 }),
               ]
             : []),
-          ...(isPluginEnabled(pluginSettings, "document-header", settings.documentHeaderEnabled) &&
-          documentName &&
-          showDocumentHeader &&
+          ...((presentationTitle ||
+            (isPluginEnabled(pluginSettings, "document-header", settings.documentHeaderEnabled) &&
+              documentName &&
+              showDocumentHeader)) &&
           mode === "write"
             ? [
                 createDocumentHeaderPlugin({
-                  documentName,
-                  projectName,
-                  showProjectName: settings.showProjectNameInHeader,
+                  documentName: presentationTitle ?? documentName,
+                  projectName: presentationTitle ? undefined : projectName,
+                  showProjectName: presentationTitle ? false : settings.showProjectNameInHeader,
+                  presentationTitle: Boolean(presentationTitle),
+                  hasPortrait: Boolean(
+                    presentationTitle &&
+                      presentationHasPortrait &&
+                      (presentationPortraitPath || onChoosePresentationPortrait),
+                  ),
                   onDocumentNameChange,
                 }),
               ]
@@ -931,9 +949,8 @@ export function CodeMirrorEditor({
                     }
                   }
 
-                  // Default: insert plain newline
                   view.dispatch({
-                    changes: { from: selection.from, insert: "\n" },
+                    changes: { from: selection.from, to: selection.to, insert: "\n" },
                     selection: { anchor: selection.from + 1 },
                   });
                   return true;
@@ -1010,7 +1027,7 @@ export function CodeMirrorEditor({
             },
             mousedown(event, view) {
               if (openUrlAtEvent(event, view)) return true;
-              return event.button === 0 ? openStructureMenu(view, event) : false;
+              return false;
             },
             contextmenu(event, view) {
               return openStructureMenu(view, event);

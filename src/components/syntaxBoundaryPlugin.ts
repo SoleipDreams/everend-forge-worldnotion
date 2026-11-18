@@ -48,6 +48,7 @@ function normalizeSelection(state: EditorState) {
 function semanticWikilinkEditFilter(): Extension {
   return EditorState.transactionFilter.of((transaction) => {
     if (!transaction.docChanged) return transaction;
+    const isFormat = transaction.isUserEvent("format");
     const edits: Array<{ from: number; to: number; insert: string }> = [];
     transaction.changes.iterChanges((from, to, _fromNew, _toNew, inserted) => {
       edits.push({ from, to, insert: inserted.toString() });
@@ -67,8 +68,21 @@ function semanticWikilinkEditFilter(): Extension {
     const relativeFrom = edit.from - visible.from;
     const relativeTo = edit.to - visible.from;
     const nextLabel = `${oldLabel.slice(0, relativeFrom)}${edit.insert}${oldLabel.slice(relativeTo)}`;
-    const replacement = nextLabel ? wikilinkMarkdown(element.target ?? oldLabel, nextLabel) : "";
-    const labelOffset = nextLabel ? 2 + (element.target ?? oldLabel).length + 1 : 0;
+    const target = element.target ?? oldLabel;
+    const replacement = nextLabel ? wikilinkMarkdown(target, nextLabel) : "";
+    const labelOffset = nextLabel ? 2 + target.length + 1 : 0;
+    if (isFormat && nextLabel) {
+      const selection = transaction.state.selection.main;
+      const mapPosition = (position: number) => element.from + labelOffset + position - visible.from;
+      return {
+        changes: { from: element.from, to: element.to, insert: replacement },
+        selection: {
+          anchor: mapPosition(selection.anchor),
+          head: mapPosition(selection.head),
+        },
+        userEvent: "format",
+      };
+    }
     return {
       changes: { from: element.from, to: element.to, insert: replacement },
       selection: { anchor: element.from + labelOffset + nextLabel.length },

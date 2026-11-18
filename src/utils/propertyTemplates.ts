@@ -589,7 +589,7 @@ const ESTRELLAS_CORRUPTAS_ENTITY_TYPES: EntityTypeDefinition[] = [
       "attributes",
     ],
     presentation: { portraitPropertyId: "portrait" },
-    hiddenProperties: ["status", "aliases", "lore-level"],
+    hiddenProperties: ["status", "aliases", "lore-level", "portrait"],
   },
   {
     id: "location",

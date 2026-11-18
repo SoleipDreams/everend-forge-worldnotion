@@ -370,7 +370,10 @@ export function ExplorerPanel({
   }, [scrollTop, shouldVirtualize, viewportHeight, visibleRows]);
 
   return (
-    <aside data-onboarding-target="worldnotion.explorer" className="sidebar dock-panel-body">
+    <aside
+      data-onboarding-target="worldnotion.explorer"
+      className="sidebar dock-panel-body worldnotion-explorer-sidebar"
+    >
       <div className="explorer-search-panel">
         <label className="search-box">
           <Search size={15} />
@@ -853,7 +856,7 @@ export function ExplorerPanel({
         ) : null}
 
         {activeSection === "allFiles" || activeSection === "images" ? (
-          <section className="sidebar-section">
+          <section className="sidebar-section explorer-tree-section">
             {activeSection === "images" ? <h2>{t("Images")}</h2> : null}
             <div
               className={`explorer-tree-surface ${visibleRows.length ? "has-items" : "is-empty"}`}
@@ -1044,6 +1047,7 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
   const descriptionIsOpen = Boolean(row.descriptionPath && openTabPaths.has(row.descriptionPath));
   const hasPersistentActions =
     isFocused || isFavorite || (row.kind === "folder" && folderNotesEnabled && row.hasDescription);
+  const hasFolderNote = row.kind === "folder" && folderNotesEnabled && row.hasDescription;
   const tagColor = entityTagColors?.get(row.path);
   const customIcon = customIcons?.[row.path];
   const IconComponent = customIcon ? getIconComponent(customIcon) : undefined;
@@ -1180,11 +1184,14 @@ const ExplorerTreeRow = memo(function ExplorerTreeRow({
         )}
         <span className="tree-label">{row.name}</span>
         {isDirty ? <strong className="tree-dirty">*</strong> : null}
-        <div className={`tree-node-buttons ${hasPersistentActions ? "has-persistent-state" : ""} ${isFolderNoteOnboardingTarget ? "has-onboarding-target" : ""}`}>
+        <div
+          className={`tree-node-buttons ${hasPersistentActions ? "has-persistent-state" : ""} ${hasFolderNote ? "has-folder-note" : ""} ${isFolderNoteOnboardingTarget ? "has-onboarding-target" : ""}`}
+        >
           {row.kind === "folder" ? (
             <button
               type="button"
               className={`tree-inline-button tree-focus-button ${isFocused ? "active" : "inactive"}`}
+              aria-label={isFocused ? "Exit folder focus" : "Focus folder"}
               onClick={(event) => {
                 event.stopPropagation();
                 onToggleFolderFocus(row.path);

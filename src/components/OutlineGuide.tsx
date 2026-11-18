@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { OutlineHeader } from "../utils/outlineExtractor";
 
 interface OutlineGuideProps {
@@ -23,7 +24,13 @@ export function OutlineGuide({
         <button
           type="button"
           className={`outline-item ${isCurrent ? "active" : ""}`}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
+          style={
+            {
+              "--outline-indent": `${depth * 12}px`,
+              "--outline-mark-indent": `${Math.min(depth * 3, 9)}px`,
+              "--outline-mark-width": `${15 - Math.min(depth * 3, 9)}px`,
+            } as CSSProperties
+          }
           onClick={() => onNavigate(header.line)}
           aria-current={isCurrent ? "location" : undefined}
           title={header.text}

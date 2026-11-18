@@ -14,6 +14,7 @@ export type EditorDocumentSurfaceProps = {
   saveError?: ReactNode;
   recovery?: ReactNode;
   loading?: ReactNode;
+  banner?: ReactNode;
   children: ReactNode;
   outline?: ReactNode;
 };
@@ -32,6 +33,7 @@ export function EditorDocumentSurface({
   saveError,
   recovery,
   loading,
+  banner,
   children,
   outline,
 }: EditorDocumentSurfaceProps) {
@@ -48,14 +50,6 @@ export function EditorDocumentSurface({
       onMouseDownCapture={onActivate}
       onFocusCapture={onActivate}
     >
-      {visualAction || showModeSelector || showSourceViewSelector ? (
-        <div className="floating-control-panel">
-          {visualAction}
-          {showModeSelector ? modeSelector : null}
-          {showSourceViewSelector ? sourceViewSelector : null}
-        </div>
-      ) : null}
-
       {floatingToolbar}
       {selectionToolbar}
       {saveError}
@@ -65,14 +59,28 @@ export function EditorDocumentSurface({
       <div
         className={`editor-surface page-style-${settings.pageStyle} mode-${document.mode}${
           settings.showPaperShadow && document.mode === "write" ? " paper-shadow" : ""
-        }${settings.outlineGuideEnabled && outline ? " outline-visible" : ""}`}
+        }${
+          settings.outlineGuideEnabled && outline
+            ? ` outline-visible outline-position-${settings.outlinePosition}`
+            : ""
+        }${banner ? " has-banner" : ""}`}
         style={
           settings.pageStyle === "custom"
             ? ({ "--wn-custom-page": settings.customPageColor } as CSSProperties)
             : undefined
         }
       >
-        <div className="editor-document-column">{children}</div>
+        {banner ? <div className="editor-banner-column">{banner}</div> : null}
+        <div className="editor-document-column">
+          {visualAction || showModeSelector || showSourceViewSelector ? (
+            <div className="floating-control-panel">
+              {visualAction}
+              {showModeSelector ? modeSelector : null}
+              {showSourceViewSelector ? sourceViewSelector : null}
+            </div>
+          ) : null}
+          {children}
+        </div>
         {settings.outlineGuideEnabled ? outline : null}
       </div>
     </section>

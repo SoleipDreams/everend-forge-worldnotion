@@ -416,22 +416,19 @@
 }
 @container wn-editor (max-width: 340px) {
   .forge-worldnotion .floating-control-panel {
-    position: relative;
-    inset: auto;
-    align-self: stretch;
-    justify-content: flex-start;
+    position: absolute;
+    inset: auto 8px 8px auto;
+    align-self: auto;
+    justify-content: flex-end;
     flex-wrap: wrap;
-    margin: 8px;
-    padding: 6px;
+    margin: 0;
+    padding: 0;
     max-width: calc(100% - 16px);
+    background: transparent;
   }
-  .forge-worldnotion .floating-control-panel .mode-toggle {
-    display: flex;
-    flex-wrap: wrap;
+  .forge-worldnotion .floating-control-panel .editor-mode-dropdown {
     min-width: 0;
-  }
-  .forge-worldnotion .floating-control-panel .mode-toggle button {
-    padding: 5px 8px;
+    max-width: 100%;
   }
   .forge-worldnotion .floating-format-toolbar-fixed {
     position: relative;

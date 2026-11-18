@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EditorModeSelector } from "./EditorModeSelector";
 
@@ -11,7 +11,7 @@ const labels = {
 };
 
 describe("EditorModeSelector", () => {
-  it("selects Processed, Semi-processed, and Source from one accessible group", () => {
+  it("selects Processed, Semi-processed, and Source from one accessible dropdown", () => {
     const onWritingModeChange = vi.fn();
     const onOpenSource = vi.fn();
     render(
@@ -24,16 +24,15 @@ describe("EditorModeSelector", () => {
       />,
     );
 
-    const group = screen.getByRole("radiogroup", { name: "Editor mode" });
-    expect(group).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("radio", { name: "Semi-processed" }));
+    const dropdown = screen.getByRole("combobox", { name: "Editor mode" });
+    fireEvent.change(dropdown, { target: { value: "semi" } });
     expect(onWritingModeChange).toHaveBeenCalledWith("semi");
 
-    fireEvent.click(screen.getByRole("radio", { name: "Source" }));
+    fireEvent.change(dropdown, { target: { value: "source" } });
     expect(onOpenSource).toHaveBeenCalledOnce();
   });
 
-  it("supports arrow navigation between modes", async () => {
+  it("updates the writing mode from the dropdown", () => {
     const onWritingModeChange = vi.fn();
     render(
       <EditorModeSelector
@@ -45,11 +44,8 @@ describe("EditorModeSelector", () => {
       />,
     );
 
-    const processed = screen.getByRole("radio", { name: "Processed" });
-    const semi = screen.getByRole("radio", { name: "Semi-processed" });
-    processed.focus();
-    fireEvent.keyDown(processed, { key: "ArrowRight" });
-    await waitFor(() => expect(semi).toHaveFocus());
+    const dropdown = screen.getByRole("combobox", { name: "Editor mode" });
+    fireEvent.change(dropdown, { target: { value: "semi" } });
     expect(onWritingModeChange).toHaveBeenCalledWith("semi");
   });
 
@@ -66,9 +62,11 @@ describe("EditorModeSelector", () => {
       />,
     );
 
-    expect(screen.getByRole("radio", { name: "Processed" })).toBeDisabled();
-    expect(screen.getByRole("radio", { name: "Semi-processed" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("radio", { name: "Source" }));
+    expect(screen.getByRole("option", { name: "Processed" })).toBeDisabled();
+    expect(screen.getByRole("option", { name: "Semi-processed" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Editor mode" }), {
+      target: { value: "source" },
+    });
     expect(onOpenSource).toHaveBeenCalledOnce();
   });
 });
