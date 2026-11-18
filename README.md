@@ -4,26 +4,38 @@
 
 <h1 align="center">Everend WorldNotion</h1>
 <p align="center">
-  The desktop worldbuilding vault app for <a href="https://github.com/Everendforge/everend-forge">Everend Forge</a>.<br />
-  Local Markdown vaults, portable canon, Everend Spec compatible.
+  Free, open-source desktop app for worlds stored as local Markdown.<br />
+  Portable canon, rich references, and Everend Spec compatibility.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Everendforge/ef-worldnotion/actions/workflows/ci.yml"><img src="https://github.com/Everendforge/ef-worldnotion/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
-  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/built%20with-Tauri%20%2B%20React%20%2B%20TypeScript-1e2a4a.svg" alt="Built with Tauri, React, TypeScript">
-  <a href="https://github.com/Everendforge/everend-forge"><img src="https://img.shields.io/badge/Everend%20Forge-open%20core%20suite-0a0e1a.svg" alt="Part of Everend Forge"></a>
+  <a href="README.es.md">Español</a> · <a href="https://github.com/SoleipDreams/everend-forge-worldnotion/releases/latest">Download free</a> · <a href="https://website-everend-forge.pages.dev/">Explore the integrated Suite</a>
 </p>
 
-<p align="center"><a href="https://everend-forge-site.pages.dev/#access">Conoce y compra Everend Forge Suite →</a></p>
+<p align="center">
+  <a href="https://github.com/SoleipDreams/everend-forge-worldnotion/actions/workflows/ci.yml"><img src="https://github.com/SoleipDreams/everend-forge-worldnotion/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/SoleipDreams/everend-forge-worldnotion/releases/latest"><img src="https://img.shields.io/github/v/release/SoleipDreams/everend-forge-worldnotion?label=latest%20release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/code-MIT%20OR%20Apache--2.0-blue.svg" alt="Code license"></a>
+  <img src="https://img.shields.io/badge/built%20with-Tauri%20%2B%20React%20%2B%20TypeScript-1e2a4a.svg" alt="Built with Tauri, React, TypeScript">
+</p>
+
+<p align="center">WorldNotion is free to use on its own. The paid Suite is a separate integrated product; buying it does not change this app's open-source rights.</p>
 
 ---
 
-WorldNotion is a Tauri + React + TypeScript desktop app for local-first worldbuilding.
+WorldNotion is a free, open-source Tauri + React + TypeScript desktop app for local-first worldbuilding.
 
 ## Product direction
 
 WorldNotion is the canon and worldbuilding foundation of Everend Forge. Its longer-term direction covers connected story creation for video games, roleplaying, and literature, alongside PathBranching and Compendium. See [docs/PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md) for the milestones and WorldNotion's role in each one.
+
+```mermaid
+flowchart LR
+  V[Local Markdown vault] <--> W[WorldNotion]
+  W --> I[References and backlinks]
+  W --> Q[Search and validation]
+  W --> E[Local editing]
+```
 
 ## Current capabilities
 
@@ -78,13 +90,16 @@ A deliberately empty placeholder vault lives in [examples/demo-vault](examples/d
 
 ## Related Repositories
 
-- [Everend Forge portal](https://github.com/Everendforge/everend-forge)
-- [Everend Spec](https://github.com/Everendforge/specs)
+- [Everend Forge portal](https://github.com/SoleipDreams/everend-forge)
+- [Everend Spec](https://github.com/SoleipDreams/everend-forge-specs)
+- [Everend PathBranching](https://github.com/SoleipDreams/everend-forge-pathbranching)
+- [Everend Compendium](https://github.com/SoleipDreams/everend-forge-compendium)
 
 ## License
 
-Code is licensed under MIT OR Apache-2.0. Documentation is licensed under CC BY 4.0 unless stated otherwise.
+Code is licensed under either MIT or Apache-2.0; documentation is CC BY 4.0. Preserve required legal notices when redistributing. See [license scope](LICENSE), [MIT](LICENSE-MIT), [Apache-2.0](LICENSE-APACHE), [CC BY 4.0](LICENSE-CC-BY-4.0), and the separate [brand policy](TRADEMARKS.md).
 
 ## Support
 
 If Everend Forge is useful to you, you can support its development on [Ko-fi](https://ko-fi.com/heinzdbv).
+
