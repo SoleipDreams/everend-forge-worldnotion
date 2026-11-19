@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import type { BasePropertyDefinition, CustomFieldDefinition } from "../editorTypes";
 import type { VaultIndex } from "../domain";
 import { EntityRefField } from "./properties/fields/EntityRefField";
@@ -248,7 +249,7 @@ function renderSelect(
   const stringValue = typeof value === "string" ? value : "";
 
   return (
-    <select
+    <WorldNotionDropdown
       value={stringValue}
       onChange={(e) => onChange(e.target.value)}
       disabled={readOnly}
@@ -261,7 +262,7 @@ function renderSelect(
           {opt.label}
         </option>
       ))}
-    </select>
+    </WorldNotionDropdown>
   );
 }
 

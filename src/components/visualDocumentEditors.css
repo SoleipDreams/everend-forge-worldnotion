@@ -77,6 +77,15 @@
   border-left: 1px solid var(--ef-border);
   background: var(--ef-panel);
 }
+.forge-worldnotion .visual-document-inspector-host .ef-visual-inspector {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
 .forge-worldnotion .ef-visual-inspector h3 {
   font-size: 14px;
   margin: 0 0 14px;

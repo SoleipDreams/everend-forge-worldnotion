@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { focusAppElement, useAppIsActive } from "../hooks/useAppInteraction";
 import Fuse, { type IFuseOptions } from "fuse.js";
@@ -416,7 +417,7 @@ export function CommandPalette({
             {entityTypes.length > 0 && (
               <div className="filter-group">
                 <label>{ui.type}</label>
-                <select
+                <WorldNotionDropdown
                   value={filterEntityType || ""}
                   onChange={(e) => setFilterEntityType(e.target.value || null)}
                 >
@@ -426,13 +427,13 @@ export function CommandPalette({
                       {type.label}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </div>
             )}
             {statuses.length > 0 && (
               <div className="filter-group">
                 <label>{ui.status}</label>
-                <select
+                <WorldNotionDropdown
                   value={filterStatus || ""}
                   onChange={(e) => setFilterStatus(e.target.value || null)}
                 >
@@ -442,7 +443,7 @@ export function CommandPalette({
                       {status.label}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </div>
             )}
             {(filterEntityType || filterStatus) && (

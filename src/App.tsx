@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "./SettingsDropdown.js";
 import { mergeUniverseProfile, readUniverseProfileSource } from "./universeProfilePersistence";
 import { useLearningAdapter, useLearningReporter } from "./learning";
 import { worldnotionIntroduction, worldnotionLessons } from "./learningCatalog";
@@ -102,6 +103,7 @@ import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { ExplorerPanel, type ExplorerTreeAction } from "./components/ExplorerPanel";
 import { ImagePreviewDialog } from "./components/ImagePreviewDialog";
+import { ImageRelinkDialog } from "./components/ImageRelinkDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { JsonReader } from "./components/JsonReader";
 import { XmlReader } from "./components/XmlReader";
@@ -184,7 +186,19 @@ import {
   saveExplorerIcons,
   type ExplorerIconsData,
 } from "./utils/explorerIconsStorage";
-import { isImagePath, resolveNoteImageUrl, setBrowserVaultRoot } from "./utils/vaultImages";
+import {
+  invalidateVaultImage,
+  isImagePath,
+  resolveNoteImageUrl,
+  setBrowserVaultRoot,
+} from "./utils/vaultImages";
+import {
+  countImageReferences,
+  getImageUsageByPath,
+  planImageRelink,
+  type ImageRelinkFileChange,
+  type ImageUsage,
+} from "./utils/imageRelinking";
 import { normalizeDocumentName, planDocumentRename } from "./utils/documentRename";
 import {
   VAULT_APPEARANCE_SETTINGS_PATH,
@@ -202,7 +216,6 @@ import {
 import {
   BASE_VARIANT_ID,
   deleteVariant,
-  insertVariantBlock,
   removeVariantBlocks,
   readNoteVariants,
   resolveVariantFrontmatter,
@@ -425,6 +438,7 @@ import {
 } from "./utils/workspaceLayout";
 import { isPluginEnabled } from "./utils/pluginRegistry";
 import { DocumentPresentation } from "./components/DocumentPresentation";
+import "./dropdownStyles.css";
 
 const CommandPalette = lazy(() =>
   import("./components/CommandPalette").then((module) => ({ default: module.CommandPalette })),
@@ -454,7 +468,7 @@ const AiAdvisorPanel = lazy(() =>
 type LoadState = "idle" | "loading" | "ready" | "error";
 type AppView = "home" | "workspace";
 type ActiveWorkspacePreset = WorkspaceLayoutPreset | "custom";
-type TogglePanelKind = "explorer" | "inspector" | "links" | "backlinks" | "graph" | "ai-advisor";
+type TogglePanelKind = "explorer" | "inspector" | "links" | "graph" | "ai-advisor";
 type PointerDragItem = {
   path: string;
   kind: "file" | "folder";
@@ -558,6 +572,38 @@ function pickImageFile(): Promise<File | null> {
   });
 }
 
+function imageReferenceWarning(
+  index: VaultIndex,
+  path: string,
+  tabs: OpenTab[],
+  locale: string,
+): string {
+  const usage = getImageUsageByPath(
+    index,
+    tabs.map((tab) => ({ path: tab.path, content: tab.rawMarkdown })),
+  ).get(path);
+  if (!usage) return "";
+  const useDescriptions: string[] = [];
+  if (usage.referenceCount) {
+    useDescriptions.push(
+      locale === "es"
+        ? `${usage.referenceCount} ${usage.referenceCount === 1 ? "referencia" : "referencias"} en ${usage.documentPaths.length} ${usage.documentPaths.length === 1 ? "nota" : "notas"}`
+        : `${usage.referenceCount} ${usage.referenceCount === 1 ? "reference" : "references"} in ${usage.documentPaths.length} ${usage.documentPaths.length === 1 ? "note" : "notes"}`,
+    );
+  }
+  if (usage.pathBranchingReferenceCount) {
+    useDescriptions.push(
+      locale === "es"
+        ? `${usage.pathBranchingReferenceCount} ${usage.pathBranchingReferenceCount === 1 ? "uso" : "usos"} en PathBranching`
+        : `${usage.pathBranchingReferenceCount} ${usage.pathBranchingReferenceCount === 1 ? "use" : "uses"} in PathBranching`,
+    );
+  }
+  if (!useDescriptions.length) return "";
+  return locale === "es"
+    ? `\n\nEsta imagen tiene uso: ${useDescriptions.join(" y ")}. Al eliminarla, las referencias quedarán sin imagen.`
+    : `\n\nThis image is used: ${useDescriptions.join(" and ")}. Deleting it will leave those references without an image.`;
+}
+
 const STARTUP_LOADER_MIN_MS = 700;
 
 function WorldnotionWorkbench({
@@ -593,6 +639,8 @@ function WorldnotionWorkbench({
   const [pointerDragTargetPath, setPointerDragTargetPath] = useState<string>();
   const undoRedo = useUndoRedo();
   const [imagePreviewPath, setImagePreviewPath] = useState<string>();
+  const [imageRelinkPath, setImageRelinkPath] = useState<string>();
+  const [visualInspectorHost, setVisualInspectorHost] = useState<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [initialReady, setInitialReady] = useState(false);
@@ -660,7 +708,8 @@ function WorldnotionWorkbench({
   const [appZoom, setAppZoom] = useState(1);
   const [floatingToolbarRect, setFloatingToolbarRect] = useState<DOMRect>();
   const [editorFormats, setEditorFormats] = useState<ActiveFormats>();
-  const [templatesExpanded, setTemplatesExpanded] = useState(false);
+  const [explorerFooterView, setExplorerFooterView] = useState<"recent" | "templates">("recent");
+  const [explorerFooterExpanded, setExplorerFooterExpanded] = useState(false);
   const [cursorLine, setCursorLine] = useState(0);
   const [unsavedDialogPath, setUnsavedDialogPath] = useState<string | null>(null);
   const [isSavingBeforeClose, setIsSavingBeforeClose] = useState(false);
@@ -969,31 +1018,6 @@ function WorldnotionWorkbench({
     });
   };
 
-  function insertActiveVariantBlock() {
-    if (!activeTab) return;
-    const opening = `\n\n<!-- everend:variant id="${activeVariantId}" -->\n`;
-    const block = `${opening}\n<!-- /everend:variant -->`;
-    if (editorViewRef.current && activeTab.mode === "write") {
-      const position = editorViewRef.current.state.selection.main.head;
-      editorViewRef.current.dispatch({
-        changes: { from: position, to: position, insert: block },
-        selection: { anchor: position + opening.length },
-      });
-      editorViewRef.current.focus();
-      return;
-    }
-    const parts = rawToEditorParts(activeTab.rawMarkdown);
-    const nextRaw = joinMarkdown(
-      parts.frontmatterRaw,
-      insertVariantBlock(parts.bodyMarkdown, activeVariantId),
-    );
-    setTabs((current) =>
-      current.map((tab) =>
-        tab.path === activeTab.path ? { ...tab, rawMarkdown: nextRaw, dirty: true } : tab,
-      ),
-    );
-  }
-
   function deleteActiveVariant(variantId: string) {
     if (!activeTab) return;
     const parts = rawToEditorParts(activeTab.rawMarkdown);
@@ -1049,7 +1073,6 @@ function WorldnotionWorkbench({
   const isExplorerPanelOpen = layoutHasPanel(workspaceLayout, "explorer");
   const isInspectorPanelOpen = layoutHasPanel(workspaceLayout, "inspector");
   const isLinksPanelOpen = layoutHasPanel(workspaceLayout, "links");
-  const isBacklinksPanelOpen = layoutHasPanel(workspaceLayout, "backlinks");
   const isGraphPanelOpen = layoutHasPanel(workspaceLayout, "graph");
   const isAiAdvisorPanelOpen = layoutHasPanel(workspaceLayout, "ai-advisor");
   const aiAdvisorEnabled = isPluginEnabled(settings.plugins, "ai-advisor");
@@ -1217,6 +1240,23 @@ function WorldnotionWorkbench({
   }, [graphData.nodes]);
 
   const activeExplorerSection = settings.explorer.activeSection;
+  const imageRelinkUsage = useMemo(() => {
+    if (!index || !imageRelinkPath) return undefined;
+    return countImageReferences(
+      index,
+      imageRelinkPath,
+      tabs.map((tab) => ({ path: tab.path, content: tab.rawMarkdown })),
+    );
+  }, [imageRelinkPath, index, tabs]);
+  const imageUsageByPath = useMemo(() => {
+    if (!index || activeExplorerSection !== "images") {
+      return new Map<string, ImageUsage>();
+    }
+    return getImageUsageByPath(
+      index,
+      tabs.map((tab) => ({ path: tab.path, content: tab.rawMarkdown })),
+    );
+  }, [activeExplorerSection, index, tabs]);
   const focusedFolderPath = index
     ? settings.explorer.focusedFoldersByUniverse?.[index.rootPath]
     : undefined;
@@ -1859,6 +1899,10 @@ function WorldnotionWorkbench({
         }
       } else if (action === "preview" && targetKind === "file" && isImagePath(targetPath)) {
         selectPath(targetPath);
+      } else if (action === "relinkImage" && targetKind === "file" && isImagePath(targetPath)) {
+        setImageRelinkPath(targetPath);
+      } else if (action === "convertToTemplate" && targetKind === "file") {
+        await convertNoteToTemplate(targetPath);
       } else if (action === "newBlankPage") {
         const name = await promptUser("Enter page name:");
         if (!name || name.trim() === "") {
@@ -2276,6 +2320,130 @@ function WorldnotionWorkbench({
     }
   }
 
+  async function relinkImageReferences(sourcePath: string, targetPath: string) {
+    if (!index || !isImagePath(sourcePath) || !isImagePath(targetPath)) return;
+    try {
+      const plan = planImageRelink(
+        index,
+        sourcePath,
+        targetPath,
+        tabs.map((tab) => ({ path: tab.path, content: tab.rawMarkdown })),
+      );
+      if (!plan.files.length) {
+        showToast(
+          interfaceLocale === "es"
+            ? "No se encontraron referencias a esta imagen."
+            : "No references to this image were found.",
+          "warning",
+        );
+        return;
+      }
+
+      const dirtyDocuments = plan.files.filter((change) =>
+        tabs.some((tab) => tab.path === change.path && tab.dirty),
+      ).length;
+      const summary =
+        interfaceLocale === "es"
+          ? `Se actualizarán ${plan.referenceCount} referencias en ${plan.documentCount} notas.`
+          : `${plan.referenceCount} references across ${plan.documentCount} notes will be updated.`;
+      const unsavedNote = dirtyDocuments
+        ? interfaceLocale === "es"
+          ? ` También se guardarán los cambios sin guardar de ${dirtyDocuments} notas abiertas.`
+          : ` Unsaved changes in ${dirtyDocuments} open notes will also be saved.`
+        : "";
+      const confirmed = await confirmDialog(
+        `${summary}${unsavedNote}`,
+        {
+          title:
+            interfaceLocale === "es"
+              ? "Revincular referencias de imagen"
+              : "Relink image references",
+          confirmLabel: interfaceLocale === "es" ? "Revincular" : "Relink",
+        },
+      );
+      if (!confirmed) return;
+
+      const vault = vaultHandleFor(index.rootPath, browserRoot);
+      const saved: Array<ImageRelinkFileChange & { modifiedMs?: number | null }> = [];
+      try {
+        for (const change of plan.files) {
+          saveCoordinatorRef.current.cancel(`note:${change.path}`);
+          const modifiedMs = await saveCoordinatorRef.current.run(`note:${change.path}`, () =>
+            saveVaultFile(
+              vault,
+              change.path,
+              change.nextContent,
+              "Could not relink image references.",
+              index.files.find((file) => file.relativePath === change.path)?.modifiedMs ?? null,
+            ),
+          );
+          saved.push({ ...change, modifiedMs });
+        }
+        await refreshUniverse();
+      } catch (error) {
+        const rollbackErrors: string[] = [];
+        for (const change of [...saved].reverse()) {
+          try {
+            await saveCoordinatorRef.current.run(`note:${change.path}`, () =>
+              saveVaultFile(
+                vault,
+                change.path,
+                change.previousContent,
+                "Could not restore a note after relinking failed.",
+                change.modifiedMs ?? null,
+              ),
+            );
+          } catch (rollbackError) {
+            rollbackErrors.push(
+              `${change.path}: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+            );
+          }
+        }
+        if (rollbackErrors.length) {
+          throw new Error(
+            `${error instanceof Error ? error.message : String(error)}. Some notes could not be restored: ${rollbackErrors.join("; ")}`,
+          );
+        }
+        throw error;
+      }
+
+      const savedModifiedMs = new Map(
+        saved.map((change) => [change.path, change.modifiedMs] as const),
+      );
+      const changesByPath = new Map(plan.files.map((change) => [change.path, change] as const));
+      setTabs((current) =>
+        current.map((tab) => {
+          const change = changesByPath.get(tab.path);
+          if (!change) return tab;
+          return {
+            ...tab,
+            rawMarkdown: change.nextContent,
+            savedMarkdown: change.nextContent,
+            modifiedMs: savedModifiedMs.get(tab.path) ?? tab.modifiedMs,
+            dirty: false,
+          };
+        }),
+      );
+      setDocumentSaveStates((current) => {
+        const next = { ...current };
+        plan.files.forEach(({ path }) => delete next[path]);
+        return next;
+      });
+      setImageRelinkPath(undefined);
+      showToast(
+        interfaceLocale === "es"
+          ? `Se revincularon ${plan.referenceCount} referencias en ${plan.documentCount} notas.`
+          : `Relinked ${plan.referenceCount} references across ${plan.documentCount} notes.`,
+        "success",
+      );
+    } catch (error) {
+      showToast(
+        `${interfaceLocale === "es" ? "No se pudieron revincular las imágenes" : "Could not relink image references"}: ${error instanceof Error ? error.message : String(error)}`,
+        "error",
+      );
+    }
+  }
+
   async function trashExplorerPath(path: string, kind: "file" | "folder") {
     if (!index) return;
     const folderNotePath = kind === "folder" ? folderDescriptionPath(path) : undefined;
@@ -2308,13 +2476,22 @@ function WorldnotionWorkbench({
       kind === "folder"
         ? `Delete the empty folder ${pathName(path)}${hasFolderNote ? " and its folder note" : ""}?`
         : browserRoot
-          ? `Delete ${pathName(path)} from this browser-opened universe?`
-          : `${labels.trashAction} ${pathName(path)}?`,
+          ? `Delete ${pathName(path)} from this browser-opened universe?${
+              kind === "file" && isImagePath(path)
+                ? imageReferenceWarning(index, path, tabs, interfaceLocale)
+                : ""
+            }`
+          : `${labels.trashAction} ${pathName(path)}?${
+              kind === "file" && isImagePath(path)
+                ? imageReferenceWarning(index, path, tabs, interfaceLocale)
+                : ""
+            }`,
       { title: labels.trashAction, confirmLabel: labels.trashAction, destructive: true },
     );
     if (!confirmed) return;
     const vault = vaultHandleFor(index.rootPath, browserRoot);
     await trashVaultPath(vault, path, { requireEmpty: kind === "folder" });
+    if (kind === "file" && isImagePath(path)) invalidateVaultImage(index.rootPath, path);
     const removedPaths = [path];
     if (folderNotePath && hasFolderNote) {
       try {
@@ -2855,9 +3032,34 @@ function WorldnotionWorkbench({
 
   async function requestPropertyPathChange(nextConfig: import("./editorTypes").PropertiesConfig) {
     if (!index?.propertiesConfig) return;
+    const openMarkdownTabs = new Map(
+      tabs
+        .filter((tab) => !tab.isTemplate && tab.path.endsWith(".md"))
+        .map((tab) => [tab.path, tab] as const),
+    );
+    const indexedTabPaths = new Set<string>();
+    const migrationFiles = index.files.map((file) => {
+      const tab = openMarkdownTabs.get(file.relativePath);
+      if (!tab) return file;
+      indexedTabPaths.add(tab.path);
+      return {
+        ...file,
+        content: tab.rawMarkdown,
+        modifiedMs: tab.modifiedMs ?? file.modifiedMs,
+      };
+    });
+    openMarkdownTabs.forEach((tab, path) => {
+      if (indexedTabPaths.has(path)) return;
+      migrationFiles.push({
+        relativePath: path,
+        absolutePath: tab.absolutePath,
+        content: tab.rawMarkdown,
+        modifiedMs: tab.modifiedMs,
+      });
+    });
     const dirtyPaths = new Set(tabs.filter((tab) => tab.dirty).map((tab) => tab.path));
     const plan = planPropertyPathMigration(
-      index.files,
+      migrationFiles,
       index.propertiesConfig,
       nextConfig,
       dirtyPaths,
@@ -3444,12 +3646,20 @@ function WorldnotionWorkbench({
         propertyId = availableImage.id;
       } else {
         const existingPropertyIds = new Set(listAllProperties(propertiesConfig).map((p) => p.id));
-        const withBannerField = createInspectorProperty(propertiesConfig, undefined, "Banner", "image");
-        propertyId = listAllProperties(withBannerField).find(
+        const withImageField = createInspectorProperty(
+          propertiesConfig,
+          undefined,
+          role === "portrait" ? "Portrait" : "Banner",
+          "image",
+        );
+        propertyId = listAllProperties(withImageField).find(
           (property) => !existingPropertyIds.has(property.id),
         )?.id;
-        if (!propertyId) throw new Error("Could not create a banner image property.");
-        propertiesConfig = withBannerField;
+        if (!propertyId) {
+          const imageRole = role === "portrait" ? "portrait" : "banner";
+          throw new Error(`Could not create a ${imageRole} image property.`);
+        }
+        propertiesConfig = withImageField;
         createdImageProperty = true;
       }
 
@@ -3500,11 +3710,121 @@ function WorldnotionWorkbench({
       );
       const nextIndex = await refreshUniverse(relativePath);
       selectPathAfterRefresh(relativePath, nextIndex);
-      setTemplatesExpanded(true);
+      setExplorerFooterView("templates");
+      setExplorerFooterExpanded(true);
       showToast(`Created template: ${templateType}.`, "success");
     } catch (error) {
       setLoadState("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function convertNoteToTemplate(sourcePath: string) {
+    if (!index || !sourcePath.toLocaleLowerCase().endsWith(".md")) return;
+    const sourceFile = index.files.find((file) => file.relativePath === sourcePath);
+    if (!sourceFile) return;
+
+    const sourceContent =
+      tabsRef.current.find((tab) => tab.path === sourcePath)?.rawMarkdown ?? sourceFile.content;
+    if (readVisualDocument(sourceContent).status !== "none") {
+      showToast(
+        interfaceLocale === "es"
+          ? "Los documentos visuales no se pueden convertir en plantillas de notas."
+          : "Visual documents cannot be converted into note templates.",
+        "warning",
+      );
+      return;
+    }
+
+    const { frontmatterRaw, bodyMarkdown } = splitMarkdown(sourceContent);
+    const frontmatter = parseFrontmatterRaw(frontmatterRaw);
+    if (frontmatter.type === "folder-description") return;
+    const currentType =
+      typeof frontmatter.type === "string" ? frontmatter.type : fileTitle(sourcePath);
+    const requestedType = await promptUser(
+      interfaceLocale === "es" ? "Tipo de plantilla" : "Template type",
+      interfaceLocale === "es" ? "Tipo de plantilla" : "Template type",
+      currentType,
+    );
+    if (!requestedType?.trim()) return;
+    const templateType = slugify(requestedType);
+    if (!templateType) return;
+
+    const templatePath = `.everend/templates/${templateType}.md`;
+    const existingTemplate = index.files.find(
+      (file) => file.relativePath.toLocaleLowerCase() === templatePath.toLocaleLowerCase(),
+    );
+    if (existingTemplate) {
+      const confirmed = await confirmDialog(
+        interfaceLocale === "es"
+          ? `Ya existe la plantilla "${templateType}". ¿Quieres reemplazarla?`
+          : `The "${templateType}" template already exists. Replace it?`,
+        {
+          title: interfaceLocale === "es" ? "Reemplazar plantilla" : "Replace template",
+          confirmLabel: interfaceLocale === "es" ? "Reemplazar" : "Replace",
+          destructive: true,
+        },
+      );
+      if (!confirmed) return;
+    }
+
+    let templateFrontmatter: string;
+    if (frontmatterRaw) {
+      templateFrontmatter = frontmatterRaw;
+      ["folder", "parentId", "childrenIds"].forEach((propertyId) => {
+        if (propertyId in frontmatter) {
+          templateFrontmatter = removeFrontmatterProperty(
+            templateFrontmatter,
+            propertyId,
+            index.propertiesConfig,
+            currentType,
+          );
+        }
+      });
+      templateFrontmatter = updateFrontmatterProperties(
+        templateFrontmatter,
+        {
+          id: "{{id}}",
+          type: "{{type}}",
+          name: "{{name}}",
+          status: "{{status}}",
+        },
+        index.propertiesConfig,
+        currentType,
+      );
+    } else {
+      templateFrontmatter = createEntityFrontmatter({
+        id: "{{id}}",
+        type: "{{type}}",
+        name: "{{name}}",
+        status: "{{status}}",
+        propertiesConfig: index.propertiesConfig,
+      });
+    }
+
+    try {
+      await saveVaultFile(
+        vaultHandleFor(index.rootPath, browserRoot),
+        templatePath,
+        joinMarkdown(templateFrontmatter, bodyMarkdown),
+        "Could not convert note to template.",
+        existingTemplate?.modifiedMs ?? null,
+      );
+      const nextIndex = await refreshUniverse(templatePath);
+      selectPathAfterRefresh(templatePath, nextIndex);
+      setExplorerFooterView("templates");
+      setExplorerFooterExpanded(true);
+      showToast(
+        interfaceLocale === "es"
+          ? `Plantilla creada a partir de ${fileTitle(sourcePath)}.`
+          : `Created a template from ${fileTitle(sourcePath)}.`,
+        "success",
+      );
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : "Could not convert note to template.",
+        "error",
+      );
     }
   }
 
@@ -5524,14 +5844,29 @@ function WorldnotionWorkbench({
       ecosystemGroups={ecosystemGroups}
       ecosystemView={settings.explorer.ecosystemView}
       onEcosystemViewChange={(ecosystemView) => updateExplorer({ ecosystemView })}
+      favoritesView={settings.explorer.favoritesView}
+      onFavoritesViewChange={(favoritesView) => updateExplorer({ favoritesView })}
+      imagesView={settings.explorer.imagesView}
+      onImagesViewChange={(imagesView) => updateExplorer({ imagesView })}
+      imageUsageByPath={imageUsageByPath}
       ecosystemEntityColors={ecosystemEntityColors}
       entityTagColors={entityTagColors}
       folderNotesEnabled={settings.explorer.folderNotesEnabled}
       customIcons={settings.explorer.customIcons}
       pointerDragActive={Boolean(pointerDragItem?.active)}
-      templatesExpanded={templatesExpanded}
+      recentFiles={settings.explorer.recentFiles}
+      footerDockView={explorerFooterView}
+      footerDockExpanded={explorerFooterExpanded}
       expandedPaths={expandedPaths}
-      onToggleTemplatesExpanded={() => setTemplatesExpanded((expanded) => !expanded)}
+      onSelectFooterDockView={(view) => {
+        if (view === explorerFooterView) {
+          setExplorerFooterExpanded((expanded) => !expanded);
+          return;
+        }
+        setExplorerFooterView(view);
+        setExplorerFooterExpanded(true);
+      }}
+      onCloseFooterDock={() => setExplorerFooterExpanded(false)}
       onCreateTemplate={createTemplate}
       onSelectPath={selectPath}
       onSelectFolder={selectFolder}
@@ -5784,6 +6119,7 @@ function WorldnotionWorkbench({
       void calendarPresetRevision;
       const shared = {
         vaultIndex: index,
+        inspectorHost: documentTab.path === activeTabPath ? visualInspectorHost : null,
         session: visualSession,
         onSessionChange: (next: VisualDocumentSession) =>
           updateVisualSession(documentTab.path, next),
@@ -5956,15 +6292,19 @@ function WorldnotionWorkbench({
         entity.type,
         "cover",
       );
-      const canStartBanner = entity.type !== "character";
+      const canStartPortrait = canWrite;
+      const canStartBanner = canWrite;
       return {
         entity,
         type,
         frontmatter: effectiveFrontmatter,
         portraitPropertyId,
         coverPropertyId,
+        canStartPortrait,
         canStartBanner,
-        hasPresentation: Boolean(portraitPropertyId || coverPropertyId || canStartBanner),
+        hasPresentation: Boolean(
+          portraitPropertyId || coverPropertyId || canStartPortrait || canStartBanner,
+        ),
         portraitPath: getPresentationRoleValue(
           index.propertiesConfig,
           entity.type,
@@ -6087,7 +6427,7 @@ function WorldnotionWorkbench({
         sourceViewSelector={
           <label className="source-view-select-wrap">
             <span className="sr-only">Source view</span>
-            <select
+            <WorldNotionDropdown
               className="source-view-select"
               aria-label={surfaceText("Source view")}
               value={sourceView}
@@ -6101,7 +6441,7 @@ function WorldnotionWorkbench({
               <option value="raw">Raw</option>
               <option value="json">JSON</option>
               <option value="xml">XML</option>
-            </select>
+            </WorldNotionDropdown>
           </label>
         }
         floatingToolbar={
@@ -6228,7 +6568,9 @@ function WorldnotionWorkbench({
                     : documentPresentation.entity.name
                   : undefined
               }
-              presentationHasPortrait={Boolean(documentPresentation?.portraitPropertyId)}
+              presentationHasPortrait={Boolean(
+                documentPresentation?.portraitPropertyId || documentPresentation?.canStartPortrait,
+              )}
               presentationPortraitLabels={
                 interfaceLocale === "es"
                   ? {
@@ -6245,7 +6587,8 @@ function WorldnotionWorkbench({
                     }
               }
               onChoosePresentationPortrait={
-                canWrite && documentPresentation?.portraitPropertyId
+                canWrite &&
+                (documentPresentation?.portraitPropertyId || documentPresentation?.canStartPortrait)
                   ? () =>
                       choosePresentationImage(
                         documentTab.path,
@@ -6395,13 +6738,27 @@ function WorldnotionWorkbench({
     </section>
   );
 
+  const activeVisualDocument = activeTab
+    ? readVisualDocument(activeTab.rawMarkdown)
+    : undefined;
+  const visualDocumentEditorVisible = Boolean(
+    activeTab &&
+      activeVisualDocument?.status === "supported" &&
+      activeTab.mode === "write" &&
+      activeTab.visualMode !== "markdown",
+  );
   const inspectorPanel =
-    activeTab && readVisualDocument(activeTab.rawMarkdown).status !== "none" ? (
+    activeTab && activeVisualDocument?.status !== "none" ? (
       <aside className="inspector dock-panel-body">
-        <h3>{surfaceText("Visual document")}</h3>
-        <p>
-          {surfaceText("Content, calendar and relationships belong to this document. Edit them in its visual workspace or Source.")}
-        </p>
+        <h2>{interfaceLocale === "es" ? "Inspector del lienzo" : "Canvas inspector"}</h2>
+        <div className="visual-document-inspector-host" ref={setVisualInspectorHost} />
+        {!visualDocumentEditorVisible && (
+          <p className="muted">
+            {interfaceLocale === "es"
+              ? "Abre la vista visual del documento para editar los elementos de su lienzo aquí."
+              : "Open the document's visual view to edit its canvas items here."}
+          </p>
+        )}
       </aside>
     ) : (
       <InspectorPanel
@@ -6434,7 +6791,6 @@ function WorldnotionWorkbench({
         activeVariantId={activeVariantId}
         focusPropertyId={canonFocusPropertyId}
         onSelectVariant={selectActiveVariant}
-        onInsertVariantBlock={insertActiveVariantBlock}
         onDeleteVariant={deleteActiveVariant}
         explorerSelection={explorerSelection}
         onMoveExplorerSelection={moveExplorerSelection}
@@ -6443,31 +6799,28 @@ function WorldnotionWorkbench({
 
   const linksPanel = (
     <aside className="inspector dock-panel-body">
-      <Suspense fallback={<LazyPanelFallback label="Loading links..." />}>
-        <LinksPanel
-          entity={selectedEntity}
-          index={index}
-          onOpenEntity={(path) => {
-            openOrCreateTab(path);
-            setSelectedPath(path);
-          }}
-        />
-      </Suspense>
-    </aside>
-  );
-
-  const backlinksPanel = (
-    <aside className="inspector dock-panel-body">
-      <Suspense fallback={<LazyPanelFallback label="Loading backlinks..." />}>
-        <BacklinksPanel
-          entity={selectedEntity}
-          allEntities={index?.entities ?? []}
-          onOpenEntity={(path) => {
-            openOrCreateTab(path);
-            setSelectedPath(path);
-          }}
-        />
-      </Suspense>
+      <div className="relationships-panel-stack">
+        <Suspense fallback={<LazyPanelFallback label="Loading relationships..." />}>
+          <>
+            <LinksPanel
+              entity={selectedEntity}
+              index={index}
+              onOpenEntity={(path) => {
+                openOrCreateTab(path);
+                setSelectedPath(path);
+              }}
+            />
+            <BacklinksPanel
+              entity={selectedEntity}
+              allEntities={index?.entities ?? []}
+              onOpenEntity={(path) => {
+                openOrCreateTab(path);
+                setSelectedPath(path);
+              }}
+            />
+          </>
+        </Suspense>
+      </div>
     </aside>
   );
 
@@ -6579,8 +6932,7 @@ function WorldnotionWorkbench({
     if (tab.kind === "document") return tab.path ? renderDocumentPanel(tab) : emptyDocumentPanel;
     if (tab.kind === "explorer") return explorerPanel;
     if (tab.kind === "inspector") return inspectorPanel;
-    if (tab.kind === "links") return linksPanel;
-    if (tab.kind === "backlinks") return backlinksPanel;
+    if (tab.kind === "links" || tab.kind === "backlinks") return linksPanel;
     if (tab.kind === "graph") return graphPanel;
     if (tab.kind === "ai-advisor") {
       return (
@@ -6619,12 +6971,15 @@ function WorldnotionWorkbench({
         moveDocumentTab({
           path,
           targetPath: request.documentDrop.targetPath,
-          targetSide: request.documentDrop.side,
+          targetSide:
+            request.documentDrop.side === "center" ? undefined : request.documentDrop.side,
           targetGroupId: request.documentDrop.targetDocumentGroupId ?? null,
           targetDockGroupId: request.targetGroupId,
-          createGroupWithTarget: request.documentDrop.targetDocumentGroupId
-            ? undefined
-            : request.documentDrop.targetPath,
+          createGroupWithTarget:
+            request.documentDrop.side === "center" &&
+            !request.documentDrop.targetDocumentGroupId
+              ? request.documentDrop.targetPath
+              : undefined,
         });
         return;
       }
@@ -6661,14 +7016,6 @@ function WorldnotionWorkbench({
     setWorkspaceLayout(createWorkspaceLayoutPreset(preset, tabs, { activePath: activeTabPath }));
   }
 
-  function layoutPresetLabel(preset: ActiveWorkspacePreset) {
-    if (preset === "default") return "Default";
-    if (preset === "writing") return "Writing";
-    if (preset === "graph") return "Flow Map";
-    if (preset === "focus") return "Focus";
-    return "Custom";
-  }
-
   function toggleDockPanel(kind: TogglePanelKind | "outline") {
     if (kind === "ai-advisor" && !aiAdvisorEnabled) return;
     setActiveWorkspacePreset("custom");
@@ -6679,7 +7026,6 @@ function WorldnotionWorkbench({
     { kind: "explorer", label: "Explorer", open: isExplorerPanelOpen },
     { kind: "inspector", label: "Inspector", open: isInspectorPanelOpen },
     { kind: "links", label: "Links", open: isLinksPanelOpen },
-    { kind: "backlinks", label: "Backlinks", open: isBacklinksPanelOpen },
     { kind: "graph", label: "Flow Map", open: isGraphPanelOpen },
     ...(aiAdvisorEnabled
       ? [{ kind: "ai-advisor" as const, label: "AI Advisor", open: isAiAdvisorPanelOpen }]
@@ -6778,9 +7124,9 @@ function WorldnotionWorkbench({
           <div className="dock-top-right">
             <SaveStatusIndicator path={activeTab?.path} dirty={Boolean(activeTab?.dirty)} />
             <label className="dock-layout-select" title={surfaceText("Workspace layout")}>
-              <span>{surfaceText(layoutPresetLabel(activeWorkspacePreset))}</span>
-              <select
+              <WorldNotionDropdown
                 aria-label={surfaceText("Workspace layout")}
+                className="dock-layout-select-control"
                 value={activeWorkspacePreset === "custom" ? "custom" : activeWorkspacePreset}
                 onChange={(event) => {
                   const preset = event.target.value as ActiveWorkspacePreset;
@@ -6792,8 +7138,7 @@ function WorldnotionWorkbench({
                 <option value="writing">{surfaceText("Writing")}</option>
                 <option value="graph">{surfaceText("Flow Map")}</option>
                 <option value="focus">{surfaceText("Focus")}</option>
-              </select>
-              <ChevronDown size={13} />
+              </WorldNotionDropdown>
             </label>
 
             <div className="dock-panel-menu-anchor">
@@ -7010,7 +7355,6 @@ function WorldnotionWorkbench({
               ["inspector", "Inspector", isInspectorPanelOpen],
               ...(aiAdvisorEnabled ? [["ai-advisor", "AI Advisor", isAiAdvisorPanelOpen]] : []),
               ["links", "Links", isLinksPanelOpen],
-              ["backlinks", "Backlinks", isBacklinksPanelOpen],
             ].map(([kind, label, checked]) => (
               <button
                 key={kind as string}
@@ -7166,6 +7510,15 @@ function WorldnotionWorkbench({
                 ? !folderDescriptionInfo(index, dirname(contextMenu.targetPath)).hasDescription
                 : false
             }
+            canConvertToTemplate={Boolean(
+              contextMenu.targetKind === "file" &&
+                index &&
+                contextMenu.targetPath.toLocaleLowerCase().endsWith(".md") &&
+                !contextMenu.targetPath.toLocaleLowerCase().startsWith(".everend/templates/") &&
+                !index.visualDocuments?.some((document) => document.path === contextMenu.targetPath) &&
+                index.entities.find((entity) => entity.path === contextMenu.targetPath)?.type !==
+                  "folder-description",
+            )}
             onAction={handleContextMenuAction}
             onClose={() => setContextMenu(null)}
           />
@@ -7176,6 +7529,17 @@ function WorldnotionWorkbench({
             index={index}
             path={imagePreviewPath}
             onClose={() => setImagePreviewPath(undefined)}
+          />
+        ) : null}
+
+        {imageRelinkPath && index && imageRelinkUsage ? (
+          <ImageRelinkDialog
+            index={index}
+            sourcePath={imageRelinkPath}
+            referenceCount={imageRelinkUsage.referenceCount}
+            documentCount={imageRelinkUsage.documentCount}
+            onClose={() => setImageRelinkPath(undefined)}
+            onRelink={(targetPath) => relinkImageReferences(imageRelinkPath, targetPath)}
           />
         ) : null}
 

@@ -300,6 +300,10 @@ export type ExplorerSettings = {
   activeSection: ExplorerSection;
   /** Local display preference; never written into Markdown or universe settings. */
   ecosystemView: EcosystemView;
+  /** Local display preference for the Favorites section. */
+  favoritesView: EcosystemView;
+  /** Local display preference for the Images section. */
+  imagesView: EcosystemView;
   confirmDragMove: boolean;
   showHiddenEverend: boolean;
   /** Keeps folder descriptions embedded on their folders instead of listing them as note children. */
@@ -620,6 +624,8 @@ export const DEFAULT_EXPLORER_SETTINGS: ExplorerSettings = {
   recentFiles: [],
   activeSection: "allFiles",
   ecosystemView: "gallery",
+  favoritesView: "gallery",
+  imagesView: "gallery",
   confirmDragMove: false,
   showHiddenEverend: false,
   folderNotesEnabled: true,

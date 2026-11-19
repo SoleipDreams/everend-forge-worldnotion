@@ -34,7 +34,7 @@ export type DockMoveRequest = {
   targetTabId?: string;
   targetSide?: "before" | "after";
   documentDrop?:
-    | { kind: "tab"; targetPath: string; targetDocumentGroupId?: string; side: "before" | "after" }
+    | { kind: "tab"; targetPath: string; targetDocumentGroupId?: string; side: "before" | "after" | "center" }
     | { kind: "group"; targetDocumentGroupId: string }
     | { kind: "pane" };
 };
@@ -280,9 +280,39 @@ function DockGroup({
   onPointerDragStart,
 }: DockGroupProps) {
   const activeTab = group.tabs.find((tab) => tab.id === group.activeTabId) ?? group.tabs[0];
+  const advisorTab = group.tabs.find((tab) => tab.kind === "ai-advisor");
+  const advisorTabId = advisorTab?.id;
+  const advisorIsActive = Boolean(advisorTabId && activeTab?.id === advisorTabId);
+  const [openedAdvisorTabIds, setOpenedAdvisorTabIds] = useState<Set<string>>(() => new Set());
   const contentRef = useSurfaceMotion<HTMLDivElement>(activeTab?.id);
   const dropTarget = dragState?.target?.groupId === group.id ? dragState.target : undefined;
   const isContentDragOver = dragState?.active && dropTarget?.surface === "content";
+
+  function handleSelectTab(tab: DockTabRef, groupId: string) {
+    if (advisorIsActive && advisorTabId) {
+      setOpenedAdvisorTabIds((current) =>
+        current.has(advisorTabId) ? current : new Set(current).add(advisorTabId),
+      );
+    }
+    if (tab.kind === "ai-advisor") {
+      setOpenedAdvisorTabIds((current) =>
+        current.has(tab.id) ? current : new Set(current).add(tab.id),
+      );
+    }
+    onSelectTab(tab, groupId);
+  }
+
+  function handleCloseTab(tab: DockTabRef) {
+    if (tab.kind === "ai-advisor") {
+      setOpenedAdvisorTabIds((current) => {
+        if (!current.has(tab.id)) return current;
+        const next = new Set(current);
+        next.delete(tab.id);
+        return next;
+      });
+    }
+    onCloseTab(tab);
+  }
 
   return (
     <section
@@ -293,8 +323,8 @@ function DockGroup({
       <DockTabBar
         group={group}
         activeTab={activeTab}
-        onSelectTab={onSelectTab}
-        onCloseTab={onCloseTab}
+        onSelectTab={handleSelectTab}
+        onCloseTab={handleCloseTab}
         onTabContextMenu={onTabContextMenu}
         onGroupContextMenu={onGroupContextMenu}
         onDocumentGroupToggle={onDocumentGroupToggle}
@@ -307,11 +337,20 @@ function DockGroup({
         documentTabGroups={documentTabGroups}
       />
       <div ref={contentRef} className="dock-group-content">
-        {activeTab ? (
+        {activeTab && !advisorIsActive ? (
           renderTab(activeTab)
-        ) : (
+        ) : !activeTab ? (
           <EmptyDockGroup groupId={group.id} renderEmptyDocuments={renderEmptyDocuments} />
-        )}
+        ) : null}
+        {advisorTab && (advisorIsActive || openedAdvisorTabIds.has(advisorTab.id)) ? (
+          <div
+            key={advisorTab.id}
+            className={`dock-ai-advisor-slot ${advisorIsActive ? "active" : ""}`}
+            aria-hidden={!advisorIsActive}
+          >
+            {renderTab(advisorTab)}
+          </div>
+        ) : null}
       </div>
       {isContentDragOver ? <DockDropOverlay target={dropTarget} /> : null}
     </section>
@@ -772,17 +811,18 @@ function getDockDropTarget(
       const targetPath = tabElement.dataset.dockTabPath;
       if (!targetPath) return undefined;
       const rect = tabElement.getBoundingClientRect();
+      const side = getDocumentTabDropSide(rect, x);
       return {
         groupId,
         position: "center",
         surface: "tabs",
         targetTabId,
-        targetSide: x < rect.left + rect.width / 2 ? "before" : "after",
+        ...(side === "center" ? {} : { targetSide: side }),
         documentDrop: {
           kind: "tab",
           targetPath,
           targetDocumentGroupId: tabElement.dataset.documentTabGroupId || undefined,
-          side: x < rect.left + rect.width / 2 ? "before" : "after",
+          side,
         },
       };
     }
@@ -868,6 +908,13 @@ function getDockDropTarget(
   const documentDrop = item.kind === "document" && position === "center" ? { kind: "pane" as const } : undefined;
 
   return { groupId, position, surface: "content", documentDrop };
+}
+
+function getDocumentTabDropSide(rect: DOMRect, x: number): "before" | "after" | "center" {
+  const relativeX = (x - rect.left) / Math.max(rect.width, 1);
+  if (relativeX < 0.3) return "before";
+  if (relativeX > 0.7) return "after";
+  return "center";
 }
 
 function isPointInsideRect(x: number, y: number, rect: DOMRect): boolean {

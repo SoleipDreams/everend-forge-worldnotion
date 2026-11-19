@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "theme": "forge-mono-dark",
+  "editor": {
+    "lineNumbers": true,
+    "lineWrap": true,
+    "activeLine": false,
+    "fontSize": 15,
+    "tabSize": 2,
+    "defaultMode": "processed",
+    "showModeTabs": true,
+    "pageStyle": "theme",
+    "customPageColor": "#ffffff",
+    "writeFontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "sourceFontFamily": "\"SFMono-Regular\", Consolas, monospace",
+    "persistTabs": true,
+    "reuseOpenTabs": true,
+    "dockTabScale": 1.35,
+    "confirmCloseDirtyTab": true,
+    "showPaperShadow": false,
+    "commandPaletteEnabled": true,
+    "quickSwitcherEnabled": true,
+    "searchPanelEnabled": true,
+    "outlineGuideEnabled": true,
+    "outlinePosition": "right",
+    "breadcrumbsEnabled": false,
+    "codeFoldingEnabled": true,
+    "floatingToolbarEnabled": false,
+    "documentHeaderEnabled": true,
+    "showProjectNameInHeader": false,
+    "assetStorageMode": "global",
+    "coverImageVisible": false
+  },
+  "explorer": {
+    "confirmDragMove": false,
+    "showHiddenEverend": false,
+    "folderNotesEnabled": true,
+    "showImagesInAllFiles": false,
+    "activeSection": "allFiles",
+    "favorites": []
+  },
+  "graph": {
+    "mode": "global",
+    "depth": 1,
+    "searchQuery": "",
+    "showTags": false,
+    "existingFilesOnly": true,
+    "showOrphans": true,
+    "showWikilinks": true,
+    "showHierarchy": false,
+    "showTagRelations": false,
+    "showArrows": false,
+    "textFadeThreshold": 0.75,
+    "nodeSize": 1,
+    "linkThickness": 1,
+    "centerForce": 0.08,
+    "repelForce": 240,
+    "linkForce": 0.45,
+    "linkDistance": 110,
+    "groups": []
+  },
+  "plugins": {
+    "enabled": {
+      "wikilinks": true,
+      "footnotes": true,
+      "table-tools": true,
+      "code-folding": true,
+      "font-family-rendering": true,
+      "image-rendering": true,
+      "document-header": true,
+      "unity-adapter": false,
+      "godot-adapter": false,
+      "unreal-adapter": false,
+      "ai-advisor": true
+    }
+  },
+  "aiAdvisor": {
+    "providers": [
+      {
+        "id": "chatgpt",
+        "name": "ChatGPT",
+        "url": "https://chatgpt.com/",
+        "enabled": true,
+        "description": "OpenAI's conversational workspace."
+      },
+      {
+        "id": "claude",
+        "name": "Claude",
+        "url": "https://claude.ai/",
+        "enabled": true,
+        "description": "Anthropic's conversational workspace."
+      },
+      {
+        "id": "gemini",
+        "name": "Gemini",
+        "url": "https://gemini.google.com/app",
+        "enabled": true,
+        "description": "Google's Gemini web app."
+      },
+      {
+        "id": "deepseek",
+        "name": "DeepSeek",
+        "url": "https://chat.deepseek.com/",
+        "enabled": true,
+        "description": "DeepSeek's official chat workspace."
+      },
+      {
+        "id": "perplexity",
+        "name": "Perplexity",
+        "url": "https://www.perplexity.ai/",
+        "enabled": true,
+        "description": "Web-grounded conversational research."
+      },
+      {
+        "id": "mistral",
+        "name": "Mistral Vibe",
+        "url": "https://chat.mistral.ai/",
+        "enabled": true,
+        "description": "Mistral's Vibe chat workspace."
+      },
+      {
+        "id": "grok",
+        "name": "Grok",
+        "url": "https://grok.com/",
+        "enabled": true,
+        "description": "xAI's conversational workspace."
+      },
+      {
+        "id": "qwen",
+        "name": "Qwen",
+        "url": "https://chat.qwen.ai/",
+        "enabled": true,
+        "description": "Alibaba's Qwen chat workspace."
+      }
+    ],
+    "activeProviderId": "chatgpt"
+  },
+  "keybindings": [
+    {
+      "commandId": "save",
+      "shortcut": "Mod+S"
+    },
+    {
+      "commandId": "search",
+      "shortcut": "Mod+F"
+    },
+    {
+      "commandId": "replace",
+      "shortcut": "Mod+H"
+    },
+    {
+      "commandId": "findNext",
+      "shortcut": "F3"
+    },
+    {
+      "commandId": "findPrevious",
+      "shortcut": "Shift+F3"
+    },
+    {
+      "commandId": "bold",
+      "shortcut": "Mod+B"
+    },
+    {
+      "commandId": "italic",
+      "shortcut": "Mod+I"
+    },
+    {
+      "commandId": "inlineCode",
+      "shortcut": "Mod+E"
+    },
+    {
+      "commandId": "strikethrough",
+      "shortcut": "Mod+Shift+X"
+    },
+    {
+      "commandId": "codeBlock",
+      "shortcut": "Mod+Shift+C"
+    },
+    {
+      "commandId": "heading1",
+      "shortcut": "Mod+Alt+1"
+    },
+    {
+      "commandId": "heading2",
+      "shortcut": "Mod+Alt+2"
+    },
+    {
+      "commandId": "heading3",
+      "shortcut": "Mod+Alt+3"
+    },
+    {
+      "commandId": "blockquote",
+      "shortcut": "Mod+Shift+."
+    },
+    {
+      "commandId": "unorderedList",
+      "shortcut": "Mod+Shift+8"
+    },
+    {
+      "commandId": "orderedList",
+      "shortcut": "Mod+Shift+7"
+    },
+    {
+      "commandId": "taskList",
+      "shortcut": "Mod+Shift+9"
+    },
+    {
+      "commandId": "link",
+      "shortcut": "Mod+K"
+    },
+    {
+      "commandId": "wikilink",
+      "shortcut": "Mod+Shift+K"
+    },
+    {
+      "commandId": "footnote",
+      "shortcut": "Mod+Alt+F"
+    },
+    {
+      "commandId": "horizontalRule",
+      "shortcut": "Mod+Shift+H"
+    },
+    {
+      "commandId": "foldBlock",
+      "shortcut": "Mod+Alt+["
+    },
+    {
+      "commandId": "commandPalette",
+      "shortcut": "Mod+P"
+    },
+    {
+      "commandId": "quickSwitcher",
+      "shortcut": "Mod+Shift+O"
+    },
+    {
+      "commandId": "toggleOutline",
+      "shortcut": "Mod+Shift+O"
+    },
+    {
+      "commandId": "collapseExplorerFolders",
+      "shortcut": "Mod+Shift+E"
+    },
+    {
+      "commandId": "switchMode",
+      "shortcut": "Mod+/"
+    },
+    {
+      "commandId": "closeTab",
+      "shortcut": "Mod+W"
+    },
+    {
+      "commandId": "nextTab",
+      "shortcut": "Mod+Shift+]"
+    },
+    {
+      "commandId": "previousTab",
+      "shortcut": "Mod+Shift+["
+    }
+  ]
+}

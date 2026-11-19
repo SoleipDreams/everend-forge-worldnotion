@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../../SettingsDropdown.js";
 import { useEffect, useState } from "react";
 import {
   autoUpdate,
@@ -266,7 +267,7 @@ export function PropertyEditorPopover({
 
         <label className="property-editor-field">
           <span>Type</span>
-          <select
+          <WorldNotionDropdown
             value={property.type}
             disabled={isProtected || property.type === "group"}
             onChange={(event) => onChangeType(event.target.value as CustomFieldType)}
@@ -277,7 +278,7 @@ export function PropertyEditorPopover({
               </option>
             ))}
             {property.type === "group" ? <option value="group">Group</option> : null}
-          </select>
+          </WorldNotionDropdown>
         </label>
 
         <label className="property-editor-field">
@@ -503,7 +504,7 @@ export function PropertyEditorPopover({
                             return (
                               <label key={role}>
                                 <span>{roleLabel}</span>
-                                <select
+                                <WorldNotionDropdown
                                   aria-label={`${type.label} ${roleLabel.toLowerCase()} image`}
                                   value={currentPropertyId ?? ""}
                                   disabled={!onSetPresentationRole || type.imageProperties.length === 0}
@@ -527,7 +528,7 @@ export function PropertyEditorPopover({
                                       {imageProperty.label}
                                     </option>
                                   ))}
-                                </select>
+                                </WorldNotionDropdown>
                               </label>
                             );
                           })}
@@ -550,7 +551,7 @@ export function PropertyEditorPopover({
                     );
                     return (
                       <div key={conditionId} className="property-editor-condition">
-                        <select
+                        <WorldNotionDropdown
                           value={conditionId}
                           aria-label="Condition property"
                           onChange={(event) => {
@@ -567,7 +568,7 @@ export function PropertyEditorPopover({
                               {candidate.label ?? candidate.id}
                             </option>
                           ))}
-                        </select>
+                        </WorldNotionDropdown>
                         <button
                           type="button"
                           className="danger"

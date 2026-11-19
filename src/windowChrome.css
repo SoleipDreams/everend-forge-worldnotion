@@ -175,6 +175,7 @@
   }
 
   .forge-worldnotion[data-window-chrome="true"] .dock-layout-select > span,
+  .forge-worldnotion[data-window-chrome="true"] .dock-layout-select .ef-settings-select-value,
   .forge-worldnotion[data-window-chrome="true"] .dock-panel-menu-toggle > span,
   .forge-worldnotion[data-window-chrome="true"] .dock-panel-menu-toggle > small {
     display: none;

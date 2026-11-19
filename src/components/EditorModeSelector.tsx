@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import type { EditorMode, WritingMode } from "../editorTypes";
 
 type ModeOption = "processed" | "semi" | "source";
@@ -22,7 +23,7 @@ export function EditorModeSelector({
   const selected: ModeOption = mode === "source" ? "source" : writingMode;
 
   return (
-    <select
+    <WorldNotionDropdown
       className="editor-mode-dropdown"
       aria-label={labels.mode}
       value={selected}
@@ -35,6 +36,6 @@ export function EditorModeSelector({
       <option value="processed" disabled={disabled}>{labels.processed}</option>
       <option value="semi" disabled={disabled}>{labels.semi}</option>
       <option value="source">{labels.source}</option>
-    </select>
+    </WorldNotionDropdown>
   );
 }

@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { AppInteractionContext } from "../hooks/useAppInteraction";
 import { SettingsFrame, settingsContent } from "../SettingsFrame";
 import type { SettingsHost, SettingsDraft } from "../settingsIntegration";
@@ -141,7 +142,7 @@ function UniverseLanguageSettings({
     <div className="locale-settings-fields">
       <label>
         <span>Primary language</span>
-        <select
+        <WorldNotionDropdown
           value={locales[0]}
           onChange={(event) =>
             update(event.target.value, [
@@ -155,7 +156,7 @@ function UniverseLanguageSettings({
               {localeDisplayName(locale, localeNames)}
             </option>
           ))}
-        </select>
+        </WorldNotionDropdown>
       </label>
       <div className="locale-settings-list">
         <span>Additional languages</span>
@@ -181,7 +182,7 @@ function UniverseLanguageSettings({
         ) : (
           <p>None yet.</p>
         )}
-        <select aria-label="Additional languages"
+        <WorldNotionDropdown aria-label="Additional languages"
           value=""
           onChange={(event) => {
             if (event.target.value) update(locales[0], [...locales, event.target.value]);
@@ -195,7 +196,7 @@ function UniverseLanguageSettings({
                 {localeDisplayName(locale, localeNames)}
               </option>
             ))}
-        </select>
+        </WorldNotionDropdown>
       </div>
       <div className="locale-invented-language">
         <label>
@@ -805,11 +806,11 @@ export function SettingsModal({
   };
   const draft: SettingsDraft = { dirty: profileDirty || propertiesDirty, busy: profileSaving || propertiesSaving, save: saveDrafts, discard: discardDrafts };
   return <AppInteractionContext.Provider value={settingsHost ? settingsHost.visible && page.startsWith("worldnotion.") : !hidden}><SettingsFrame title={interfaceLocale === "es" ? "Ajustes de WorldNotion" : "WorldNotion settings"} locale={interfaceLocale} pages={settingsHost ? integratedSettingsPages : suiteSettings ? legacyHostPages : worldnotionSettingsPages} page={page} onPage={setLocalPage} visible={!hidden} onClose={onClose} host={settingsHost} hasUniverse={Boolean(universe)} draft={draft} helpPage="worldnotion.help" onHelp={() => {}} contentClassName="worldnotion-settings-content">
-{section === "general" ? <div className="settings-grid">{!suiteSettings && <label><span>{interfaceLocale === "es" ? "Fuente de interfaz" : "Interface typeface"}</span><select value={settings.interfaceFont ?? "sans"} onChange={event => onChange({...settings, interfaceFont: event.target.value as NonNullable<AppSettingsV4["interfaceFont"]>})}><option value="sans">Sans serif</option><option value="serif">Serif</option><option value="humanist">Humanist</option></select></label>}
+{section === "general" ? <div className="settings-grid">{!suiteSettings && <label><span>{interfaceLocale === "es" ? "Fuente de interfaz" : "Interface typeface"}</span><WorldNotionDropdown value={settings.interfaceFont ?? "sans"} onChange={event => onChange({...settings, interfaceFont: event.target.value as NonNullable<AppSettingsV4["interfaceFont"]>})}><option value="sans">Sans serif</option><option value="serif">Serif</option><option value="humanist">Humanist</option></WorldNotionDropdown></label>}
                     {!suiteSettings ? (
                       <label>
                         <span>{interfaceCopy.interfaceLanguage}</span>
-                        <select
+                        <WorldNotionDropdown
                           value={settings.localePreference ?? "system"}
                           onChange={(event) =>
                             onChange({
@@ -821,7 +822,7 @@ export function SettingsModal({
                           <option value="system">{interfaceCopy.system}</option>
                           <option value="en">English</option>
                           <option value="es">Español</option>
-                        </select>
+                        </WorldNotionDropdown>
                       </label>
                     ) : null}
                     <label>
@@ -832,7 +833,7 @@ export function SettingsModal({
                           readOnly
                         />
                       ) : (
-                        <select
+                        <WorldNotionDropdown
                           value={settings.theme}
                           onChange={(event) =>
                             onChange({ ...settings, theme: normalizeThemeId(event.target.value) })
@@ -843,7 +844,7 @@ export function SettingsModal({
                               {theme.label}
                             </option>
                           ))}
-                        </select>
+                        </WorldNotionDropdown>
                       )}
                     </label>
 <label><span>{interfaceLocale === "es" ? "Modo del tema" : "Theme mode"}</span><button type="button" onClick={() => onChange({...settings, theme: toggledThemeMode(settings.theme)})}>{interfaceLocale === "es" ? "Cambiar claro / oscuro" : "Toggle light / dark"}</button></label>
@@ -865,7 +866,7 @@ export function SettingsModal({
                 <div className="settings-grid">
                   <label>
                     <span>{interfaceCopy.interfaceLanguage}</span>
-                    <select
+                    <WorldNotionDropdown
                       value={suiteSettings.localePreference}
                       onChange={(event) =>
                         suiteSettings.onLocalePreferenceChange(
@@ -876,11 +877,11 @@ export function SettingsModal({
                       <option value="system">{interfaceCopy.system}</option>
                       <option value="en">English</option>
                       <option value="es">Español</option>
-                    </select>
+                    </WorldNotionDropdown>
                   </label>
                   <label>
                     <span>{settingsText.style}</span>
-                    <select
+                    <WorldNotionDropdown
                       value={suiteSettings.style}
                       onChange={(event) => suiteSettings.onStyleChange(event.target.value)}
                     >
@@ -889,11 +890,11 @@ export function SettingsModal({
                           {theme.label}
                         </option>
                       ))}
-                    </select>
+                    </WorldNotionDropdown>
                   </label>
                   <label>
                     <span>{settingsText.typeface}</span>
-                    <select
+                    <WorldNotionDropdown
                       value={suiteSettings.primaryFont}
                       onChange={(event) => suiteSettings.onPrimaryFontChange(event.target.value)}
                     >
@@ -902,7 +903,7 @@ export function SettingsModal({
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </WorldNotionDropdown>
                   </label>
                 </div>
               </div>
@@ -1192,7 +1193,7 @@ export function SettingsModal({
                     </h3>
                     <label>
                       <span>{settingsText.pageStyle}</span>
-                      <select
+                      <WorldNotionDropdown
                         value={settings.editor.pageStyle}
                         onChange={(event) =>
                           updateEditor({
@@ -1205,7 +1206,7 @@ export function SettingsModal({
                         <option value="warm-paper">{settingsText.warmPaper}</option>
                         <option value="system">{settingsText.systemSurface}</option>
                         <option value="custom">{settingsText.customColor}</option>
-                      </select>
+                      </WorldNotionDropdown>
                     </label>
                     <label>
                       <span>{settingsText.customPageColor}</span>
@@ -1319,7 +1320,7 @@ export function SettingsModal({
                           {settingsText.defaultMode}
                           <small>{settingsText.editorModeDescription}</small>
                         </span>
-                        <select
+                        <WorldNotionDropdown
                           value={settings.editor.defaultMode}
                           onChange={(event) =>
                             updateEditor({
@@ -1330,7 +1331,7 @@ export function SettingsModal({
                           <option value="processed">{editorModeText.processed}</option>
                           <option value="semi">{editorModeText.semi}</option>
                           <option value="source">{editorModeText.source}</option>
-                        </select>
+                        </WorldNotionDropdown>
                       </label>
                       <label>
                         <span>
@@ -1399,7 +1400,7 @@ export function SettingsModal({
                       {settings.editor.outlineGuideEnabled && (
                         <label>
                           <span>{settingsText.outlinePosition}</span>
-                          <select
+                          <WorldNotionDropdown
                             value={settings.editor.outlinePosition}
                             onChange={(event) =>
                               updateEditor({
@@ -1409,7 +1410,7 @@ export function SettingsModal({
                           >
                             <option value="left">{settingsText.left}</option>
                             <option value="right">{settingsText.right}</option>
-                          </select>
+                          </WorldNotionDropdown>
                         </label>
                       )}
                       <label>
@@ -2007,14 +2008,16 @@ export function SettingsModal({
                     ] as PluginCategory[]
                   ).map((category) => {
                     const normalizedQuery = pluginQuery.trim().toLowerCase();
-                    const plugins = getPluginDefinitions().filter((plugin) => {
-                      const matchesCategory = plugin.category === category;
-                      const matchesQuery =
-                        !normalizedQuery ||
-                        plugin.name.toLowerCase().includes(normalizedQuery) ||
-                        plugin.description.toLowerCase().includes(normalizedQuery);
-                      return matchesCategory && matchesQuery;
-                    });
+                    const plugins = getPluginDefinitions()
+                      .filter((plugin) => {
+                        const matchesCategory = plugin.category === category;
+                        const matchesQuery =
+                          !normalizedQuery ||
+                          plugin.name.toLowerCase().includes(normalizedQuery) ||
+                          plugin.description.toLowerCase().includes(normalizedQuery);
+                        return matchesCategory && matchesQuery;
+                      })
+                      .sort((first, second) => first.name.localeCompare(second.name, "en"));
                     if (!plugins.length) return null;
                     return (
                       <section key={category} className="plugin-category">
@@ -2037,11 +2040,6 @@ export function SettingsModal({
                                 <div className="plugin-card-title">
                                   <strong>{t(plugin.name)}</strong>
                                   <span className={`plugin-badge ${plugin.status}`}>{badge}</span>
-                                  <span
-                                    className={`plugin-badge ${enabled ? "enabled" : "disabled"}`}
-                                  >
-                                    {enabled ? "Enabled" : "Disabled"}
-                                  </span>
                                 </div>
                                 <p>{t(plugin.description)}</p>
                                 {plugin.status === "planned" ? (
@@ -2056,11 +2054,11 @@ export function SettingsModal({
                                   </small>
                                 ) : null}
                               </div>
-                              <label className="plugin-toggle">
+                              {plugin.status === "planned" ? <span className="plugin-toggle-state">Unavailable</span> : <label className="plugin-toggle">
                                 <input
                                   type="checkbox"
                                   checked={enabled}
-                                  disabled={!plugin.configurable || plugin.status === "planned"}
+                                  disabled={!plugin.configurable}
                                   onChange={(event) =>
                                     onChange(
                                       updatePluginEnabled(
@@ -2071,8 +2069,8 @@ export function SettingsModal({
                                     )
                                   }
                                 />
-                                <span>{plugin.configurable ? "Active" : "Locked"}</span>
-                              </label>
+                                <span>{plugin.configurable ? enabled ? "Active" : "Disabled" : "Always active"}</span>
+                              </label>}
                             </article>
                           );
                         })}

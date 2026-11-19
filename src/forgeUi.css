@@ -145,27 +145,6 @@
   padding-right: 12px;
   padding-left: 12px;
 }
-.forge-worldnotion .ecosystem-view-heading {
-  gap: 8px;
-  align-items: center;
-}
-.forge-worldnotion .ecosystem-result-summary {
-  font-size: 11px;
-  color: var(--ef-muted);
-}
-.forge-worldnotion .ecosystem-filter-disclosure {
-  margin: 8px 0;
-}
-.forge-worldnotion .ecosystem-filter-disclosure > summary {
-  padding: 8px;
-  border-radius: var(--ef-radius-control);
-  color: var(--ef-muted);
-  cursor: pointer;
-  font-size: 12px;
-}
-.forge-worldnotion .ecosystem-filter-disclosure > summary:hover {
-  background: var(--ef-panel-soft);
-}
 .forge-worldnotion .ecosystem-gallery-card {
   border-radius: var(--ef-radius-card);
 }

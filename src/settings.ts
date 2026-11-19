@@ -127,6 +127,8 @@ export function loadSettings(): AppSettingsV4 {
         ...parsedExplorer,
         activeSection,
         ecosystemView: parsedExplorer.ecosystemView === "list" ? "list" : "gallery",
+        favoritesView: parsedExplorer.favoritesView === "list" ? "list" : "gallery",
+        imagesView: parsedExplorer.imagesView === "list" ? "list" : "gallery",
         folderNotesEnabled,
         showImagesInAllFiles,
       },

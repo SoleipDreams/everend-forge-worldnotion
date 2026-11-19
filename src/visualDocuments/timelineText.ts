@@ -8,6 +8,7 @@ const SPANISH: Record<string, string> = {
   "All / custom view": "Todo / vista personalizada",
   "Timeline canvas: events above the axis and periods below":
     "Lienzo de cronología: eventos sobre el eje y periodos debajo",
+  Timeline: "Cronología",
   "Timeline filters": "Filtros de cronología",
   "Timeline inspector": "Inspector de cronología",
   "% · Drag to pan · Wheel to zoom · Drag an item to move":
@@ -86,6 +87,8 @@ const SPANISH: Record<string, string> = {
     "Este calendario se copia en el documento. Cambiarlo conserva el instante exacto de cada evento.",
   Title: "Título",
   "Title, description, tags…": "Título, descripción, etiquetas…",
+  "Select an event or period on the canvas to edit it, or add one from the toolbar.":
+    "Selecciona un evento o periodo en el lienzo para editarlo, o añade uno desde la barra de herramientas.",
   "Vault-relative image path": "Ruta de imagen dentro del universo",
   "View name…": "Nombre de vista…",
   "Week progression": "Progresión semanal",

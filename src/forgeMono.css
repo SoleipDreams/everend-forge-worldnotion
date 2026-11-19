@@ -78,7 +78,6 @@
 .forge-worldnotion[data-theme^="forge-mono-"]
   :is(
     .sidebar-section-title,
-    .ecosystem-result-summary,
     .document-header-meta,
     .save-status,
     .onboarding-guide-eyebrow,

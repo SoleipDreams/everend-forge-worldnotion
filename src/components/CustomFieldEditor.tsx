@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { useState } from "react";
 import { Plus, Edit2, Trash2, GitBranch, List, DownloadCloud } from "lucide-react";
 import type { PropertyDefinition, CustomFieldType } from "../editorTypes";
@@ -121,7 +122,7 @@ function FieldItem({ field, onUpdate, onDelete }: FieldItemProps) {
 
               <label>
                 <span>Type:</span>
-                <select
+                <WorldNotionDropdown
                   value={draft.type}
                   onChange={(e) => setDraft({ ...draft, type: e.target.value as CustomFieldType })}
                 >
@@ -130,7 +131,7 @@ function FieldItem({ field, onUpdate, onDelete }: FieldItemProps) {
                       {label}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </label>
 
               <label>
@@ -447,7 +448,7 @@ export function CustomFieldEditor({ fields, onChange }: CustomFieldEditorProps) 
               </label>
               <label>
                 <span>Type:</span>
-                <select
+                <WorldNotionDropdown
                   value={newField.type}
                   onChange={(e) =>
                     setNewField({
@@ -461,7 +462,7 @@ export function CustomFieldEditor({ fields, onChange }: CustomFieldEditorProps) 
                       {label}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </label>
               <div className="custom-field-add-actions">
                 <button type="button" onClick={handleAdd}>

@@ -72,17 +72,17 @@ export function EditorDocumentSurface({
       >
         {banner ? <div className="editor-banner-column">{banner}</div> : null}
         <div className="editor-document-column">
-          {visualAction || showModeSelector || showSourceViewSelector ? (
-            <div className="floating-control-panel">
-              {visualAction}
-              {showModeSelector ? modeSelector : null}
-              {showSourceViewSelector ? sourceViewSelector : null}
-            </div>
-          ) : null}
           {children}
         </div>
         {settings.outlineGuideEnabled ? outline : null}
       </div>
+      {visualAction || showModeSelector || showSourceViewSelector ? (
+        <div className="floating-control-panel">
+          {visualAction}
+          {showModeSelector ? modeSelector : null}
+          {showSourceViewSelector ? sourceViewSelector : null}
+        </div>
+      ) : null}
     </section>
   );
 }

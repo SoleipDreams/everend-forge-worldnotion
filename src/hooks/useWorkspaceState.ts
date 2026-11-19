@@ -27,11 +27,15 @@ export type WorkspaceDocumentState = {
 
 function normalizeWorkspaceDocumentState(
   state: WorkspaceDocumentState,
+  previous?: WorkspaceDocumentState,
 ): WorkspaceDocumentState {
+  // A panel can be selected while the last active document remains unchanged.
+  const activePathToSync =
+    previous?.activeTabPath !== state.activeTabPath ? state.activeTabPath : undefined;
   const workspaceLayout = syncLayoutWithOpenTabs(
     state.workspaceLayout,
     state.tabs,
-    state.activeTabPath,
+    activePathToSync,
   );
   const orderedTabs = orderOpenTabsByLayout(state.tabs, workspaceLayout);
   const tabs = orderedTabs.every((tab, index) => tab === state.tabs[index]) &&
@@ -97,7 +101,7 @@ export function useWorkspaceState({
   >((update) => {
     const previous = workspaceDocumentStateRef.current;
     const updated = typeof update === "function" ? update(previous) : update;
-    const next = normalizeWorkspaceDocumentState(updated);
+    const next = normalizeWorkspaceDocumentState(updated, previous);
     if (next.tabs !== previous.tabs) {
       onTabsChangeRef.current?.(next.tabs, previous.tabs);
     }

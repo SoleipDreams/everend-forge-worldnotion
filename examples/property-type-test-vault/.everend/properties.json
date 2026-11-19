@@ -1,0 +1,70 @@
+{
+  "version": "3.0",
+  "tags": {
+    "rootNodes": [],
+    "allowCustomTags": true,
+    "autoDetectSlashNotation": true
+  },
+  "entityTypes": {
+    "definitions": [
+      { "id": "item", "label": "Item", "customFields": ["inspector-tests"] },
+      { "id": "location", "label": "Location", "customFields": [] },
+      { "id": "organization", "label": "Organization", "customFields": [] }
+    ],
+    "defaultType": "item",
+    "allowCustomTypes": true
+  },
+  "statuses": {
+    "definitions": [
+      { "id": "draft", "label": "Draft", "color": "#6b7280" },
+      { "id": "published", "label": "Published", "color": "#10b981" }
+    ],
+    "defaultStatus": "draft",
+    "allowCustomStatuses": true
+  },
+  "customFields": {
+    "definitions": [
+      {
+        "id": "inspector-tests",
+        "label": "Property Type Checks",
+        "type": "group",
+        "description": "Synthetic values for checking inspector controls.",
+        "appliesTo": ["item"],
+        "children": [
+          { "id": "text-sample", "label": "Text", "type": "text", "description": "Edit a short text value." },
+          { "id": "number-sample", "label": "Number", "type": "number", "description": "0–100", "min": 0, "max": 100 },
+          { "id": "boolean-sample", "label": "Boolean", "type": "boolean" },
+          { "id": "date-sample", "label": "Date", "type": "date" },
+          {
+            "id": "select-sample",
+            "label": "Select",
+            "type": "select",
+            "options": [
+              { "value": "bronze", "label": "Bronze", "color": "#b7791f" },
+              { "value": "silver", "label": "Silver", "color": "#94a3b8" },
+              { "value": "gold", "label": "Gold", "color": "#d5a441" }
+            ]
+          },
+          {
+            "id": "multiselect-sample",
+            "label": "Multiselect",
+            "type": "multiselect",
+            "options": [
+              { "value": "arcane", "label": "Arcane", "color": "#8b5cf6" },
+              { "value": "fragile", "label": "Fragile", "color": "#ef4444" },
+              { "value": "heirloom", "label": "Heirloom", "color": "#f59e0b" }
+            ]
+          },
+          { "id": "reference-sample", "label": "Entity reference", "type": "entity-ref", "targetTypes": ["location"] },
+          { "id": "affiliation", "label": "Affiliation", "type": "entity-ref-list", "description": "Add and remove linked organizations.", "targetTypes": ["organization"] },
+          { "id": "url-sample", "label": "URL", "type": "url" },
+          { "id": "email-sample", "label": "Email", "type": "email" },
+          { "id": "phone-sample", "label": "Phone", "type": "phone" },
+          { "id": "file-sample", "label": "File", "type": "file" },
+          { "id": "image-sample", "label": "Image", "type": "image" }
+        ]
+      }
+    ],
+    "globalFields": []
+  }
+}

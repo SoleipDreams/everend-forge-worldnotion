@@ -200,6 +200,20 @@
   border-left: 1px solid var(--ef-border, var(--wn-border));
   background: var(--ef-panel, var(--wn-panel));
 }
+.forge-worldnotion .visual-document-inspector-host .timeline-inspector {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.forge-worldnotion .timeline-inspector-empty p {
+  color: var(--ef-muted, var(--wn-muted));
+  line-height: 1.5;
+}
 .forge-worldnotion .timeline-inspector-heading {
   display: flex;
   align-items: center;

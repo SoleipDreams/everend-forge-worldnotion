@@ -458,9 +458,59 @@ export function updateLayoutForPathChange(
 }
 
 export function normalizeWorkspaceLayout(layout: WorkspaceLayoutV1): WorkspaceLayoutV1 {
-  const migratedRoot = mapGroups(layout.root, (group) => ({ ...group, role: group.role ?? (group.id === DOCUMENT_GROUP_ID || group.tabs.some((tab) => tab.kind === "document") ? "documents" : "panels") }));
+  // Older sessions stored outgoing and incoming links as separate dock tabs.
+  let hasLinksPanel = false;
+  visitGroups(layout.root, (group) => {
+    if (group.tabs.some((tab) => tab.kind === "links" || tab.id === panelDockTabId("links"))) {
+      hasLinksPanel = true;
+    }
+  });
+
+  let keptLinksPanel = false;
+  const unifiedRelationshipRoot = mapGroups(layout.root, (group) => {
+    const tabs: DockTabRef[] = [];
+    let activeTabId = group.activeTabId;
+
+    for (const tab of group.tabs) {
+      const isRelationshipTab =
+        tab.kind === "links" ||
+        tab.kind === "backlinks" ||
+        tab.id === panelDockTabId("links") ||
+        tab.id === panelDockTabId("backlinks");
+      if (!isRelationshipTab) {
+        tabs.push(tab);
+        continue;
+      }
+
+      const shouldKeep = !keptLinksPanel && (!hasLinksPanel || tab.kind === "links");
+      if (!shouldKeep) {
+        if (activeTabId === tab.id) activeTabId = undefined;
+        continue;
+      }
+
+      const linksTab = createPanelDockTab("links");
+      tabs.push(linksTab);
+      keptLinksPanel = true;
+      if (activeTabId === tab.id) activeTabId = linksTab.id;
+    }
+
+    if (activeTabId && !tabs.some((tab) => tab.id === activeTabId)) {
+      activeTabId = tabs[0]?.id;
+    }
+
+    return {
+      ...group,
+      tabs,
+      activeTabId,
+      role:
+        group.role ??
+        (group.id === DOCUMENT_GROUP_ID || group.tabs.some((tab) => tab.kind === "document")
+          ? "documents"
+          : "panels"),
+    };
+  });
   const root = ensureDocumentAnchor(
-    pruneNode(migratedRoot) ?? createDockGroup(DOCUMENT_GROUP_ID, []),
+    pruneNode(unifiedRelationshipRoot) ?? createDockGroup(DOCUMENT_GROUP_ID, []),
   );
   const activeGroupId = findGroup(root, layout.activeGroupId)
     ? layout.activeGroupId

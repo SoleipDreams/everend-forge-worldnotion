@@ -1,0 +1,333 @@
+/* Shared select styling inspired by PathBranching's theme-aware inspector fields. */
+#root .forge-worldnotion select:not([multiple]):not([size]) {
+  --_wn-select-chevron: var(--wn-muted, var(--wn-text));
+  --_wn-select-fill: var(--wn-panel-2, var(--wn-panel));
+
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 30px 4px 10px;
+  border: 1px solid var(--wn-border);
+  border-radius: 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--_wn-select-fill);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--_wn-select-chevron) 50%),
+    linear-gradient(135deg, var(--_wn-select-chevron) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  background-origin: padding-box, padding-box;
+  background-clip: padding-box, padding-box;
+  box-shadow: none;
+  color: var(--wn-text);
+  font-family: inherit;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+#root .forge-worldnotion select:not([multiple]):not([size]):hover:not(:disabled) {
+  --_wn-select-fill: var(--wn-panel-2, var(--wn-panel));
+  background-color: var(--_wn-select-fill);
+  border-color: color-mix(in srgb, var(--wn-border) 68%, var(--wn-text));
+}
+
+#root .forge-worldnotion select:not([multiple]):not([size]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--wn-border) 55%, var(--wn-text));
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+#root .forge-worldnotion select:not([multiple]):not([size]):disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Keep dense inspector controls compact while sharing the same visual skin. */
+#root .forge-worldnotion .property-row-value select:not([multiple]):not([size]) {
+  min-height: 24px;
+  padding: 2px 27px 2px 6px;
+}
+
+#root .forge-worldnotion .dock-panel-body select:not([multiple]):not([size]),
+#root .forge-worldnotion .ai-advisor-provider-control select:not([multiple]):not([size]) {
+  min-height: 28px;
+  padding: 3px 27px 3px 8px;
+}
+
+#root .forge-worldnotion .variant-selector select:not([multiple]):not([size]) {
+  min-height: 30px;
+  padding: 0 27px 0 6px;
+}
+
+#root .forge-worldnotion select:not([multiple]):not([size]) option,
+#root .forge-worldnotion select:not([multiple]):not([size]) optgroup {
+  background-color: var(--wn-panel);
+  color: var(--wn-text);
+  font: inherit;
+}
+
+#root .forge-worldnotion select:not([multiple]):not([size]) option:checked {
+  background-color: var(--wn-panel-2, var(--wn-panel));
+  color: var(--wn-text);
+}
+
+/* This select is an invisible hit target under the dock's styled trigger. */
+#root .forge-worldnotion .dock-layout-select select {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+#root .forge-worldnotion .dock-layout-select select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Custom single-select menu used across every WorldNotion surface. */
+#root .forge-worldnotion .ef-settings-select {
+  --settings-panel: var(--wn-panel, #16181f);
+  --settings-soft: var(--wn-panel-2, #20232c);
+  --settings-text: var(--wn-text, #f1eee8);
+  --settings-muted: var(--wn-muted, #aaa59c);
+  --settings-border: var(--wn-border, #3a3d46);
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+#root .forge-worldnotion .ef-settings-select-native {
+  display: none !important;
+}
+
+#root .forge-worldnotion .ef-settings-select[data-open] {
+  z-index: 1200;
+}
+
+#root .forge-worldnotion .ef-settings-select-trigger {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between !important;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 9px !important;
+  border: 1px solid var(--settings-border) !important;
+  border-radius: 8px !important;
+  background: var(--settings-panel) !important;
+  color: var(--settings-text) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+#root .forge-worldnotion .ef-settings-select-trigger:hover:not(:disabled),
+#root .forge-worldnotion .ef-settings-select-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--settings-border) 68%, var(--settings-text)) !important;
+  background: var(--settings-soft) !important;
+}
+
+#root .forge-worldnotion .ef-settings-select-trigger:focus-visible,
+#root .forge-worldnotion .ef-settings-select-option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--settings-border) 62%, var(--settings-text));
+  outline-offset: 2px;
+}
+
+#root .forge-worldnotion .ef-settings-select-menu {
+  position: absolute;
+  z-index: 1201;
+  top: calc(100% + 5px);
+  left: 0;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(360px, calc(100vw - 32px));
+  max-height: min(300px, calc(100dvh - 48px));
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--settings-border);
+  border-radius: 9px;
+  background: var(--settings-panel);
+  color: var(--settings-text);
+  box-shadow: 0 12px 28px #0006;
+}
+
+#root .forge-worldnotion .ef-settings-select-menu[data-placement="top"] {
+  top: auto;
+  bottom: calc(100% + 5px);
+}
+
+#root .forge-worldnotion .ef-settings-select-menu[data-align="end"] {
+  right: 0;
+  left: auto;
+}
+
+#root .forge-worldnotion .ef-settings-select-group + .ef-settings-select-group {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--settings-border);
+}
+
+#root .forge-worldnotion .ef-settings-select-group-title {
+  margin: 0;
+  padding: 4px 7px;
+  color: var(--settings-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#root .forge-worldnotion .ef-settings-select-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 31px;
+  margin: 0;
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--settings-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+#root .forge-worldnotion .ef-settings-select-option:hover:not(:disabled),
+#root .forge-worldnotion .ef-settings-select-option[aria-selected="true"] {
+  background: var(--settings-soft);
+  color: var(--settings-text);
+}
+
+#root .forge-worldnotion .ef-settings-select-option:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+#root .forge-worldnotion .property-row-value .ef-settings-select,
+#root .forge-worldnotion .variant-selector .ef-settings-select {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+#root .forge-worldnotion .property-row-value .ef-settings-select-trigger,
+#root .forge-worldnotion .dock-panel-body .ef-settings-select-trigger,
+#root .forge-worldnotion .ai-advisor-provider-control .ef-settings-select-trigger,
+#root .forge-worldnotion .variant-selector .ef-settings-select-trigger,
+#root .forge-worldnotion .timeline-toolbar .ef-settings-select-trigger,
+#root .forge-worldnotion .filter-group .ef-settings-select-trigger {
+  min-height: 28px !important;
+  padding: 3px 8px !important;
+  font-size: 12px !important;
+}
+
+#root .forge-worldnotion .ai-advisor-provider-control .ef-settings-select {
+  width: min(220px, 100%);
+}
+
+#root .forge-worldnotion .timeline-toolbar .ef-settings-select {
+  max-width: 185px;
+}
+
+#root .forge-worldnotion .variant-selector .ef-settings-select-trigger {
+  height: 30px;
+  min-height: 30px !important;
+  border-radius: 6px !important;
+}
+
+/* Inspector values and the variant selector use regular weight like other fields. */
+#root .forge-worldnotion .property-row-value .ef-settings-select-trigger,
+#root .forge-worldnotion .variant-selector .ef-settings-select-trigger {
+  font-weight: 400 !important;
+}
+
+#root .forge-worldnotion .dock-layout-select .ef-settings-select {
+  width: 100%;
+}
+
+#root .forge-worldnotion .dock-layout-select .ef-settings-select-trigger {
+  min-height: 26px !important;
+  padding: 3px 24px 3px 8px !important;
+  border-color: transparent !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--wn-muted) !important;
+  font-size: 0.76rem !important;
+}
+
+#root .forge-worldnotion .dock-layout-select .ef-settings-select-trigger:hover:not(:disabled),
+#root .forge-worldnotion .dock-layout-select .ef-settings-select-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--wn-border) 68%, var(--wn-text)) !important;
+  background: var(--wn-panel-2) !important;
+  color: var(--wn-text) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root .forge-worldnotion select:not([multiple]):not([size]) {
+    transition: none;
+  }
+
+  #root .forge-worldnotion .ef-settings-select-trigger {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  #root .forge-worldnotion select:not([multiple]):not([size]) {
+    appearance: auto;
+    -webkit-appearance: auto;
+    border: 1px solid ButtonText;
+    background: Canvas;
+    color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  #root .forge-worldnotion .dock-layout-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+  }
+
+  #root .forge-worldnotion .ef-settings-select-trigger {
+    border: 1px solid ButtonText !important;
+    background: Canvas !important;
+    color: CanvasText !important;
+    forced-color-adjust: auto;
+  }
+
+  #root .forge-worldnotion .ef-settings-select-menu {
+    border-color: ButtonText;
+    background: Canvas;
+    color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  #root .forge-worldnotion .ef-settings-select-option[aria-selected="true"] {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

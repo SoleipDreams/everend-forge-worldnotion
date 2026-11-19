@@ -34,7 +34,6 @@ export type InspectorPanelProps = {
   onRequestImage?: () => Promise<{ path: string; alt?: string } | null>;
   activeVariantId?: string;
   onSelectVariant?: (id: string) => void;
-  onInsertVariantBlock?: () => void;
   onDeleteVariant?: (id: string) => void;
   explorerSelection?: Array<{ path: string; kind: "file" | "folder" }>;
   onMoveExplorerSelection?: (targetFolderPath: string) => void | Promise<void>;
@@ -59,7 +58,6 @@ export function InspectorPanel({
   onRequestImage,
   activeVariantId = "base",
   onSelectVariant,
-  onInsertVariantBlock,
   onDeleteVariant,
   explorerSelection = [],
   onMoveExplorerSelection,
@@ -218,7 +216,6 @@ export function InspectorPanel({
                     activeVariantId={activeVariantId}
                     onSelect={(id) => onSelectVariant?.(id)}
                     onUpdateRawYaml={(yaml) => onChangeFrontmatter(yaml)}
-                    onInsertBlock={onInsertVariantBlock}
                     onDeleteVariant={onDeleteVariant}
                   />
                 </div>

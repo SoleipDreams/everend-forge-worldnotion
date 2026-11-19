@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import {
   createContext,
   useContext,
@@ -30,6 +31,7 @@ import { timelineText } from "../visualDocuments/timelineText";
 import { resolveVisualDocumentReference } from "../visualDocuments/references";
 import { isImagePath, useVaultImage } from "../utils/vaultImages";
 import { getIconComponent } from "./IconPicker";
+import { VisualInspectorPortal } from "./VisualInspectorPortal";
 import {
   CALENDAR_PRECISIONS,
   EARTH_CALENDAR,
@@ -292,7 +294,7 @@ function DateFields({
       <legend>{label}</legend>
       <label>
         {t("Precision")}
-        <select
+        <WorldNotionDropdown
           value={draft.precision ?? precision}
           onChange={(event) => update("precision", event.target.value as CalendarPrecision)}
         >
@@ -301,19 +303,19 @@ function DateFields({
               {t(value)}
             </option>
           ))}
-        </select>
+        </WorldNotionDropdown>
       </label>
       {calendar.eras.length > 0 && (
         <label>
           {t("Era")}
-          <select value={eraId} onChange={(event) => setEraId(event.target.value)}>
+          <WorldNotionDropdown value={eraId} onChange={(event) => setEraId(event.target.value)}>
             <option value="">{t("Base calendar")}</option>
             {calendar.eras.map((era) => (
               <option key={era.id} value={era.id}>
                 {era.name} · {era.suffix}
               </option>
             ))}
-          </select>
+          </WorldNotionDropdown>
         </label>
       )}
       <div className="timeline-date-grid">
@@ -336,7 +338,7 @@ function DateFields({
         {rank >= 1 && (
           <label>
             {t("Month")}
-            <select
+            <WorldNotionDropdown
               value={draft.month ?? 1}
               onChange={(event) => update("month", Number(event.target.value))}
             >
@@ -345,7 +347,7 @@ function DateFields({
                   {month.name}
                 </option>
               ))}
-            </select>
+            </WorldNotionDropdown>
           </label>
         )}
         {rank >= 2 && (
@@ -505,7 +507,7 @@ function CalendarSettings({
       </p>
       <label>
         {t("Preset")}
-        <select
+        <WorldNotionDropdown
           value=""
           onChange={(event) => {
             const preset = presets.find((entry) => entry.id === event.target.value);
@@ -521,7 +523,7 @@ function CalendarSettings({
               {preset.name}
             </option>
           ))}
-        </select>
+        </WorldNotionDropdown>
       </label>
       <label>
         {t("Calendar name")}
@@ -636,7 +638,7 @@ function CalendarSettings({
         <legend>{t("Weeks")}</legend>
         <label>
           {t("Week progression")}
-          <select
+          <WorldNotionDropdown
             value={draft.weekMode ?? "continuous"}
             onChange={(event) =>
               change({ weekMode: event.target.value as "continuous" | "monthly" })
@@ -644,7 +646,7 @@ function CalendarSettings({
           >
             <option value="continuous">{t("Continuous across months")}</option>
             <option value="monthly">{t("Restart with each month")}</option>
-          </select>
+          </WorldNotionDropdown>
         </label>
         <label>
           {t("Weekday names · one per line")}
@@ -936,6 +938,7 @@ export function TimelineEditor({
   locale = "en",
   calendarPresets = [],
   onSaveCalendarPreset,
+  inspectorHost,
 }: TimelineEditorProps) {
   const t = timelineText(locale);
   const appActive = useAppIsActive();
@@ -1318,7 +1321,7 @@ export function TimelineEditor({
             <Filter size={15} />
             {visibleItems.length}/{document.items.length}
           </button>
-          <select
+          <WorldNotionDropdown
             aria-label={t("Saved timeline view")}
             value={session.activeViewId ?? ""}
             onChange={(event) => applyView(event.target.value)}
@@ -1329,7 +1332,7 @@ export function TimelineEditor({
                 {saved.name}
               </option>
             ))}
-          </select>
+          </WorldNotionDropdown>
           <button
             type="button"
             className="timeline-calendar-button"
@@ -1640,8 +1643,12 @@ export function TimelineEditor({
               {t("% · Drag to pan · Wheel to zoom · Drag an item to move")}
             </div>
           </div>
-          {(calendarOpen || selected) && (
-            <aside className="timeline-inspector" aria-label={t("Timeline inspector")}>
+          <VisualInspectorPortal target={inspectorHost}>
+            <aside
+              className="timeline-editor timeline-inspector"
+              aria-label={t("Timeline inspector")}
+              inert={!documentActive}
+            >
               {calendarOpen ? (
                 <CalendarSettings
                   value={document.calendar}
@@ -1667,9 +1674,8 @@ export function TimelineEditor({
                   }}
                   onSavePreset={onSaveCalendarPreset}
                 />
-              ) : (
-                selected && (
-                  <>
+              ) : selected ? (
+                <>
                     <div className="timeline-inspector-heading">
                       <h3>{t(selected.kind === "event" ? "Event" : "Period")}</h3>
                       <button
@@ -1853,14 +1859,14 @@ export function TimelineEditor({
                       </label>
                       <label>
                         {t("Icon")}
-                        <select
+                        <WorldNotionDropdown
                           value={selected.icon ?? "flag"}
                           onChange={(event) => patchItem({ icon: event.target.value })}
                         >
                           {ICON_PRESETS.map((icon) => (
                             <option key={icon}>{icon}</option>
                           ))}
-                        </select>
+                        </WorldNotionDropdown>
                       </label>
                     </div>
                     <TimelineTags
@@ -1889,11 +1895,23 @@ export function TimelineEditor({
                       <Trash2 size={14} />
                       {t("Delete")} {t(selected.kind)}
                     </button>
-                  </>
-                )
+                </>
+              ) : (
+                <div className="timeline-inspector-empty">
+                  <h3>{t("Timeline")}</h3>
+                  <p>
+                    {t(
+                      "Select an event or period on the canvas to edit it, or add one from the toolbar.",
+                    )}
+                  </p>
+                  <button type="button" onClick={() => setCalendarOpen(true)}>
+                    <Calendar size={14} />
+                    {t("Calendar settings")}
+                  </button>
+                </div>
               )}
             </aside>
-          )}
+          </VisualInspectorPortal>
         </div>
       </section>
     </TimelineTextContext.Provider>

@@ -43,9 +43,11 @@ function renderPanel(
       entityTagColors={new Map()}
       folderNotesEnabled={false}
       pointerDragActive={false}
-      templatesExpanded={false}
+      recentFiles={[]}
+      footerDockView="recent"
+      footerDockExpanded={false}
       expandedPaths={new Set()}
-      onToggleTemplatesExpanded={vi.fn()}
+      onSelectFooterDockView={vi.fn()}
       onCreateTemplate={vi.fn()}
       onSelectPath={vi.fn()}
       onSelectFolder={vi.fn()}

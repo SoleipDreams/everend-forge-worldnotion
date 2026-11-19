@@ -38,6 +38,7 @@ import { isPluginEnabled } from "../utils/pluginRegistry";
 import { imageMarkdown } from "../utils/attachments";
 import { isImagePath } from "../utils/vaultImages";
 import { tableInsertion } from "../utils/markdownEditing";
+import { useWorldnotionSurfaceText } from "../i18n";
 import type { StructuredElement } from "../utils/structuredMarkdown";
 import { buildStructuredRangeIndex, type StructuredRange } from "../utils/structuredRangeIndex";
 import {
@@ -148,6 +149,12 @@ const SLASH_COMMANDS: SlashCommandDefinition[] = [
   { id: "task", label: "Task list", keywords: ["todo", "checkbox"], group: "block" },
   { id: "quote", label: "Quote", keywords: ["blockquote"], group: "block" },
   { id: "code", label: "Code block", keywords: ["pre", "snippet"], group: "block" },
+  {
+    id: "variant-section",
+    label: "Variant section",
+    keywords: ["variant", "section", "seccion"],
+    group: "block",
+  },
   { id: "divider", label: "Divider", keywords: ["rule", "hr"], group: "insert" },
   { id: "wikilink", label: "Wikilink", keywords: ["page", "note"], group: "insert" },
   { id: "link", label: "Link", keywords: ["url"], group: "insert" },
@@ -196,6 +203,7 @@ export function CodeMirrorEditor({
   activeVariantLabel,
   onOpenSource,
 }: CodeMirrorEditorProps) {
+  const surfaceText = useWorldnotionSurfaceText();
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState>();
   const [slashIndex, setSlashIndex] = useState(0);
@@ -231,13 +239,22 @@ export function CodeMirrorEditor({
   const filteredSlashCommands = useMemo(() => {
     if (!slashMenu) return [];
     const query = slashMenu.query.toLowerCase();
+    const variantSectionLineIsEmpty = (() => {
+      if (!editorView || !activeVariantId) return false;
+      const line = editorView.state.doc.lineAt(slashMenu.from);
+      return (
+        !line.text.slice(0, slashMenu.from - line.from).trim() &&
+        !line.text.slice(slashMenu.to - line.from).trim()
+      );
+    })();
     return SLASH_COMMANDS.filter(
       (command) =>
         (command.id !== "table" || isPluginEnabled(pluginSettings, "table-tools")) &&
+        (command.id !== "variant-section" || variantSectionLineIsEmpty) &&
         (command.label.toLowerCase().includes(query) ||
           command.keywords.some((keyword) => keyword.includes(query))),
     ).slice(0, 8);
-  }, [pluginSettings, slashMenu]);
+  }, [activeVariantId, editorView, pluginSettings, slashMenu]);
 
   const filteredNoteSuggestions = useMemo(() => {
     if (!wikilinkMenu) return [];
@@ -279,6 +296,19 @@ export function CodeMirrorEditor({
       .replace(/^#{1,6}\s+/, "")
       .replace(/^(- \[[ xX]\]|\d+\.|[-*])\s+/, "")
       .replace(/^>\s+/, "");
+
+    if (commandId === "variant-section" && activeVariantId) {
+      const openingMarker = `<!-- everend:variant id="${activeVariantId}" -->`;
+      const insert = `${openingMarker}\n\n<!-- /everend:variant -->`;
+      editorView.dispatch({
+        changes: { from: line.from, to: line.to, insert },
+        selection: { anchor: line.from + openingMarker.length + 2 },
+      });
+      editorView.focus();
+      setSlashMenu(undefined);
+      return;
+    }
+
     const linkUrl = commandId === "link" ? await onRequestUrl?.() : undefined;
     if (commandId === "link" && !linkUrl?.trim()) {
       editorView.focus();
@@ -810,7 +840,7 @@ export function CodeMirrorEditor({
           ...(writing && resolveImage && isPluginEnabled(pluginSettings, "image-rendering")
             ? [imagePlugin({ resolve: resolveImage, presentation: writingMode })]
             : []),
-          ...(settings.lineWrap || Boolean(presentationPortraitPath)
+          ...(settings.lineWrap || Boolean(presentationHasPortrait || presentationPortraitPath)
             ? [EditorView.lineWrapping]
             : []),
           CodeMirrorState.tabSize.of(settings.tabSize),
@@ -1205,7 +1235,7 @@ export function CodeMirrorEditor({
                 void applySlashCommand(command.id);
               }}
             >
-              <span>{command.label}</span>
+              <span>{surfaceText(command.label)}</span>
               <small>{command.group}</small>
             </button>
           ))}

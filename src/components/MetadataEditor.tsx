@@ -1,4 +1,7 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { useEffect, useMemo, useState } from "react";
+import { DragDropProvider, type DragEndEvent, type DragMoveEvent, DragOverlay } from "@dnd-kit/react";
+import { isSortable } from "@dnd-kit/react/sortable";
 import { focusAppElement } from "../hooks/useAppInteraction";
 import { useWorldnotionUi } from "../i18n";
 import {
@@ -7,6 +10,8 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Folder,
+  GripVertical,
   Plus,
   Trash2,
   Wand2,
@@ -38,6 +43,7 @@ import {
   getFrontmatterPropertyValue,
   getFrontmatterPropertyValues,
   getConfiguredFrontmatterOrder,
+  moveInspectorPropertyToPosition,
   reorderInspectorPropertySiblings,
   removeInspectorProperty,
   reorderFrontmatter,
@@ -46,6 +52,8 @@ import {
   setInspectorPropertyAppliesTo,
   updateFrontmatterProperties,
   upsertInspectorProperty,
+  type InspectorPropertyTreeNode,
+  type PropertyReorderPosition,
   type VisiblePropertyDefinition,
 } from "../utils/propertiesConfig";
 import {
@@ -58,7 +66,13 @@ import { listPropertyPathEntries } from "../utils/propertyPaths";
 import { coercePropertyValue } from "../utils/propertyValueCoercion";
 import { detectOrphanedFields, inferValueType } from "../utils/frontmatterValidator";
 import { useAppDialogs } from "./DialogProvider";
-import { PropertyRow, type PropertyRowHandlers } from "./properties/PropertyRow";
+import {
+  PropertyRow,
+  type InspectorPropertyDragData,
+  type InspectorPropertyDropPreview,
+  type InspectorPropertyGroupDropData,
+  type PropertyRowHandlers,
+} from "./properties/PropertyRow";
 import { AddPropertyRow, type NewInspectorProperty } from "./properties/AddPropertyRow";
 import { PropertyContextMenu } from "./properties/PropertyContextMenu";
 import { PropertyEditorPopover } from "./properties/PropertyEditorPopover";
@@ -135,7 +149,6 @@ export function MetadataEditor({
   >();
   const propertiesConfig = pendingPropertiesConfig ?? incomingPropertiesConfig;
   const [adaptTargets, setAdaptTargets] = useState<Record<string, string>>({});
-  const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
   const [propertyContextMenu, setPropertyContextMenu] = useState<{
     x: number;
     y: number;
@@ -148,6 +161,7 @@ export function MetadataEditor({
   const [showHiddenProperties, setShowHiddenProperties] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [dropPreview, setDropPreview] = useState<InspectorPropertyDropPreview | null>(null);
   useEffect(() => {
     if (!focusPropertyId) return;
     setCollapsedGroups(new Set());
@@ -535,20 +549,28 @@ export function MetadataEditor({
     }
   };
 
-  const reorderProperty = (targetPropertyId: string) => {
+  const reorderProperty = (
+    propertyId: string | null,
+    targetPropertyId: string,
+    position: PropertyReorderPosition,
+  ) => {
     if (
       !propertiesConfig?.baseProperties ||
-      !draggedPropertyId ||
-      draggedPropertyId === targetPropertyId ||
+      !propertyId ||
+      propertyId === "type" ||
+      targetPropertyId === "type" ||
+      propertyId === targetPropertyId ||
       !inspectorProperties
     )
       return;
     const nextConfig = reorderInspectorPropertySiblings(
       propertiesConfig,
       entity.type,
-      draggedPropertyId,
+      propertyId,
       targetPropertyId,
+      position,
     );
+    if (nextConfig === propertiesConfig) return;
 
     saveConfig(nextConfig);
     onUpdateRawYaml?.(
@@ -557,7 +579,6 @@ export function MetadataEditor({
         getConfiguredFrontmatterOrder(nextConfig, entity.type, Object.keys(frontmatterData)),
       ),
     );
-    setDraggedPropertyId(null);
   };
 
   /** Sensible initial value for a missing schema field: entity fallback for core fields, defaultValue/empty otherwise. */
@@ -626,11 +647,21 @@ export function MetadataEditor({
   };
 
   const propertySections = useMemo(
-    () =>
-      buildInspectorPropertySections(propertiesConfig, entity.type, getPropertyValues(), {
+    () => {
+      const sections = buildInspectorPropertySections(propertiesConfig, entity.type, getPropertyValues(), {
         includeHidden: showHiddenProperties,
         includeInactiveConditions: showHiddenProperties,
-      }),
+      });
+      return sections.map((section) => {
+        if (section.id !== "main") return section;
+        const typeNode = section.nodes.find((node) => node.property.id === "type");
+        if (!typeNode || section.nodes[0] === typeNode) return section;
+        return {
+          ...section,
+          nodes: [typeNode, ...section.nodes.filter((node) => node !== typeNode)],
+        };
+      });
+    },
     [
       entity.customProperties,
       entity.type,
@@ -644,6 +675,221 @@ export function MetadataEditor({
     if (ENTITY_FRONTMATTER_FIELD_IDS.has(propertyId)) return true;
     const definition = allInspectableProperties.find((property) => property.id === propertyId);
     return Boolean(definition && "immutable" in definition && definition.immutable);
+  };
+
+  const findPropertyNode = (
+    nodes: InspectorPropertyTreeNode[],
+    propertyId: string,
+  ): InspectorPropertyTreeNode | undefined => {
+    for (const node of nodes) {
+      if (node.property.id === propertyId) return node;
+      const nested = findPropertyNode(node.children, propertyId);
+      if (nested) return nested;
+    }
+    return undefined;
+  };
+
+  const getSiblingPropertyIds = (parentId: string | null, sectionId: string): string[] => {
+    if (parentId) {
+      const parent = propertySections
+        .map((section) => findPropertyNode(section.nodes, parentId))
+        .find(Boolean);
+      return parent?.children.map((node) => node.property.id) ?? [];
+    }
+    return (
+      propertySections
+        .find((section) => section.id === sectionId)
+        ?.nodes.map((node) => node.property.id) ?? []
+    );
+  };
+
+  const commitParentMove = (nextConfig: PropertiesConfig) => {
+    if (onRequestPropertyPathChange) {
+      void onRequestPropertyPathChange(nextConfig);
+    } else {
+      saveConfig(nextConfig);
+    }
+  };
+
+  const movePropertyIntoGroup = (propertyId: string, parentId: string) => {
+    if (!propertiesConfig || propertyId === "type") return;
+    const currentParentId = parentIdOf(propertyId) || null;
+    const destinationSiblings = getSiblingPropertyIds(parentId, "main").filter(
+      (siblingId) => siblingId !== propertyId,
+    );
+
+    if (currentParentId === parentId) {
+      const lastSibling = destinationSiblings.at(-1);
+      if (lastSibling) reorderProperty(propertyId, lastSibling, "after");
+      return;
+    }
+    if (isProtectedProperty(propertyId)) return;
+
+    const lastSibling = destinationSiblings.at(-1);
+    const nextConfig = moveInspectorPropertyToPosition(
+      propertiesConfig,
+      entity.type,
+      propertyId,
+      parentId,
+      lastSibling,
+      "after",
+    );
+    if (nextConfig !== propertiesConfig) commitParentMove(nextConfig);
+  };
+
+  const wouldCreateGroupCycle = (propertyId: string, parentId: string | null) => {
+    if (!parentId) return false;
+    const roots = [
+      ...(propertiesConfig?.baseProperties?.definitions ?? []),
+      ...(propertiesConfig?.customFields.definitions ?? []),
+    ];
+    return getPropertyPath(roots, parentId).includes(propertyId);
+  };
+
+  const canDropPropertyIntoGroup = (
+    sourceData: InspectorPropertyDragData,
+    targetData: InspectorPropertyGroupDropData,
+  ) => {
+    if (
+      sourceData.propertyId === "type" ||
+      sourceData.propertyId === targetData.propertyId ||
+      targetData.propertyId === "type"
+    ) {
+      return false;
+    }
+    if (
+      sourceData.parentId !== targetData.parentId &&
+      isProtectedProperty(sourceData.propertyId)
+    ) {
+      return false;
+    }
+    return !wouldCreateGroupCycle(sourceData.propertyId, targetData.parentId);
+  };
+
+  const handlePropertyDragMove = (event: DragMoveEvent) => {
+    const { source, target } = event.operation;
+    let nextPreview: InspectorPropertyDropPreview | null = null;
+
+    if (source && target) {
+      const sourceData = source.data as InspectorPropertyDragData;
+      const targetData = target.data as
+        | InspectorPropertyDragData
+        | InspectorPropertyGroupDropData;
+
+      if (
+        sourceData.kind === "property" &&
+        sourceData.propertyId !== "type" &&
+        targetData.propertyId !== "type" &&
+        targetData.kind === "group"
+      ) {
+        if (canDropPropertyIntoGroup(sourceData, targetData)) {
+          nextPreview = { kind: "group", propertyId: targetData.propertyId };
+        }
+      } else if (
+        sourceData.kind === "property" &&
+        sourceData.propertyId !== "type" &&
+        targetData.propertyId !== "type" &&
+        targetData.kind === "property" &&
+        sourceData.propertyId !== targetData.propertyId &&
+        isSortable(source) &&
+        isSortable(target)
+      ) {
+        const isRootSectionChange =
+          sourceData.parentId === null &&
+          targetData.parentId === null &&
+          sourceData.sectionId !== targetData.sectionId;
+        const isParentChange = sourceData.parentId !== targetData.parentId;
+        const canMoveAcrossParents =
+          !isParentChange ||
+          (!isProtectedProperty(sourceData.propertyId) &&
+            !wouldCreateGroupCycle(sourceData.propertyId, targetData.parentId));
+
+        if (!isRootSectionChange && canMoveAcrossParents) {
+          const targetBounds = target.element?.getBoundingClientRect();
+          const dropY = event.operation.position.current.y;
+          const position: "before" | "after" = targetBounds
+            ? dropY >= targetBounds.top + targetBounds.height / 2
+              ? "after"
+              : "before"
+            : source.initialGroup === target.group && source.initialIndex < target.index
+              ? "after"
+              : "before";
+          nextPreview = {
+            kind: "property",
+            propertyId: targetData.propertyId,
+            position,
+          };
+        }
+      }
+    }
+
+    setDropPreview((current) => {
+      if (current === nextPreview) return current;
+      if (!current || !nextPreview) return nextPreview;
+      if (
+        current.kind === nextPreview.kind &&
+        current.propertyId === nextPreview.propertyId &&
+        (current.kind === "group" ||
+          (nextPreview.kind === "property" && current.position === nextPreview.position))
+      ) {
+        return current;
+      }
+      return nextPreview;
+    });
+  };
+
+  const handlePropertyDragEnd = (event: DragEndEvent) => {
+    setDropPreview(null);
+    const { source, target } = event.operation;
+    if (event.canceled || !source || !target) return;
+
+    const sourceData = source.data as InspectorPropertyDragData;
+    if (sourceData.kind !== "property" || sourceData.propertyId === "type") return;
+
+    const targetData = target.data as InspectorPropertyDragData | InspectorPropertyGroupDropData;
+    if (targetData.propertyId === "type") return;
+    if (targetData.kind === "group") {
+      if (!canDropPropertyIntoGroup(sourceData, targetData)) return;
+      movePropertyIntoGroup(sourceData.propertyId, targetData.parentId);
+      return;
+    }
+    if (targetData.kind !== "property" || !isSortable(source) || !isSortable(target)) return;
+
+    const isRootSectionChange =
+      sourceData.parentId === null &&
+      targetData.parentId === null &&
+      sourceData.sectionId !== targetData.sectionId;
+    if (isRootSectionChange) return;
+
+    const sameParent = sourceData.parentId === targetData.parentId;
+    const nativeEvent = event.nativeEvent;
+    const dropY = nativeEvent && "clientY" in nativeEvent ? Number(nativeEvent.clientY) : null;
+    const targetBounds = target.element?.getBoundingClientRect();
+    const position: PropertyReorderPosition =
+      dropY !== null && targetBounds
+        ? dropY >= targetBounds.top + targetBounds.height / 2
+          ? "after"
+          : "before"
+        : source.initialGroup === target.group && source.initialIndex < target.index
+          ? "after"
+          : "before";
+
+    if (sameParent) {
+      reorderProperty(sourceData.propertyId, targetData.propertyId, position);
+      return;
+    }
+    if (isProtectedProperty(sourceData.propertyId)) return;
+    if (!propertiesConfig) return;
+
+    const nextConfig = moveInspectorPropertyToPosition(
+      propertiesConfig,
+      entity.type,
+      sourceData.propertyId,
+      targetData.parentId ?? undefined,
+      targetData.propertyId,
+      position,
+    );
+    if (nextConfig !== propertiesConfig) commitParentMove(nextConfig);
   };
 
   const availableProperties = useMemo(() => {
@@ -758,9 +1004,6 @@ export function MetadataEditor({
     getOptions: getPropertyOptions,
     onChange: handlePropertyChange,
     onContextMenu: openPropertyContextMenu,
-    onDragStart: setDraggedPropertyId,
-    onDragEnd: () => setDraggedPropertyId(null),
-    onDrop: reorderProperty,
     onToggleGroup: toggleGroupCollapsed,
     onOpenPropertyEditor: openPropertyEditor,
     vaultIndexProps: { vaultIndex, onOpenEntity, onRequestImage },
@@ -810,61 +1053,77 @@ export function MetadataEditor({
     },
   };
 
-  const renderPropertySections = (): React.ReactNode[] => {
+  const renderPropertySections = (): React.ReactNode => {
     return (
-      propertySections
-        .filter((section) => section.nodes.length > 0)
-        // Structure connectors (parentId/childrenIds) are noise for everyday
-        // editing; only surface them alongside the other hidden properties.
-        .filter((section) => section.kind !== "structure" || showHiddenProperties)
-        .map((section) => {
-          const isCollapsed = collapsedSections.has(section.id);
-          // The main list needs no header — the inspector toolbar already reads
-          // "Properties". Group rows carry their own name, so a section title
-          // would just repeat it.
-          const showHeader = section.kind !== "main";
-          const nodesVisible = !showHeader || !isCollapsed;
-          return (
-            <section
-              key={section.id}
-              className={`metadata-property-section metadata-property-section-${section.kind}`}
-            >
-              {showHeader ? (
-                <button
-                  type="button"
-                  className="metadata-property-section-title"
-                  onClick={() =>
-                    setCollapsedSections((current) => {
-                      const next = new Set(current);
-                      if (next.has(section.id)) next.delete(section.id);
-                      else next.add(section.id);
-                      return next;
-                    })
-                  }
-                  aria-expanded={!isCollapsed}
-                >
-                  <span className="metadata-property-section-title-main">
-                    {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                    {section.title}
-                  </span>
-                  <small>{section.nodes.length}</small>
-                </button>
-              ) : null}
-              {nodesVisible
-                ? section.nodes.map((node) => (
-                    <PropertyRow
-                      key={node.property.id}
-                      node={node}
-                      entityType={entity.type}
-                      draggedPropertyId={draggedPropertyId}
-                      collapsedGroups={collapsedGroups}
-                      handlers={rowHandlers}
-                    />
-                  ))
-                : null}
-            </section>
-          );
-        })
+      <DragDropProvider onDragMove={handlePropertyDragMove} onDragEnd={handlePropertyDragEnd}>
+        {propertySections
+          .filter((section) => section.nodes.length > 0)
+          // Structure connectors (parentId/childrenIds) are noise for everyday
+          // editing; only surface them alongside the other hidden properties.
+          .filter((section) => section.kind !== "structure" || showHiddenProperties)
+          .map((section) => {
+            const isCollapsed = collapsedSections.has(section.id);
+            // The main list needs no header — the inspector toolbar already reads
+            // "Properties". Group rows carry their own name, so a section title
+            // would just repeat it.
+            const showHeader = section.kind !== "main";
+            const nodesVisible = !showHeader || !isCollapsed;
+            return (
+              <section
+                key={section.id}
+                className={`metadata-property-section metadata-property-section-${section.kind}`}
+              >
+                {showHeader ? (
+                  <button
+                    type="button"
+                    className="metadata-property-section-title"
+                    onClick={() =>
+                      setCollapsedSections((current) => {
+                        const next = new Set(current);
+                        if (next.has(section.id)) next.delete(section.id);
+                        else next.add(section.id);
+                        return next;
+                      })
+                    }
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className="metadata-property-section-title-main">
+                      {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                      {section.title}
+                    </span>
+                    <small>{section.nodes.length}</small>
+                  </button>
+                ) : null}
+                {nodesVisible
+                  ? section.nodes.map((node, index) => (
+                      <PropertyRow
+                        key={node.property.id}
+                        node={node}
+                        entityType={entity.type}
+                        sectionId={section.id}
+                        sortableIndex={index}
+                        collapsedGroups={collapsedGroups}
+                        dropPreview={dropPreview}
+                        handlers={rowHandlers}
+                      />
+                    ))
+                  : null}
+              </section>
+            );
+          })}
+        <DragOverlay className="property-drag-overlay" dropAnimation={null}>
+          {(source) => {
+            const dragData = source.data as InspectorPropertyDragData;
+            return (
+              <div className="property-drag-preview">
+                <GripVertical size={13} aria-hidden="true" />
+                {dragData.isGroup ? <Folder size={13} aria-hidden="true" /> : null}
+                <span className="property-drag-preview-label">{dragData.propertyLabel}</span>
+              </div>
+            );
+          }}
+        </DragOverlay>
+      </DragDropProvider>
     );
   };
 
@@ -955,7 +1214,7 @@ export function MetadataEditor({
         onClick={(event) => {
           if (
             !(event.target as HTMLElement).closest(
-              ".inspector-property-context-menu, .property-editor-popover",
+              ".inspector-property-context-menu, .property-editor-popover, .property-value-popover",
             )
           ) {
             setPropertyContextMenu(null);
@@ -1133,7 +1392,7 @@ export function MetadataEditor({
                       {ui.addToSchema}
                     </button>
                     <label>
-                      <select
+                      <WorldNotionDropdown
                         value={adaptTargets[property.key] ?? ""}
                         onChange={(event) =>
                           setAdaptTargets((current) => ({
@@ -1150,7 +1409,7 @@ export function MetadataEditor({
                               {candidate.label || candidate.id}
                             </option>
                           ))}
-                      </select>
+                      </WorldNotionDropdown>
                     </label>
                     <button
                       type="button"

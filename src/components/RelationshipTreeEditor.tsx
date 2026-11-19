@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import {
   useEffect,
   useRef,
@@ -58,6 +59,7 @@ import { resolveNoteImagePath, useVaultImage } from "../utils/vaultImages";
 import { parseMarkdownFrontmatter } from "../domain";
 import { resolveVariantFrontmatter } from "../utils/noteVariants";
 import { useUniverseDraft } from "../hooks/useUniverseDraft";
+import { VisualInspectorPortal } from "./VisualInspectorPortal";
 import "./visualDocumentEditors.css";
 
 type Props = {
@@ -70,6 +72,7 @@ type Props = {
   session?: VisualDocumentSession;
   onSessionChange?: (session: VisualDocumentSession) => void;
   active?: boolean;
+  inspectorHost?: Element | null;
 };
 type Drag =
   | { kind: "pan"; start: TreePoint; viewport: VisualViewport }
@@ -159,6 +162,7 @@ export function RelationshipTreeEditor({
   session,
   onSessionChange,
   active = true,
+  inspectorHost,
 }: Props) {
   const es = locale.startsWith("es");
   const text = (spanish: string, english: string) => (es ? spanish : english);
@@ -511,7 +515,7 @@ export function RelationshipTreeEditor({
         >
           <Users size={16} />
         </button>
-        <select
+        <WorldNotionDropdown
           aria-label={text("Tipo de relación al conectar", "Relationship type when connecting")}
           value={relationshipType}
           onChange={(event) => setRelationshipType(event.target.value)}
@@ -521,8 +525,8 @@ export function RelationshipTreeEditor({
               {type.icon} {(es && RELATION_ES[type.id]) || type.name}
             </option>
           ))}
-        </select>
-        <select
+        </WorldNotionDropdown>
+        <WorldNotionDropdown
           aria-label={text("Variante del árbol", "Tree variant")}
           value={variantId}
           onChange={(event) => updateSession({ variantId: event.target.value, selectedIds: [] })}
@@ -532,7 +536,7 @@ export function RelationshipTreeEditor({
               {variant.name}
             </option>
           ))}
-        </select>
+        </WorldNotionDropdown>
         <button
           type="button"
           title={text("Alejar", "Zoom out")}
@@ -928,10 +932,12 @@ export function RelationshipTreeEditor({
             )}
           </div>
         )}
-        <aside
-          className="ef-visual-inspector"
-          aria-label={text("Inspector del árbol", "Tree inspector")}
-        >
+        <VisualInspectorPortal target={inspectorHost}>
+          <aside
+            className="ef-visual-inspector"
+            aria-label={text("Inspector del árbol", "Tree inspector")}
+            inert={!active}
+          >
           <h3>
             {selectedNode
               ? text("Persona", "Person")
@@ -956,7 +962,7 @@ export function RelationshipTreeEditor({
               </label>
               <label>
                 {text("Vincular ficha", "Link card")}
-                <select
+                <WorldNotionDropdown
                   value={selectedNode.reference || ""}
                   onChange={(event) =>
                     changeNode({
@@ -979,7 +985,7 @@ export function RelationshipTreeEditor({
                       {entity.name} · {entity.path}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </label>
               <label>
                 {text("Referencia / variante", "Reference / variant")}
@@ -1034,7 +1040,7 @@ export function RelationshipTreeEditor({
             <>
               <label>
                 {text("Tipo", "Type")}
-                <select
+                <WorldNotionDropdown
                   value={selectedEdge.typeId}
                   onChange={(event) =>
                     commit(
@@ -1055,7 +1061,7 @@ export function RelationshipTreeEditor({
                       {(es && RELATION_ES[type.id]) || type.name}
                     </option>
                   ))}
-                </select>
+                </WorldNotionDropdown>
               </label>
               {(["label", "icon", "color"] as const).map((key) => (
                 <label key={key}>
@@ -1088,7 +1094,7 @@ export function RelationshipTreeEditor({
               ))}
               <label>
                 {text("Línea", "Line")}
-                <select
+                <WorldNotionDropdown
                   value={selectedEdge.style || selectedEdgeType?.style || "solid"}
                   onChange={(event) =>
                     commit(
@@ -1110,7 +1116,7 @@ export function RelationshipTreeEditor({
                   <option value="solid">{text("Sólida", "Solid")}</option>
                   <option value="dashed">{text("Discontinua", "Dashed")}</option>
                   <option value="dotted">{text("Punteada", "Dotted")}</option>
-                </select>
+                </WorldNotionDropdown>
               </label>
               <p className="ef-visual-hint">
                 {text(
@@ -1286,13 +1292,13 @@ export function RelationshipTreeEditor({
           )}
           <label>
             {text("Etiquetas", "Labels")}
-            <select
+            <WorldNotionDropdown
               value={labelMode}
               onChange={(event) => setLabelMode(event.target.value as "always" | "hover")}
             >
               <option value="always">{text("Siempre", "Always")}</option>
               <option value="hover">{text("Al pasar el cursor", "On hover")}</option>
-            </select>
+            </WorldNotionDropdown>
           </label>
           <details>
             <summary>{text("Variantes completas", "Complete variants")}</summary>
@@ -1455,7 +1461,7 @@ export function RelationshipTreeEditor({
                       )
                     }
                   />
-                  <select
+                  <WorldNotionDropdown
                     aria-label={text("Estilo de relación", "Relationship style")}
                     value={type.style || "solid"}
                     onChange={(event) =>
@@ -1478,7 +1484,7 @@ export function RelationshipTreeEditor({
                     <option value="solid">{text("Sólida", "Solid")}</option>
                     <option value="dashed">{text("Discontinua", "Dashed")}</option>
                     <option value="dotted">{text("Punteada", "Dotted")}</option>
-                  </select>
+                  </WorldNotionDropdown>
                   <input
                     aria-label={text("Color de relación", "Relationship color")}
                     type="color"
@@ -1498,7 +1504,8 @@ export function RelationshipTreeEditor({
                 </div>
               ))}
           </details>
-        </aside>
+          </aside>
+        </VisualInspectorPortal>
       </div>
     </section>
   );

@@ -72,26 +72,3 @@
   overflow-wrap: anywhere;
   font: 12px/1.5 var(--wn-monospace-font, ui-monospace, monospace);
 }
-.forge-worldnotion .visual-documents-discovery {
-  padding: 8px;
-  display: grid;
-  gap: 4px;
-  max-height: 180px;
-  overflow: auto;
-  border-top: 1px solid var(--ef-border);
-}
-.forge-worldnotion .visual-documents-discovery button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-  border: 0;
-  border-radius: 6px;
-  padding: 6px;
-  background: transparent;
-  color: var(--ef-text);
-}
-.forge-worldnotion .visual-documents-discovery button[aria-current],
-.forge-worldnotion .visual-documents-discovery button:hover {
-  background: var(--ef-accent-soft);
-}

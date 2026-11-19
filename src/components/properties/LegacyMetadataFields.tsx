@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../../SettingsDropdown.js";
 import type { Entity } from "../../domain";
 import type { PropertiesConfig } from "../../editorTypes";
 
@@ -83,7 +84,7 @@ export function LegacyMetadataFields({
 
       case "select":
         return (
-          <select
+          <WorldNotionDropdown
             value={String(value ?? "")}
             onChange={(e) => handleFieldChange(fieldDef.id, e.target.value)}
           >
@@ -93,7 +94,7 @@ export function LegacyMetadataFields({
                 {opt.label}
               </option>
             ))}
-          </select>
+          </WorldNotionDropdown>
         );
 
       case "multiselect": {
@@ -163,13 +164,13 @@ export function LegacyMetadataFields({
           <label>
             <span>Type</span>
             {entityTypes.length > 0 ? (
-              <select value={entity.type} onChange={(e) => onUpdate({ type: e.target.value })}>
+              <WorldNotionDropdown value={entity.type} onChange={(e) => onUpdate({ type: e.target.value })}>
                 {entityTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.label}
                   </option>
                 ))}
-              </select>
+              </WorldNotionDropdown>
             ) : (
               <input
                 type="text"
@@ -185,13 +186,13 @@ export function LegacyMetadataFields({
           <label>
             <span>Status</span>
             {statuses.length > 0 ? (
-              <select value={entity.status} onChange={(e) => onUpdate({ status: e.target.value })}>
+              <WorldNotionDropdown value={entity.status} onChange={(e) => onUpdate({ status: e.target.value })}>
                 {statuses.map((status) => (
                   <option key={status.id} value={status.id}>
                     {status.label}
                   </option>
                 ))}
-              </select>
+              </WorldNotionDropdown>
             ) : (
               <input
                 type="text"

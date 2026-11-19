@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../../SettingsDropdown.js";
 import { useModalFocus } from "../../hooks/useModalFocus";
 import { useWorldnotionSurfaceText } from "../../i18n";
 import { useEffect, useRef, useState } from "react";
@@ -167,7 +168,7 @@ export function AddPropertyRow({
                 </label>
                 <label>
                   {t("Type")}
-                  <select
+                  <WorldNotionDropdown
                     aria-label={t("Property type")}
                     value={type}
                     onChange={(event) => setType(event.target.value as CustomFieldType)}
@@ -177,11 +178,11 @@ export function AddPropertyRow({
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </WorldNotionDropdown>
                 </label>
                 <label>
                   {t("Parent section")}
-                  <select
+                  <WorldNotionDropdown
                     aria-label={t("Parent section")}
                     value={parentId}
                     onChange={(event) => setParentId(event.target.value)}
@@ -192,7 +193,7 @@ export function AddPropertyRow({
                         {property.label || property.id}
                       </option>
                     ))}
-                  </select>
+                  </WorldNotionDropdown>
                   <small>{t("Choose a section only when this property belongs inside it.")}</small>
                 </label>
                 {createError ? (

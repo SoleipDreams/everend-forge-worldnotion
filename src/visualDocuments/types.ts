@@ -22,6 +22,7 @@ export type VisualDocumentEditorProps<T extends VisualDocument> = {
   document: T;
   onChange: (next: T, label?: string) => void;
   vaultIndex?: VaultIndex;
+  inspectorHost?: Element | null;
   onOpenReference?: (ref: string) => void;
   session?: VisualDocumentSession;
   onSessionChange?: (next: VisualDocumentSession) => void;

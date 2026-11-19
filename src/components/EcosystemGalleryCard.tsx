@@ -96,10 +96,12 @@ export function EcosystemGalleryCard({
       </span>
       <span className="ecosystem-gallery-details">
         <span className="ecosystem-gallery-name">{entity.name}</span>
-        <span className="ecosystem-gallery-meta">
-          <span>{typeLabel === "_untyped" ? "Sin tipo" : typeLabel}</span>
-          {statusLabel ? <span className="ecosystem-gallery-status">{statusLabel}</span> : null}
-        </span>
+        {typeLabel || statusLabel ? (
+          <span className="ecosystem-gallery-meta">
+            {typeLabel ? <span>{typeLabel === "_untyped" ? "Sin tipo" : typeLabel}</span> : null}
+            {statusLabel ? <span className="ecosystem-gallery-status">{statusLabel}</span> : null}
+          </span>
+        ) : null}
       </span>
     </button>
   );

@@ -128,7 +128,9 @@ export function paragraphLinePositions(doc: Text, position: number) {
 
 /** Returns true only for a top-level prose paragraph, excluding list and quote contents. */
 export function isTopLevelParagraphAt(state: EditorState, position: number) {
-  const resolved = syntaxTree(state).resolveInner(position, -1);
+  // Inspect the token at the start of the line. Resolving backward can land
+  // outside the first paragraph immediately after a heading or block widget.
+  const resolved = syntaxTree(state).resolveInner(position, 1);
   if (resolved.name === "Paragraph") return resolved.parent?.name === "Document";
 
   for (let node = resolved.parent; node; node = node.parent) {

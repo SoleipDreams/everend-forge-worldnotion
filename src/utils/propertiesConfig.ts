@@ -20,6 +20,7 @@ import { moveFrontmatterDocumentValue, updateFrontmatterDocument } from "./front
 import { reconcileEntityPresentations } from "./entityPresentation";
 
 export type VisiblePropertyDefinition = PropertyDefinition & { source: "base" | "custom" };
+export type PropertyReorderPosition = "before" | "after";
 export type PropertyParentTarget = string | null | undefined;
 export type InspectorPropertySectionId = PropertyLayoutSectionKind;
 export type InspectorPropertyTreeNode = {
@@ -682,6 +683,7 @@ function reorderSiblingDefinitions(
   definitions: PropertyDefinition[],
   draggedId: string,
   targetId: string,
+  position: PropertyReorderPosition = "before",
 ): { definitions: PropertyDefinition[]; changed: boolean } {
   const siblingIds = definitions.map((definition) => definition.id);
   if (siblingIds.includes(draggedId) && siblingIds.includes(targetId)) {
@@ -691,9 +693,9 @@ function reorderSiblingDefinitions(
     if (!dragged || targetIndex === -1) return { definitions, changed: false };
     return {
       definitions: [
-        ...withoutDragged.slice(0, targetIndex),
+        ...withoutDragged.slice(0, targetIndex + (position === "after" ? 1 : 0)),
         dragged,
-        ...withoutDragged.slice(targetIndex),
+        ...withoutDragged.slice(targetIndex + (position === "after" ? 1 : 0)),
       ],
       changed: true,
     };
@@ -702,7 +704,7 @@ function reorderSiblingDefinitions(
   let changed = false;
   const nextDefinitions = definitions.map((definition) => {
     if (!definition.children?.length) return definition;
-    const result = reorderSiblingDefinitions(definition.children, draggedId, targetId);
+    const result = reorderSiblingDefinitions(definition.children, draggedId, targetId, position);
     if (!result.changed) return definition;
     changed = true;
     return { ...definition, children: result.definitions };
@@ -1318,14 +1320,16 @@ export function reorderInspectorPropertySiblings(
   entityType: string | undefined,
   draggedId: string,
   targetId: string,
+  position: PropertyReorderPosition = "before",
 ): PropertiesConfig {
   const customResult = reorderSiblingDefinitions(
     config.customFields.definitions,
     draggedId,
     targetId,
+    position,
   );
   const baseResult = config.baseProperties
-    ? reorderSiblingDefinitions(config.baseProperties.definitions, draggedId, targetId)
+    ? reorderSiblingDefinitions(config.baseProperties.definitions, draggedId, targetId, position)
     : { definitions: [], changed: false };
 
   if (customResult.changed || baseResult.changed) {
@@ -1350,8 +1354,25 @@ export function reorderInspectorPropertySiblings(
   const withoutDragged = currentOrder.filter((id) => id !== draggedId);
   const targetIndex = withoutDragged.indexOf(targetId);
   if (targetIndex === -1) return config;
-  withoutDragged.splice(targetIndex, 0, draggedId);
+  withoutDragged.splice(targetIndex + (position === "after" ? 1 : 0), 0, draggedId);
   return reorderPropertiesConfig(config, entityType, withoutDragged);
+}
+
+/** Moves a property to a new parent, then places it beside a destination sibling. */
+export function moveInspectorPropertyToPosition(
+  config: PropertiesConfig,
+  entityType: string | undefined,
+  draggedId: string,
+  parentId: PropertyParentTarget,
+  targetId?: string,
+  position: PropertyReorderPosition = "after",
+): PropertiesConfig {
+  if (targetId === draggedId) return config;
+
+  const moved = moveInspectorProperty(config, entityType, draggedId, parentId);
+  if (moved === config || !targetId) return moved;
+
+  return reorderInspectorPropertySiblings(moved, entityType, draggedId, targetId, position);
 }
 
 export function parseFrontmatterRaw(frontmatterRaw: string): Record<string, unknown> {

@@ -15,6 +15,7 @@ import {
   listUnconfiguredProperties,
   listVisibleProperties,
   moveInspectorProperty,
+  moveInspectorPropertyToPosition,
   parseFrontmatterRaw,
   removeFrontmatterProperty,
   renameInspectorProperty,
@@ -575,6 +576,48 @@ describe("propertiesConfig", () => {
     expect(rootPower?.id).toBe("power-level");
     expect(
       listAllProperties(movedToRoot).find((property) => property.id === "magic")?.children ?? [],
+    ).toEqual([]);
+  });
+
+  it("moves a property between groups and inserts it at the dropped position", () => {
+    const config = applyPropertyTemplate(createDefaultTaxonomyConfig(), WORLDBUILDING_TEMPLATE);
+    const withGroups = upsertInspectorProperty(
+      upsertInspectorProperty(config, { id: "identity", label: "Identity", type: "group" }, "character"),
+      { id: "attributes", label: "Attributes", type: "group" },
+      "character",
+    );
+    const withSource = upsertInspectorProperty(
+      withGroups,
+      { id: "origin", label: "Origin", type: "text" },
+      "character",
+      "identity",
+    );
+    const withTarget = upsertInspectorProperty(
+      upsertInspectorProperty(
+        withSource,
+        { id: "strength", label: "Strength", type: "number" },
+        "character",
+        "attributes",
+      ),
+      { id: "agility", label: "Agility", type: "number" },
+      "character",
+      "attributes",
+    );
+
+    const moved = moveInspectorPropertyToPosition(
+      withTarget,
+      "character",
+      "origin",
+      "attributes",
+      "agility",
+      "before",
+    );
+
+    expect(
+      listAllProperties(moved).find((property) => property.id === "attributes")?.children?.map((property) => property.id),
+    ).toEqual(["strength", "origin", "agility"]);
+    expect(
+      listAllProperties(moved).find((property) => property.id === "identity")?.children,
     ).toEqual([]);
   });
 

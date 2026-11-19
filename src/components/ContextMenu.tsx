@@ -12,6 +12,7 @@ import {
   FileText,
   FolderInput,
   FolderPlus,
+  Link2,
   Palette,
   Star,
   Trash2,
@@ -23,10 +24,12 @@ export type ContextMenuAction =
   | "open"
   | "openInNewTab"
   | "preview"
+  | "relinkImage"
   | "newBlankPage"
   | "newTimeline"
   | "newRelationshipTree"
   | "newPageFromTemplate"
+  | "convertToTemplate"
   | "newFolder"
   | "rename"
   | "duplicate"
@@ -60,6 +63,7 @@ export interface ContextMenuProps {
   folderNotesEnabled?: boolean;
   /** File targets only: whether this note's immediate parent folder has no folder note yet. */
   canPromoteToFolderNote?: boolean;
+  canConvertToTemplate?: boolean;
   onAction: (
     action: ContextMenuAction,
     targetPath: string,
@@ -84,6 +88,7 @@ export function ContextMenu({
   hasFolderDescription = false,
   folderNotesEnabled = true,
   canPromoteToFolderNote = false,
+  canConvertToTemplate = false,
   onAction,
   onClose,
 }: ContextMenuProps) {
@@ -150,10 +155,16 @@ export function ContextMenu({
       {targetKind !== "empty" ? (
         <>
           {isImage ? (
-            <button type="button" onClick={() => run("preview")} className="context-menu-item">
-              <Eye size={16} />
-              <span>{ui.preview}</span>
-            </button>
+            <>
+              <button type="button" onClick={() => run("preview")} className="context-menu-item">
+                <Eye size={16} />
+                <span>{ui.preview}</span>
+              </button>
+              <button type="button" onClick={() => run("relinkImage")} className="context-menu-item">
+                <Link2 size={16} />
+                <span>{ui.relinkImage}</span>
+              </button>
+            </>
           ) : null}
           <button type="button" onClick={() => run("open")} className="context-menu-item">
             <FileText size={16} />
@@ -279,6 +290,16 @@ export function ContextMenu({
             >
               <CornerLeftUp size={16} />
               <span>{ui.convertToParentFolderNote}</span>
+            </button>
+          ) : null}
+          {targetKind === "file" && canConvertToTemplate ? (
+            <button
+              type="button"
+              onClick={() => run("convertToTemplate")}
+              className="context-menu-item"
+            >
+              <FilePlus size={16} />
+              <span>{ui.convertToTemplate}</span>
             </button>
           ) : null}
           <button type="button" onClick={() => run("toggleFavorite")} className="context-menu-item">

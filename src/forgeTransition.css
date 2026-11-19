@@ -158,8 +158,8 @@
 }
 .forge-worldnotion .ai-advisor-toolbar {
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
+  gap: 8px;
+  padding: 9px 12px;
   background: var(--ef-panel);
   border-bottom: 1px solid var(--ef-border);
 }
@@ -168,9 +168,22 @@
   flex: 1;
 }
 .forge-worldnotion .ai-advisor-provider-control select {
+  flex: 1 1 auto;
   max-width: 100%;
   min-width: 0;
-  border-radius: 6px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+.forge-worldnotion .ai-advisor-privacy-note {
+  gap: 6px;
+  min-height: 34px;
+}
+.forge-worldnotion .ai-advisor-open-button {
+  min-width: 34px;
+  min-height: 34px;
+  flex-basis: 34px;
+  border-radius: 8px;
 }
 .forge-worldnotion :is(.ai-advisor-browser-fallback, .dock-empty-group) {
   font-family: var(--ef-ui-font);
@@ -285,15 +298,11 @@
     font-size: 12px;
     padding: 6px;
   }
-  .forge-worldnotion .ecosystem-view-heading {
+  .forge-worldnotion .ecosystem-toolbar {
     flex-wrap: wrap;
   }
   .forge-worldnotion .property-row {
     min-width: 0;
-  }
-  .forge-worldnotion .ai-advisor-toolbar {
-    flex-direction: column;
-    align-items: stretch;
   }
 }
 @container wn-settings-content (max-width: 440px) {
@@ -452,5 +461,49 @@
 @container wn-editor (max-width: 520px) {
   .forge-worldnotion .editor-shell .editor-surface.mode-write {
     padding-bottom: 84px;
+  }
+}
+
+@container ai-advisor (max-width: 440px) {
+  .forge-worldnotion .ai-advisor-toolbar {
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .forge-worldnotion .ai-advisor-provider-control {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .forge-worldnotion .ai-advisor-privacy-note {
+    margin-right: auto;
+  }
+}
+
+@container ai-advisor (max-width: 320px) {
+  .forge-worldnotion .ai-advisor-toolbar {
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .forge-worldnotion .ai-advisor-provider-control {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .forge-worldnotion .ai-advisor-provider-control select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .forge-worldnotion .ai-advisor-privacy-note {
+    font-size: 0.7rem;
+  }
+}
+
+@container ai-advisor (max-width: 260px) {
+  .forge-worldnotion .ai-advisor-privacy-note span {
+    display: none;
   }
 }

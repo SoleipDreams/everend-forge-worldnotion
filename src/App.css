@@ -12,6 +12,12 @@
   --wn-accent-soft: #e4f1eb;
   --wn-danger: #a74343;
   --wn-warning: #8a6a16;
+  --wn-slider-track: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--wn-accent) 82%, var(--wn-panel)),
+    color-mix(in srgb, var(--wn-warning) 82%, var(--wn-panel))
+  );
+  --wn-slider-thumb: linear-gradient(135deg, var(--wn-accent), var(--wn-warning));
   --wn-editor-bg: #ffffff;
   --wn-editor-text: #191f1b;
   color: var(--wn-text);
@@ -602,8 +608,8 @@
 .forge-worldnotion .dock-command-group button.active,
 .forge-worldnotion .dock-icon-button:hover,
 .forge-worldnotion .dock-layout-select:hover {
-  border-color: color-mix(in srgb, var(--wn-accent) 48%, var(--wn-border));
-  background: var(--wn-accent-soft);
+  border-color: color-mix(in srgb, var(--wn-border) 68%, var(--wn-text));
+  background: var(--wn-panel-2);
   color: var(--wn-text);
 }
 
@@ -1167,10 +1173,24 @@
 }
 
 .forge-worldnotion .dock-group-content {
+  position: relative;
   min-width: 0;
   min-height: 0;
   flex: 1;
   overflow: hidden;
+}
+
+.forge-worldnotion .dock-ai-advisor-slot {
+  position: absolute;
+  inset: 0;
+  display: none;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.forge-worldnotion .dock-ai-advisor-slot.active {
+  display: block;
 }
 
 .forge-worldnotion .dock-panel-body {
@@ -1183,7 +1203,8 @@
 }
 
 .forge-worldnotion .ai-advisor-panel {
-  --ai-advisor-toolbar-height: 44px;
+  container-name: ai-advisor;
+  container-type: inline-size;
   position: relative;
   display: flex;
   width: 100%;
@@ -1195,16 +1216,17 @@
 }
 
 .forge-worldnotion .ai-advisor-toolbar {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 0;
+  position: relative;
+  z-index: 1;
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  height: var(--ai-advisor-toolbar-height);
-  min-height: var(--ai-advisor-toolbar-height);
+  width: 100%;
+  height: auto;
+  min-height: 48px;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--wn-border);
   background: var(--wn-panel-2);
 }
@@ -1294,8 +1316,9 @@
 .forge-worldnotion .ai-advisor-webview-host {
   min-width: 0;
   min-height: 0;
-  position: absolute;
-  inset: var(--ai-advisor-toolbar-height) 0 0;
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
   overflow: hidden;
   background: var(--wn-bg);
 }
@@ -1612,13 +1635,13 @@
 .forge-worldnotion .dock-panel-body .slider,
 .forge-worldnotion .graph-floating-controls .slider {
   width: 100%;
-  height: 4px;
-  min-height: 4px;
+  height: 6px;
+  min-height: 6px;
   padding: 0;
   border: 0;
   border-radius: 999px;
   appearance: none;
-  background: color-mix(in srgb, var(--wn-border) 72%, var(--wn-panel-2));
+  background: transparent;
   cursor: pointer;
 }
 
@@ -1626,12 +1649,16 @@
 .forge-worldnotion .graph-floating-controls input[type="range"]::-webkit-slider-thumb,
 .forge-worldnotion .dock-panel-body .slider::-webkit-slider-thumb,
 .forge-worldnotion .graph-floating-controls .slider::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--wn-accent) 58%, var(--wn-border));
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 2px solid transparent;
   border-radius: 999px;
   appearance: none;
-  background: var(--wn-panel);
+  -webkit-appearance: none;
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
 }
 
@@ -1639,11 +1666,13 @@
 .forge-worldnotion .graph-floating-controls input[type="range"]::-moz-range-thumb,
 .forge-worldnotion .dock-panel-body .slider::-moz-range-thumb,
 .forge-worldnotion .graph-floating-controls .slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--wn-accent) 58%, var(--wn-border));
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
   border-radius: 999px;
-  background: var(--wn-panel);
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
 }
 
@@ -1651,7 +1680,7 @@
 .forge-worldnotion .graph-floating-controls input[type="range"]:hover,
 .forge-worldnotion .dock-panel-body .slider:hover,
 .forge-worldnotion .graph-floating-controls .slider:hover {
-  background: color-mix(in srgb, var(--wn-accent) 28%, var(--wn-border));
+  filter: saturate(1.14) brightness(1.06);
 }
 
 .forge-worldnotion .dock-panel-body input[type="range"]:focus-visible,
@@ -2318,6 +2347,12 @@
   scrollbar-gutter: stable both-edges;
 }
 
+.forge-worldnotion .visual-document-inspector-host {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .forge-worldnotion .brand {
   display: flex;
   align-items: center;
@@ -2731,6 +2766,10 @@
   padding: 0 8px;
 }
 
+.forge-worldnotion .sidebar-section.explorer-tree-section.images-explorer-section {
+  margin-top: 18px;
+}
+
 .forge-worldnotion .explorer-tree-surface {
   position: relative;
   flex: 1;
@@ -2981,10 +3020,25 @@
   container-name: explorer-row;
   container-type: inline-size;
   cursor: grab;
+  transition:
+    background-color 170ms ease,
+    border-color 190ms ease,
+    color 170ms ease,
+    box-shadow 190ms ease;
 }
 
 .forge-worldnotion .explorer-tree-surface .tree-button {
   padding-right: 3px;
+}
+
+.forge-worldnotion .explorer-tree-surface .tree-button:hover:not(.active) {
+  background: color-mix(in srgb, var(--wn-accent) 5%, transparent);
+}
+
+.forge-worldnotion .tree-button > svg {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
 }
 
 .forge-worldnotion .tree-button:active,
@@ -3110,6 +3164,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 18px;
   width: 18px;
   height: 18px;
   padding: 2px;
@@ -3123,6 +3178,10 @@
     opacity 0.2s,
     background-color 0.2s,
     color 0.2s;
+}
+
+.forge-worldnotion .tree-inline-button > svg {
+  flex: 0 0 auto;
 }
 
 .forge-worldnotion .tree-inline-button.available {
@@ -3165,9 +3224,17 @@
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+  transform: translateX(3px);
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
+    max-width 190ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 170ms ease,
+    border-width 170ms ease,
+    border-color 170ms ease,
+    background-color 170ms ease,
+    box-shadow 190ms ease,
+    opacity 150ms ease,
+    transform 190ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 190ms;
 }
 
 .forge-worldnotion .tree-button:hover .tree-node-buttons,
@@ -3182,6 +3249,17 @@
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
+  transform: translateX(0);
+  transition:
+    max-width 190ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 170ms ease,
+    border-width 170ms ease,
+    border-color 170ms ease,
+    background-color 170ms ease,
+    box-shadow 190ms ease,
+    opacity 150ms ease,
+    transform 190ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
 }
 
 @container explorer-row (min-width: 180px) {
@@ -3283,6 +3361,14 @@
   border-left: 1px solid var(--wn-border);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .forge-worldnotion .explorer-tree-surface .tree-button,
+  .forge-worldnotion .tree-node-buttons {
+    transition: none;
+    transform: none;
+  }
+}
+
 .forge-worldnotion .templates-dock {
   position: relative;
   z-index: 5;
@@ -3300,15 +3386,25 @@
 }
 
 .forge-worldnotion .templates-dock-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
 }
 
-.forge-worldnotion .templates-dock-toggle,
-.forge-worldnotion .templates-dock-action {
+.forge-worldnotion .explorer-footer-switcher {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  min-width: 0;
+  padding: 3px;
+  border: 1px solid var(--wn-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--wn-panel) 70%, transparent);
+}
+
+.forge-worldnotion .explorer-footer-tab {
   display: grid;
   align-items: center;
   min-height: 34px;
@@ -3316,29 +3412,30 @@
   background: transparent;
 }
 
-.forge-worldnotion .templates-dock-toggle {
+.forge-worldnotion .explorer-footer-tab {
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 6px;
-  padding: 7px 9px;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px 7px;
+  border-radius: 7px;
   color: var(--wn-muted);
   text-align: left;
 }
 
-.forge-worldnotion .templates-dock-action {
-  justify-content: center;
-  min-width: 34px;
-  padding: 6px;
-  color: var(--wn-muted);
+.forge-worldnotion .explorer-footer-tab.active {
+  border-color: var(--wn-border);
+  background: var(--wn-panel);
+  color: var(--wn-text);
 }
 
-.forge-worldnotion .templates-dock-toggle span {
+.forge-worldnotion .explorer-footer-tab span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.forge-worldnotion .templates-dock-toggle small {
+.forge-worldnotion .explorer-footer-tab small {
   color: var(--wn-muted);
 }
 
@@ -3362,6 +3459,54 @@
   box-shadow: 0 12px 28px color-mix(in srgb, #000 30%, transparent);
   transform-origin: bottom center;
   animation: wn-templates-dock-list-in 160ms ease-out both;
+}
+
+.forge-worldnotion .templates-dock-create {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--wn-accent) 42%, var(--wn-border));
+  background: color-mix(in srgb, var(--wn-accent) 7%, var(--wn-panel));
+  color: var(--wn-text);
+}
+
+.forge-worldnotion .recent-document-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 1px 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--wn-text);
+  text-align: left;
+}
+
+.forge-worldnotion .recent-document-button > svg {
+  grid-row: 1 / span 2;
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion .recent-document-button > span,
+.forge-worldnotion .recent-document-button > small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-worldnotion .recent-document-button > small {
+  color: var(--wn-muted);
+  font-size: 0.72rem;
+}
+
+.forge-worldnotion .recent-document-button.active,
+.forge-worldnotion .recent-document-button:hover,
+.forge-worldnotion .recent-document-button[aria-current="page"] {
+  border-color: color-mix(in srgb, var(--wn-accent) 40%, var(--wn-border));
+  background: color-mix(in srgb, var(--wn-accent) 12%, var(--wn-panel));
 }
 
 @keyframes wn-templates-dock-list-in {
@@ -6058,15 +6203,6 @@
 }
 
 @media (max-width: 560px) {
-  .forge-worldnotion .ai-advisor-toolbar {
-    gap: 6px;
-    padding-inline: 7px;
-  }
-
-  .forge-worldnotion .ai-advisor-privacy-note span {
-    display: none;
-  }
-
   .forge-worldnotion .ai-provider-config-card,
   .forge-worldnotion .ai-provider-add-fields {
     grid-template-columns: 1fr;
@@ -8474,7 +8610,7 @@
 
 .forge-worldnotion .metadata-property-section {
   display: grid;
-  gap: 5px;
+  gap: 2px;
   width: 100%;
   min-width: 0;
   padding: 6px 0 10px;
@@ -9591,40 +9727,42 @@
 .forge-worldnotion .inspector-local-popover input[type="range"],
 .forge-worldnotion .property-manager-modal input[type="range"] {
   width: 100%;
-  height: 4px;
-  min-height: 4px;
+  height: 6px;
+  min-height: 6px;
   padding: 0;
   border: 0;
   border-radius: 999px;
   appearance: none;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--wn-accent) 54%, var(--wn-border)),
-    color-mix(in srgb, var(--wn-border) 72%, var(--wn-panel-2))
-  );
+  background: transparent;
   cursor: pointer;
 }
 
 .forge-worldnotion .metadata-editor input[type="range"]::-webkit-slider-thumb,
 .forge-worldnotion .inspector-local-popover input[type="range"]::-webkit-slider-thumb,
 .forge-worldnotion .property-manager-modal input[type="range"]::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--wn-accent) 62%, var(--wn-border));
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 2px solid transparent;
   border-radius: 999px;
   appearance: none;
-  background: var(--wn-panel);
+  -webkit-appearance: none;
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
 }
 
 .forge-worldnotion .metadata-editor input[type="range"]::-moz-range-thumb,
 .forge-worldnotion .inspector-local-popover input[type="range"]::-moz-range-thumb,
 .forge-worldnotion .property-manager-modal input[type="range"]::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--wn-accent) 62%, var(--wn-border));
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
   border-radius: 999px;
-  background: var(--wn-panel);
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
 }
 
@@ -10640,6 +10778,7 @@
 /* Tree Tag Color Indicator */
 .forge-worldnotion .tree-tag-indicator {
   display: inline-block;
+  flex: 0 0 8px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -10654,26 +10793,53 @@
   gap: 8px;
 }
 
-.forge-worldnotion .ecosystem-view-heading {
+.forge-worldnotion .favorites-view-heading {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 0 38px;
+  box-sizing: border-box;
   gap: 8px;
+  margin-bottom: 6px;
 }
 
-.forge-worldnotion .ecosystem-view-heading h2 {
-  margin-bottom: 2px;
+.forge-worldnotion .explorer-view-toolbar {
+  height: 38px;
+  min-height: 38px;
+  flex: 0 0 38px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.forge-worldnotion .ecosystem-result-summary {
-  display: block;
-  color: var(--wn-muted);
-  font-size: 0.7rem;
+.forge-worldnotion .favorites-view-heading h2 {
+  margin: 0;
+}
+
+.forge-worldnotion .favorites-gallery {
+  padding: 4px 0 0;
+}
+
+.forge-worldnotion .ecosystem-toolbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 0 38px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .forge-worldnotion .ecosystem-clear-button,
 .forge-worldnotion .ecosystem-add-filter-button,
-.forge-worldnotion .ecosystem-filter-remove {
+.forge-worldnotion .ecosystem-filter-remove,
+.forge-worldnotion .ecosystem-filter-close,
+.forge-worldnotion .ecosystem-filter-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10684,6 +10850,131 @@
   color: var(--wn-muted);
   cursor: pointer;
   font: inherit;
+}
+
+.forge-worldnotion .ecosystem-filter-trigger {
+  min-height: 34px;
+  gap: 7px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--wn-panel-2);
+  color: var(--wn-text);
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.forge-worldnotion .ecosystem-filter-trigger:hover,
+.forge-worldnotion .ecosystem-filter-trigger.is-open {
+  border-color: color-mix(in srgb, var(--wn-accent) 58%, var(--wn-border));
+  background: var(--wn-accent-soft);
+  color: var(--wn-accent);
+}
+
+.forge-worldnotion .ecosystem-filter-trigger.has-filters {
+  border-color: color-mix(in srgb, var(--wn-accent) 48%, var(--wn-border));
+}
+
+.forge-worldnotion .ecosystem-filter-trigger:focus-visible,
+.forge-worldnotion .ecosystem-filter-close:focus-visible,
+.forge-worldnotion .ecosystem-clear-button:focus-visible,
+.forge-worldnotion .ecosystem-add-filter-button:focus-visible,
+.forge-worldnotion .ecosystem-filter-remove:focus-visible {
+  outline: 2px solid var(--wn-accent);
+  outline-offset: 2px;
+}
+
+.forge-worldnotion .ecosystem-filter-count {
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--wn-accent);
+  color: var(--wn-bg);
+  font-size: 0.64rem;
+  line-height: 1;
+}
+
+.forge-worldnotion .ecosystem-filter-chevron {
+  transition: transform 140ms ease;
+}
+
+.forge-worldnotion .ecosystem-filter-trigger.is-open .ecosystem-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.forge-worldnotion .ecosystem-filter-popover {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  width: min(360px, 100%);
+  max-height: min(68vh, 520px);
+  gap: 12px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--wn-accent) 24%, var(--wn-border));
+  border-radius: 13px;
+  background: var(--wn-panel);
+  box-shadow:
+    0 18px 42px rgb(0 0 0 / 34%),
+    0 2px 8px rgb(0 0 0 / 18%);
+  animation: ecosystem-filter-pop-in 130ms ease-out;
+}
+
+@keyframes ecosystem-filter-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forge-worldnotion .ecosystem-filter-popover,
+  .forge-worldnotion .ecosystem-filter-trigger,
+  .forge-worldnotion .ecosystem-filter-chevron {
+    animation: none;
+    transition: none;
+  }
+}
+
+.forge-worldnotion .ecosystem-filter-popover-header,
+.forge-worldnotion .ecosystem-filter-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.forge-worldnotion .ecosystem-filter-popover-header {
+  color: var(--wn-text);
+  font-size: 0.8rem;
+}
+
+.forge-worldnotion .ecosystem-filter-close {
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 7px;
+}
+
+.forge-worldnotion .ecosystem-filter-close:hover {
+  border-color: var(--wn-border);
+  background: var(--wn-panel-2);
+  color: var(--wn-text);
 }
 
 .forge-worldnotion .ecosystem-clear-button {
@@ -10698,15 +10989,6 @@
   border-color: var(--wn-accent);
   background: var(--wn-accent-soft);
   color: var(--wn-accent);
-}
-
-.forge-worldnotion .ecosystem-filter-panel {
-  display: grid;
-  gap: 7px;
-  padding: 8px;
-  border: 1px solid var(--wn-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--wn-panel) 72%, transparent);
 }
 
 .forge-worldnotion .ecosystem-filter-controls {
@@ -10753,7 +11035,17 @@
 
 .forge-worldnotion .ecosystem-filter-list {
   display: grid;
-  gap: 5px;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid var(--wn-border);
+}
+
+.forge-worldnotion .ecosystem-filter-section-label {
+  color: var(--wn-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .forge-worldnotion .ecosystem-filter-row {
@@ -10771,11 +11063,16 @@
 }
 
 .forge-worldnotion .ecosystem-add-filter-button {
-  justify-self: start;
-  min-height: 25px;
+  min-height: 29px;
   padding: 3px 7px;
   border-style: dashed;
   font-size: 0.7rem;
+}
+
+.forge-worldnotion .ecosystem-filter-popover-footer {
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--wn-border);
 }
 
 @media (max-width: 520px) {
@@ -11181,6 +11478,91 @@
   overflow: auto;
 }
 
+.forge-worldnotion .relationships-panel-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.forge-worldnotion .relationships-panel-stack > .backlinks-panel {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--wn-border) 84%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--wn-panel) 92%, var(--wn-editor-bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--wn-text) 4%, transparent);
+}
+
+.forge-worldnotion .relationships-panel-stack .backlinks-header {
+  min-height: 28px;
+  gap: 7px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--wn-border) 72%, transparent);
+  color: var(--wn-muted);
+  font-size: 0.78rem;
+}
+
+.forge-worldnotion .relationships-panel-stack .backlinks-header:hover {
+  color: var(--wn-text);
+}
+
+.forge-worldnotion .relationships-panel-stack .backlinks-header h4 {
+  flex: 1;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.forge-worldnotion .relationships-panel-stack h4.backlinks-header {
+  cursor: default;
+}
+
+.forge-worldnotion .relationships-panel-stack .backlinks-header .relationship-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  min-height: 18px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wn-border) 34%, var(--wn-panel-2));
+  color: var(--wn-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.forge-worldnotion .relationship-section-icon {
+  display: inline-flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 5px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wn-border) 30%, var(--wn-panel-2));
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion .relationships-panel-stack .relationship-empty-state {
+  margin: 8px 0 0;
+  padding: 8px 9px;
+  border: 1px dashed color-mix(in srgb, var(--wn-border) 82%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wn-panel-2) 56%, transparent);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
 .forge-worldnotion .backlinks-header {
   display: flex;
   align-items: center;
@@ -11213,11 +11595,20 @@
 .forge-worldnotion .backlinks-list {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0;
+  margin: 10px 0 0;
 }
 
 .forge-worldnotion .backlink-item {
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
+}
+
+.forge-worldnotion .relationships-panel-stack .backlink-item {
+  padding: 0;
+  border-radius: 8px;
+}
+
+.forge-worldnotion .relationships-panel-stack .backlink-item:last-child {
+  margin-bottom: 0;
 }
 
 .forge-worldnotion .backlink-button {
@@ -11226,11 +11617,22 @@
   background: var(--wn-panel-2);
   border: 1px solid var(--wn-border);
   border-radius: 6px;
-  padding: 0.75rem;
+  padding: 0.7rem;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
   color: var(--wn-text);
+}
+
+.forge-worldnotion .relationships-panel-stack .backlink-button {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wn-panel-2) 82%, var(--wn-panel));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--wn-text) 3%, transparent);
+}
+
+.forge-worldnotion .relationships-panel-stack .backlink-button:hover:not(:disabled) {
+  border-color: var(--wn-border);
+  background: var(--wn-panel-hover);
 }
 
 .forge-worldnotion .backlink-button:hover:not(:disabled) {
@@ -11255,18 +11657,19 @@
 }
 
 .forge-worldnotion .backlink-name {
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--wn-text);
   flex: 1;
 }
 
 .forge-worldnotion .backlink-type-badge {
-  font-size: 0.75rem;
-  padding: 0.125rem 0.5rem;
-  background: var(--wn-accent-soft);
-  color: var(--wn-accent);
+  font-size: 0.66rem;
+  padding: 0.12rem 0.42rem;
+  background: color-mix(in srgb, var(--wn-accent) 7%, var(--wn-panel-2));
+  color: color-mix(in srgb, var(--wn-muted) 76%, var(--wn-accent));
   border-radius: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .forge-worldnotion .backlink-icon {
@@ -11278,16 +11681,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   color: var(--wn-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: "SF Mono", Monaco, "Courier New", monospace;
   background: var(--wn-bg);
-  padding: 0.25rem 0.5rem;
-  border-radius: 3px;
-  margin-top: 0.25rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--wn-border) 70%, transparent);
+  border-radius: 6px;
+  margin-top: 0.4rem;
+  line-height: 1.45;
 }
 
 .forge-worldnotion .backlink-context span {
@@ -11777,28 +12182,33 @@
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  border-radius: 3px;
-  background: var(--wn-border);
+  border-radius: 999px;
+  background: transparent;
   outline: none;
 }
 
 .forge-worldnotion .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
   border-radius: 50%;
-  background: var(--wn-accent);
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   cursor: pointer;
 }
 
 .forge-worldnotion .slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
   border-radius: 50%;
-  background: var(--wn-accent);
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
   cursor: pointer;
-  border: none;
 }
 
 .forge-worldnotion .checkbox-list {
@@ -12919,29 +13329,85 @@
 /* ===================== Obsidian-style property rows ===================== */
 
 .forge-worldnotion .property-row-wrapper {
+  position: relative;
   display: grid;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  border-radius: 6px;
 }
 
 .forge-worldnotion .property-row-wrapper.dragging {
-  opacity: 0.5;
+  z-index: 1;
 }
 
-.forge-worldnotion .property-row-wrapper.drop-target {
-  position: relative;
+.forge-worldnotion .property-row-wrapper.dragging > .property-row {
+  opacity: 0.3;
 }
 
-.forge-worldnotion .property-row-wrapper.drop-target::before {
-  content: "";
+.forge-worldnotion .property-row-wrapper.drop-target-before::before,
+.forge-worldnotion .property-row-wrapper.drop-target-after::after {
   position: absolute;
-  top: -1px;
-  left: 0;
-  right: 0;
+  z-index: 3;
+  right: 2px;
+  left: 2px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 999px;
   background: var(--wn-accent);
+  content: "";
+  pointer-events: none;
+}
+
+.forge-worldnotion .property-row-wrapper.drop-target-before::before {
+  top: -1px;
+}
+
+.forge-worldnotion .property-row-wrapper.drop-target-after::after {
+  bottom: -1px;
+}
+
+.forge-worldnotion .property-row-wrapper.drop-inside-target > .property-row.property-row-group > .property-row-group-controls {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wn-accent) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wn-accent) 48%, transparent);
+}
+
+.forge-worldnotion .property-drag-overlay[data-dnd-dragging] {
+  box-sizing: border-box !important;
+  width: min(300px, calc(100vw - 24px)) !important;
+  max-width: min(300px, calc(100vw - 24px)) !important;
+  height: 35px !important;
+  max-height: 35px !important;
+  overflow: hidden !important;
+}
+
+.forge-worldnotion .property-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--wn-accent) 58%, var(--wn-border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--wn-panel) 92%, var(--wn-accent));
+  box-shadow: 0 8px 22px rgb(0 0 0 / 34%);
+  color: var(--wn-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.forge-worldnotion .property-drag-preview > svg {
+  flex: 0 0 auto;
+  color: var(--wn-muted);
+}
+
+.forge-worldnotion .property-drag-preview-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .forge-worldnotion .property-row-wrapper.property-row-hidden-in-type {
@@ -12949,52 +13415,72 @@
 }
 
 .forge-worldnotion .property-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 13px minmax(88px, 32%) minmax(0, 1fr) 20px;
+  grid-template-columns: minmax(88px, 38%) minmax(0, 1fr);
   align-items: center;
-  gap: 3px;
+  gap: 5px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 28px;
+  min-height: 30px;
   padding: 1px 2px;
   border-radius: 6px;
+}
+
+.forge-worldnotion .property-row.property-row-variant-mode {
+  grid-template-columns: minmax(88px, 38%) minmax(0, 1fr) 22px;
 }
 
 .forge-worldnotion .property-row:hover {
   background: var(--wn-panel-hover);
 }
 
-.forge-worldnotion .property-row-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 13px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--wn-muted);
-  cursor: grab;
-  opacity: 0;
-}
-
-.forge-worldnotion .property-row:hover .property-row-handle {
-  opacity: 0.8;
-}
-
 .forge-worldnotion .property-row-key {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  width: fit-content;
   min-width: 0;
+  max-width: 100%;
+  min-height: 25px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--wn-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.forge-worldnotion .property-row-label {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: grab;
+}
+
+.forge-worldnotion .property-row-label:active {
+  cursor: grabbing;
+}
+
+.forge-worldnotion .property-row-label:hover,
+.forge-worldnotion .property-row-label:focus-visible {
+  color: var(--wn-accent);
+}
+
+.forge-worldnotion .property-row-label:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid color-mix(in srgb, var(--wn-accent) 60%, transparent);
+  outline-offset: 2px;
 }
 
 .forge-worldnotion .property-row-type-icon {
   flex-shrink: 0;
-  opacity: 0.75;
+  color: var(--wn-muted);
+  opacity: 0.82;
 }
 
 .forge-worldnotion .property-row-name {
@@ -13010,9 +13496,93 @@
   max-width: 100%;
 }
 
+.forge-worldnotion .property-row.property-row-primary {
+  min-height: 34px;
+  padding: 3px 4px;
+  padding-inline-start: 3px;
+  border: 1px solid color-mix(in srgb, var(--wn-border) 88%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--wn-panel) 58%, transparent);
+}
+
+.forge-worldnotion .property-row.property-row-primary:hover {
+  background: var(--wn-panel-hover);
+}
+
+.forge-worldnotion .property-row-primary .property-row-label {
+  color: var(--wn-text);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.forge-worldnotion .property-row-primary .property-row-type-icon {
+  color: var(--wn-muted);
+  opacity: 1;
+}
+
+.forge-worldnotion .property-row-primary .property-row-value .property-field-control {
+  border-color: var(--wn-border);
+  background: var(--wn-panel);
+  font-weight: 400;
+}
+
+.forge-worldnotion .property-row-value-number {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.forge-worldnotion .property-row-value-number .property-field-control {
+  width: min(100%, 6rem) !important;
+  max-width: 100% !important;
+}
+
 .forge-worldnotion .property-row-value > * {
   min-width: 0;
   max-width: 100%;
+}
+
+.forge-worldnotion .property-row-value-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 27px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--wn-border) 82%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wn-panel) 82%, transparent);
+  color: var(--wn-text);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.forge-worldnotion .property-row-value-summary:hover,
+.forge-worldnotion .property-row-value-summary.open,
+.forge-worldnotion .property-row-value-summary:focus-visible {
+  border-color: color-mix(in srgb, var(--wn-accent) 62%, var(--wn-border));
+  background: var(--wn-panel);
+  outline: none;
+}
+
+.forge-worldnotion .property-row-value-summary-item {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-worldnotion .property-row-value-summary-count {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--wn-accent-soft);
+  color: var(--wn-text);
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .forge-worldnotion .property-row-value input,
@@ -13039,59 +13609,83 @@
   outline: none;
 }
 
-.forge-worldnotion .property-row-more {
+.forge-worldnotion .property-row-group-controls {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.forge-worldnotion .property-row-group .property-row-group-controls {
+  min-height: 31px;
+  margin: 3px 0 2px;
+  padding: 0 2px 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--wn-border) 58%, transparent);
+}
+
+.forge-worldnotion .property-row-group .property-row-label {
+  color: var(--wn-text);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.forge-worldnotion .property-row-group .property-row-label:hover,
+.forge-worldnotion .property-row-group .property-row-label:focus-visible {
+  color: var(--wn-accent);
+}
+
+.forge-worldnotion .property-row-label.property-row-group-drop-target {
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--wn-accent) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wn-accent) 56%, transparent);
+  color: var(--wn-accent);
+}
+
+.forge-worldnotion .property-row-group-collapse {
   display: inline-flex;
+  flex: 0 0 22px;
   align-items: center;
   justify-content: center;
   width: 22px;
-  height: 22px;
+  height: 24px;
   padding: 0;
-  border: none;
-  border-radius: 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: transparent;
   color: var(--wn-muted);
-  opacity: 0;
+  cursor: pointer;
 }
 
-.forge-worldnotion .property-row:hover .property-row-more,
-.forge-worldnotion .property-row:focus-within .property-row-more,
-.forge-worldnotion .property-row-more:focus-visible {
-  opacity: 1;
-}
-
-.forge-worldnotion .property-row-more:hover {
+.forge-worldnotion .property-row-group-collapse:hover,
+.forge-worldnotion .property-row-group-collapse:focus-visible {
+  border-color: color-mix(in srgb, var(--wn-border) 82%, transparent);
   background: var(--wn-panel);
   color: var(--wn-text);
-}
-
-.forge-worldnotion .property-row-group-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  grid-column: 2 / 4;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--wn-text);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-align: left;
+  outline: none;
 }
 
 .forge-worldnotion .property-row-count {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wn-border) 35%, transparent);
   color: var(--wn-muted);
   font-weight: 400;
 }
 
 .forge-worldnotion .property-row-children {
+  position: relative;
   display: grid;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  margin-left: 10px;
+  padding-left: 9px;
+  border-left: 1px solid color-mix(in srgb, var(--wn-border) 60%, transparent);
 }
 
 .forge-worldnotion .property-row-locked {
-  grid-template-columns: minmax(96px, 38%) minmax(0, 1fr) 22px;
+  grid-template-columns: minmax(88px, 38%) minmax(0, 1fr);
   color: var(--wn-muted);
 }
 
@@ -13220,7 +13814,7 @@
 /* Picker popover (shared by add-property + entity/file/image pickers) */
 
 .forge-worldnotion .picker-popover {
-  z-index: 26000;
+  z-index: 27000;
   display: flex;
   flex-direction: column;
   width: 260px;
@@ -13831,6 +14425,37 @@
   cursor: pointer;
 }
 
+.forge-worldnotion .property-row-value > .entity-ref-field,
+.forge-worldnotion .property-row-value > .file-field,
+.forge-worldnotion .property-row-value > .entity-ref-list-field {
+  align-items: center;
+  flex-wrap: nowrap;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.forge-worldnotion .property-row-value > .entity-ref-list-field {
+  flex-wrap: wrap;
+}
+
+.forge-worldnotion .property-row-value > .entity-ref-field > .entity-ref-chip,
+.forge-worldnotion .property-row-value > .file-field > .entity-ref-chip {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.forge-worldnotion .property-row-value > .entity-ref-field > .entity-ref-action,
+.forge-worldnotion .property-row-value > .entity-ref-field > .entity-ref-variant-selector,
+.forge-worldnotion .property-row-value > .file-field > .entity-ref-action {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+}
+
 .forge-worldnotion .entity-ref-list-field {
   align-content: flex-start;
 }
@@ -14068,7 +14693,8 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
   gap: 4px;
 }
 
@@ -14086,20 +14712,25 @@
 }
 
 .forge-worldnotion .variant-selector select {
-  width: 180px;
+  width: auto;
+  min-width: 0;
+  flex: 1 1 auto;
   padding: 0 6px;
 }
 
 .forge-worldnotion .variant-selector-title {
-  flex: 1 1 180px;
+  flex: 1 1 auto;
   min-width: 0;
-  font-weight: 700 !important;
+  font-weight: 400 !important;
 }
 .forge-worldnotion .variant-selector button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 7px;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  gap: 0;
+  padding: 0;
   cursor: pointer;
 }
 .forge-worldnotion .variant-selector-delete {
@@ -14362,12 +14993,10 @@
     box-shadow 0.18s ease;
 }
 
-.forge-worldnotion .cm-presentation-portrait:hover,
-.forge-worldnotion .cm-presentation-portrait:focus-within {
-  border-color: color-mix(in srgb, var(--wn-accent) 64%, var(--wn-border));
-  box-shadow:
-    0 5px 18px rgb(0 0 0 / 16%),
-    0 0 0 1px color-mix(in srgb, var(--wn-accent) 36%, transparent);
+.forge-worldnotion .cm-presentation-portrait:not(.cm-presentation-portrait-empty):hover,
+.forge-worldnotion .cm-presentation-portrait:not(.cm-presentation-portrait-empty):focus-within {
+  border-color: transparent;
+  box-shadow: 0 5px 18px rgb(0 0 0 / 16%);
 }
 
 .forge-worldnotion .cm-presentation-portrait img {
@@ -14392,8 +15021,27 @@
 }
 
 .forge-worldnotion .cm-presentation-portrait-empty {
-  border-style: dashed;
+  border-color: transparent;
+  background: transparent;
   box-shadow: none;
+}
+
+.forge-worldnotion .cm-presentation-portrait-empty:hover,
+.forge-worldnotion .cm-presentation-portrait-empty:focus-within {
+  background: color-mix(in srgb, var(--wn-accent) 9%, transparent);
+}
+
+.forge-worldnotion .cm-presentation-portrait-empty .cm-presentation-portrait-add {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.forge-worldnotion .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add,
+.forge-worldnotion .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add,
+.forge-worldnotion .cm-presentation-portrait-empty .cm-presentation-portrait-add:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .forge-worldnotion .cm-presentation-portrait-placeholder {
@@ -14467,7 +15115,7 @@
 .forge-worldnotion .cm-presentation-portrait-action.cm-presentation-portrait-add:hover,
 .forge-worldnotion .cm-presentation-portrait-action.cm-presentation-portrait-add:focus-visible {
   color: var(--wn-text);
-  background: color-mix(in srgb, var(--wn-accent) 24%, var(--wn-panel));
+  background: color-mix(in srgb, var(--wn-accent) 10%, transparent);
 }
 
 .forge-worldnotion .cm-presentation-portrait-action:hover,
@@ -14861,7 +15509,8 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--wn-accent) 22%, transparent);
 }
 
-.forge-worldnotion .dock-tab.is-drop-target[data-drop-side]::before {
+.forge-worldnotion .dock-tab.is-drop-target[data-drop-side="before"]::before,
+.forge-worldnotion .dock-tab.is-drop-target[data-drop-side="after"]::before {
   position: absolute;
   top: 2px;
   bottom: 2px;
@@ -15002,49 +15651,41 @@
 
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover {
   position: relative;
-  height: 6px;
-  margin-bottom: 8px;
-  overflow: hidden;
-  border-color: transparent;
-  border-radius: 3px;
+  z-index: 5;
+  height: 0;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
   background: transparent;
   cursor: pointer;
   transition:
-    height 0.16s ease,
-    border-color 0.16s ease,
+    height 0.18s ease,
+    margin-bottom 0.18s ease,
     background-color 0.16s ease;
 }
 
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover::before {
-  position: absolute;
-  top: 2px;
-  right: 12%;
-  left: 12%;
-  height: 1px;
-  background: color-mix(in srgb, var(--wn-muted) 24%, transparent);
-  content: "";
-  pointer-events: none;
-  transition: opacity 0.16s ease;
+  content: none;
 }
 
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:hover,
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:focus-within {
-  height: 44px;
-  border-color: var(--wn-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--wn-panel) 54%, transparent);
-}
-
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:hover::before,
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:focus-within::before {
-  opacity: 0;
+  height: clamp(48px, 6vw, 64px);
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wn-accent) 9%, transparent);
 }
 
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover .document-presentation-cover.document-presentation-cover-empty {
-  height: 42px;
-  min-height: 42px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: clamp(32px, 5vw, 60px);
+  min-height: 0;
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
+  background: transparent;
   transition: opacity 0.14s ease;
 }
 
@@ -15052,6 +15693,13 @@
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:focus-within .document-presentation-cover.document-presentation-cover-empty {
   opacity: 1;
   pointer-events: auto;
+  height: 100%;
+  background: transparent;
+  outline: none;
+}
+
+.forge-worldnotion .editor-surface.page-style-system .document-presentation.document-presentation-empty-cover .document-presentation-cover.document-presentation-cover-empty {
+  height: 28px;
 }
 
 .forge-worldnotion .editor-surface .codemirror-wrap {
@@ -15359,4 +16007,401 @@
     --wn-portrait-gap-x: clamp(14px, 3.5cqw, 18px);
     --wn-portrait-gap-y: clamp(0px, 1cqw, 4px);
   }
+}
+
+/* A compact gutter target reveals the empty portrait slot without tracking the whole line. */
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty {
+  width: 0;
+  height: 0;
+  max-width: 0;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  aspect-ratio: auto;
+  shape-outside: none;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    width 0.18s ease,
+    margin 0.18s ease,
+    background-color 0.16s ease;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: calc(-1 * clamp(16px, 4cqw, 40px));
+  width: clamp(16px, 4cqw, 36px);
+  height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add {
+  box-sizing: border-box;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: opacity 0.12s ease;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add > span {
+  display: none;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover,
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within {
+  width: clamp(144px, 20%, 224px);
+  max-width: 36%;
+  height: auto;
+  margin: 0 var(--wn-portrait-gap-x, clamp(16px, 1.8cqw, 26px)) var(--wn-portrait-gap-y, 0px) 0;
+  border-radius: 9px;
+  aspect-ratio: 4 / 5;
+  shape-outside: margin-box;
+  background: color-mix(in srgb, var(--wn-accent) 9%, transparent);
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add,
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  transition-delay: 0.18s;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add > span,
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add > span {
+  display: inline;
+}
+
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add,
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add,
+.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 560px) {
+  .forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover,
+  .forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within {
+    width: clamp(112px, 30%, 156px);
+  }
+}
+
+/* Use a shorter top inset while the banner slot is empty. */
+.forge-worldnotion .editor-surface.mode-write:has(.document-presentation-empty-cover) {
+  --wn-empty-banner-inset: clamp(14px, 1.7vw, 22px);
+}
+
+.forge-worldnotion .editor-surface.mode-write:has(.document-presentation-empty-cover) .cm-content {
+  padding-top: var(--wn-empty-banner-inset);
+}
+
+.forge-worldnotion .editor-surface.mode-write:has(.document-presentation-empty-cover) .document-presentation-empty-cover:not(:hover):not(:focus-within) .document-presentation-cover.document-presentation-cover-empty {
+  height: var(--wn-empty-banner-inset);
+}
+
+.forge-worldnotion .editor-surface.page-style-system.mode-write:has(.document-presentation-empty-cover) {
+  --wn-empty-banner-inset: 14px;
+}
+
+/* Compact property labels and bounded editors for values that need more room. */
+.forge-worldnotion .property-value-popover {
+  z-index: 26000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 11px;
+  border: 1px solid var(--wn-border);
+  border-radius: 9px;
+  background: var(--wn-panel);
+  color: var(--wn-text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+}
+
+.forge-worldnotion .property-value-popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.forge-worldnotion .property-value-popover-header > div {
+  min-width: 0;
+}
+
+.forge-worldnotion .property-value-popover-header strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.forge-worldnotion .property-value-popover-header p {
+  margin: 3px 0 0;
+  color: var(--wn-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.forge-worldnotion .property-value-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wn-muted);
+  cursor: pointer;
+}
+
+.forge-worldnotion .property-value-popover-close:hover {
+  border-color: var(--wn-border);
+  background: var(--wn-panel-hover);
+  color: var(--wn-text);
+}
+
+.forge-worldnotion .property-value-popover-body {
+  width: 100%;
+  min-width: 0;
+}
+
+.forge-worldnotion .property-value-popover-body .entity-ref-list-field {
+  max-height: 230px;
+  overflow-y: auto;
+  border-style: solid;
+  background: color-mix(in srgb, var(--wn-bg) 28%, transparent);
+}
+
+.forge-worldnotion .property-value-popover-body .property-field-multiselect {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 7px;
+  border: 1px solid var(--wn-border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--wn-bg) 28%, transparent);
+}
+
+.forge-worldnotion .property-value-popover-body .image-field-preview img {
+  max-height: 220px;
+}
+
+/* Keep cover actions inside the image so they don't add a toolbar row below it. */
+.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) .document-presentation-image-actions {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  justify-content: flex-end;
+  margin-left: 0;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--wn-border) 74%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wn-card, #fff) 78%, transparent);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 18%);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover):hover .document-presentation-image-actions,
+.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover):focus-within .document-presentation-image-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (hover: none) {
+  .forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) .document-presentation-image-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
+/* Bring the document title closer to a present cover, and reclaim a little more room without one. */
+.forge-worldnotion .editor-surface.mode-write.has-banner:not(:has(.document-presentation-empty-cover)) .editor-document-column .cm-content {
+  padding-top: clamp(16px, 1.6vw, 22px);
+}
+
+/* Keep document and panel tabs inside their dock rail as panes get narrower. */
+.forge-worldnotion .dock-tab-strip {
+  gap: 4px;
+  overflow: hidden;
+}
+
+.forge-worldnotion .dock-document-tabs {
+  flex: 0 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-color: color-mix(in srgb, var(--wn-accent) 38%, var(--wn-border)) transparent;
+  scrollbar-width: thin;
+}
+
+.forge-worldnotion .dock-panel-tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 36%;
+  margin-left: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-color: color-mix(in srgb, var(--wn-accent) 38%, var(--wn-border)) transparent;
+  scrollbar-width: thin;
+}
+
+.forge-worldnotion .dock-writing-tab-bar .dock-panel-tabs {
+  max-width: 36%;
+  margin-left: auto;
+}
+
+.forge-worldnotion .dock-panel-tab-bar .dock-document-tabs {
+  display: none;
+}
+
+.forge-worldnotion .dock-panel-tab-bar .dock-panel-tabs {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.forge-worldnotion .dock-panel-tab-bar .dock-tab-panel {
+  flex: 1 1 calc(120px * var(--dock-tab-scale, 1.25));
+  min-width: calc(78px * var(--dock-tab-scale, 1.25));
+  max-width: calc(156px * var(--dock-tab-scale, 1.25));
+}
+
+.forge-worldnotion .dock-tab {
+  flex: 1 1 calc(88px * var(--dock-tab-scale, 1.25));
+  min-width: calc(52px * var(--dock-tab-scale, 1.25));
+  max-width: calc(110px * var(--dock-tab-scale, 1.25));
+  font-size: clamp(0.56rem, calc(0.62rem * var(--dock-tab-scale, 1.25)), 0.72rem);
+}
+
+.forge-worldnotion .dock-document-tab-group {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.forge-worldnotion .dock-document-tab-group-tabs {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.forge-worldnotion .dock-document-tabs::-webkit-scrollbar,
+.forge-worldnotion .dock-panel-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.forge-worldnotion .dock-document-tabs::-webkit-scrollbar-thumb,
+.forge-worldnotion .dock-panel-tabs::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wn-accent) 38%, var(--wn-border));
+}
+
+/* Give range controls one theme-aware gradient treatment across the app. */
+.forge-worldnotion input[type="range"] {
+  width: 100%;
+  height: 6px;
+  min-height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.forge-worldnotion input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wn-slider-track);
+}
+
+.forge-worldnotion input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wn-border) 72%, var(--wn-panel-2));
+}
+
+.forge-worldnotion input[type="range"]::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wn-slider-track);
+}
+
+.forge-worldnotion input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
+  box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
+}
+
+.forge-worldnotion input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--wn-panel), var(--wn-panel)) padding-box,
+    var(--wn-slider-thumb) border-box;
+  box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
+}
+
+.forge-worldnotion input[type="range"]:hover {
+  filter: saturate(1.14) brightness(1.06);
+}
+
+.forge-worldnotion input[type="range"]:focus-visible {
+  outline: none;
+}
+
+.forge-worldnotion input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--wn-accent-soft) 82%, transparent),
+    0 1px 3px color-mix(in srgb, #000 18%, transparent);
+}
+
+.forge-worldnotion input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--wn-accent-soft) 82%, transparent),
+    0 1px 3px color-mix(in srgb, #000 18%, transparent);
+}
+
+.forge-worldnotion input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }

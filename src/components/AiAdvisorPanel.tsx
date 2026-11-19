@@ -1,3 +1,4 @@
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, ShieldCheck } from "lucide-react";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
@@ -13,6 +14,8 @@ const AI_ADVISOR_DATA_STORE_IDENTIFIER = [
   0x57, 0x6f, 0x72, 0x6c, 0x64, 0x4e, 0x6f, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x49, 0x30, 0x30, 0x31,
 ];
 
+type WebviewBounds = { x: number; y: number; width: number; height: number };
+
 type AiAdvisorPanelProps = {
   settings: AiAdvisorSettings;
   onChange: (settings: AiAdvisorSettings) => void;
@@ -24,6 +27,8 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
   const toolbarRef = useRef<HTMLElement | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const webviewRef = useRef<Webview | null>(null);
+  const lastWebviewBoundsRef = useRef<WebviewBounds | null>(null);
+  const webviewVisibleRef = useRef(false);
   const enabledProviders = useMemo(
     () =>
       settings.providers.filter(
@@ -59,15 +64,29 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
     const right = Math.min(bounds.right, panelBounds?.right ?? bounds.right);
     const top = Math.max(bounds.top, toolbarBounds?.bottom ?? bounds.top);
     const bottom = Math.min(bounds.bottom, panelBounds?.bottom ?? bounds.bottom);
-    const width = right - left;
-    const height = bottom - top;
+    const x = Math.round(Math.max(0, left));
+    const y = Math.round(Math.max(0, top));
+    const width = Math.round(right - left);
+    const height = Math.round(bottom - top);
     if (width < 1 || height < 1) {
-      await webview.hide();
+      if (webviewVisibleRef.current) {
+        await webview.hide();
+        webviewVisibleRef.current = false;
+      }
       return;
     }
-    await webview.setPosition(new LogicalPosition(Math.max(0, left), Math.max(0, top)));
-    await webview.setSize(new LogicalSize(width, height));
-    await webview.show();
+    const previous = lastWebviewBoundsRef.current;
+    if (!previous || previous.x !== x || previous.y !== y) {
+      await webview.setPosition(new LogicalPosition(x, y));
+    }
+    if (!previous || previous.width !== width || previous.height !== height) {
+      await webview.setSize(new LogicalSize(width, height));
+    }
+    lastWebviewBoundsRef.current = { x, y, width, height };
+    if (!webviewVisibleRef.current) {
+      await webview.show();
+      webviewVisibleRef.current = true;
+    }
   }, []);
 
   useEffect(() => {
@@ -76,11 +95,24 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
     let disposed = false;
     let createdWebview: Webview | undefined;
     let webviewReady = false;
+    let syncFrame: number | undefined;
+    let pendingSync = Promise.resolve();
+    lastWebviewBoundsRef.current = null;
+    webviewVisibleRef.current = false;
 
-    const syncBoundsSafely = (webview?: Webview | null) => {
-      if (!webviewReady) return Promise.resolve();
-      return syncWebviewBounds(webview).catch((error) => {
-        if (!disposed) setWebviewError(error instanceof Error ? error.message : String(error));
+    const scheduleBoundsSync = (webview?: Webview | null) => {
+      if (!webviewReady || disposed || syncFrame !== undefined) return;
+      syncFrame = window.requestAnimationFrame(() => {
+        syncFrame = undefined;
+        const target = webview ?? webviewRef.current;
+        if (!target || disposed || !webviewReady) return;
+        pendingSync = pendingSync
+          .then(() => {
+            if (!disposed && webviewReady) return syncWebviewBounds(target);
+          })
+          .catch((error) => {
+            if (!disposed) setWebviewError(error instanceof Error ? error.message : String(error));
+          });
       });
     };
 
@@ -109,12 +141,7 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
       });
       void webview.once("tauri://created", () => {
         webviewReady = true;
-        if (!disposed) {
-          void syncBoundsSafely(webview);
-          requestAnimationFrame(() => {
-            if (!disposed) void syncBoundsSafely(webview);
-          });
-        }
+        scheduleBoundsSync(webview);
       });
     }
 
@@ -126,14 +153,15 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
     const resizeObserver =
       typeof ResizeObserver === "undefined"
         ? undefined
-        : new ResizeObserver(() => void syncBoundsSafely());
+        : new ResizeObserver(() => scheduleBoundsSync());
     if (host) resizeObserver?.observe(host);
-    const handleWindowResize = () => void syncBoundsSafely();
+    const handleWindowResize = () => scheduleBoundsSync();
     window.addEventListener("resize", handleWindowResize);
 
     return () => {
       disposed = true;
       webviewReady = false;
+      if (syncFrame !== undefined) window.cancelAnimationFrame(syncFrame);
       resizeObserver?.disconnect();
       window.removeEventListener("resize", handleWindowResize);
       webviewRef.current = null;
@@ -146,7 +174,7 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
       <header ref={toolbarRef} className="ai-advisor-toolbar">
         <div className="ai-advisor-provider-control">
           <label htmlFor="ai-advisor-provider">Provider</label>
-          <select
+          <WorldNotionDropdown
             id="ai-advisor-provider"
             value={provider?.id ?? ""}
             disabled={!enabledProviders.length}
@@ -160,7 +188,7 @@ export function AiAdvisorPanel({ settings, onChange }: AiAdvisorPanelProps) {
                 {candidate.name}
               </option>
             ))}
-          </select>
+          </WorldNotionDropdown>
         </div>
         <span
           className="ai-advisor-privacy-note"

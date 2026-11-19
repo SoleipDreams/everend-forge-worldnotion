@@ -15,7 +15,9 @@ describe("VariantSelector", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Create variant" }));
+    const selector = screen.getByRole("combobox", { name: "Variant" });
+    const createOption = screen.getByRole("option", { name: /Create new variant/ });
+    fireEvent.change(selector, { target: { value: createOption.getAttribute("value") } });
     fireEvent.change(screen.getByLabelText("New variant name"), {
       target: { value: "Mara adulta" },
     });

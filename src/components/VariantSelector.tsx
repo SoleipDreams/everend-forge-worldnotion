@@ -1,6 +1,8 @@
-import { FilePlus2, Pencil, Plus, Trash2 } from "lucide-react";
+import { WorldNotionDropdown } from "../SettingsDropdown.js";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { PropertiesConfig } from "../editorTypes";
+import { useWorldnotionSurfaceText } from "../i18n";
 import {
   BASE_VARIANT_ID,
   addVariant,
@@ -18,7 +20,6 @@ type VariantSelectorProps = {
   activeVariantId: string;
   onSelect: (id: string) => void;
   onUpdateRawYaml: (yaml: string) => void;
-  onInsertBlock?: () => void;
   onDeleteVariant?: (id: string) => void;
 };
 
@@ -29,9 +30,9 @@ export function VariantSelector({
   activeVariantId,
   onSelect,
   onUpdateRawYaml,
-  onInsertBlock,
   onDeleteVariant,
 }: VariantSelectorProps) {
+  const surfaceText = useWorldnotionSurfaceText();
   const [editMode, setEditMode] = useState<"create" | "rename" | null>(null);
   const [labelDraft, setLabelDraft] = useState("");
   const [error, setError] = useState<string>();
@@ -39,6 +40,10 @@ export function VariantSelector({
   const frontmatter = parseFrontmatterRaw(rawYaml);
   const variants = readNoteVariants(frontmatter);
   const selected = variants[activeVariantId] ? activeVariantId : BASE_VARIANT_ID;
+  let createVariantActionValue = "__worldnotion_create_variant__";
+  while (Object.prototype.hasOwnProperty.call(variants, createVariantActionValue)) {
+    createVariantActionValue += "_";
+  }
 
   const write = (next: typeof variants) =>
     onUpdateRawYaml(updateVariantsInRawYaml(rawYaml, next, config, type));
@@ -84,26 +89,27 @@ export function VariantSelector({
   return (
     <div className="variant-selector">
       <div className="variant-selector-controls">
-        <select
+        <WorldNotionDropdown
           className="variant-selector-title"
           aria-label="Variant"
           value={selected}
-          onChange={(event) => onSelect(event.target.value)}
+          onChange={(event) => {
+            if (event.target.value === createVariantActionValue) {
+              beginCreate();
+              return;
+            }
+            onSelect(event.target.value);
+          }}
         >
           {Object.entries(variants).map(([id, variant]) => (
             <option key={id} value={id}>
               {variant.label}
             </option>
           ))}
-        </select>
-        <button
-          type="button"
-          title="Create variant"
-          aria-label="Create variant"
-          onClick={beginCreate}
-        >
-          <Plus size={14} />
-        </button>
+          <option value={createVariantActionValue}>
+            ＋ {surfaceText("Create new variant…")}
+          </option>
+        </WorldNotionDropdown>
         <button
           type="button"
           title="Rename variant"
@@ -111,18 +117,6 @@ export function VariantSelector({
           onClick={beginRename}
         >
           <Pencil size={14} />
-        </button>
-        <button
-          type="button"
-          title={
-            selected === BASE_VARIANT_ID ? "Add base variant section" : "Add variant text section"
-          }
-          aria-label={
-            selected === BASE_VARIANT_ID ? "Add base variant section" : "Add variant text section"
-          }
-          onClick={onInsertBlock}
-        >
-          <FilePlus2 size={14} />
         </button>
         {selected !== BASE_VARIANT_ID ? (
           <button

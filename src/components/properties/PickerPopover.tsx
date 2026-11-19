@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
-import { autoUpdate, flip, offset, shift, size, useFloating } from "@floating-ui/react";
+import {
+  autoUpdate,
+  flip,
+  FloatingPortal,
+  offset,
+  shift,
+  size,
+  useFloating,
+} from "@floating-ui/react";
 import Fuse, { type IFuseOptions } from "fuse.js";
 import { Plus } from "lucide-react";
 import { focusAppElement, useAppIsActive } from "../../hooks/useAppInteraction";
@@ -73,6 +81,7 @@ export function PickerPopover({
   const { refs, floatingStyles } = useFloating({
     open,
     placement: "bottom-start",
+    strategy: "fixed",
     middleware: [
       offset(4),
       flip({ padding: 8 }),
@@ -171,81 +180,85 @@ export function PickerPopover({
   };
 
   return (
-    <div
-      ref={refs.setFloating}
-      style={floatingStyles}
-      className="picker-popover"
-      role="dialog"
-      onKeyDown={handleKeyDown}
+    <FloatingPortal
+      root={anchorRef.current?.closest<HTMLElement>(".forge-worldnotion") ?? undefined}
     >
-      <input
-        ref={inputRef}
-        className="picker-popover-input"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setActiveIndex(0);
-        }}
-        placeholder={placeholder}
-        aria-label={placeholder}
-      />
-      <div ref={listRef} className="picker-popover-list" role="listbox">
-        {actions?.length ? (
-          <div className="picker-popover-actions">
-            {actions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                className="picker-popover-item picker-popover-action"
-                onClick={() => {
-                  action.onSelect();
-                  onClose();
-                }}
-              >
-                {action.icon ? <span className="picker-popover-icon">{action.icon}</span> : null}
-                <span className="picker-popover-label">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-        {results.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            role="option"
-            aria-selected={index === activeIndex}
-            data-active={index === activeIndex || undefined}
-            className={`picker-popover-item ${index === activeIndex ? "active" : ""}`}
-            onPointerEnter={() => setActiveIndex(index)}
-            onClick={() => activateRow(index)}
-          >
-            {item.icon ? <span className="picker-popover-icon">{item.icon}</span> : null}
-            <span className="picker-popover-label">{item.label}</span>
-            {item.sublabel ? (
-              <span className="picker-popover-sublabel">{item.sublabel}</span>
-            ) : null}
-          </button>
-        ))}
-        {showCreate ? (
-          <button
-            type="button"
-            role="option"
-            aria-selected={activeIndex === results.length}
-            data-active={activeIndex === results.length || undefined}
-            className={`picker-popover-item picker-popover-create ${activeIndex === results.length ? "active" : ""}`}
-            onPointerEnter={() => setActiveIndex(results.length)}
-            onClick={() => activateRow(results.length)}
-          >
-            <span className="picker-popover-icon">
-              <Plus size={13} />
-            </span>
-            <span className="picker-popover-label">
-              {createLabel ? createLabel(trimmedQuery) : `Create "${trimmedQuery}"`}
-            </span>
-          </button>
-        ) : null}
-        {totalRows === 0 ? <div className="picker-popover-empty">{emptyLabel}</div> : null}
+      <div
+        ref={refs.setFloating}
+        style={floatingStyles}
+        className="picker-popover"
+        role="dialog"
+        onKeyDown={handleKeyDown}
+      >
+        <input
+          ref={inputRef}
+          className="picker-popover-input"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActiveIndex(0);
+          }}
+          placeholder={placeholder}
+          aria-label={placeholder}
+        />
+        <div ref={listRef} className="picker-popover-list" role="listbox">
+          {actions?.length ? (
+            <div className="picker-popover-actions">
+              {actions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className="picker-popover-item picker-popover-action"
+                  onClick={() => {
+                    action.onSelect();
+                    onClose();
+                  }}
+                >
+                  {action.icon ? <span className="picker-popover-icon">{action.icon}</span> : null}
+                  <span className="picker-popover-label">{action.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {results.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              role="option"
+              aria-selected={index === activeIndex}
+              data-active={index === activeIndex || undefined}
+              className={`picker-popover-item ${index === activeIndex ? "active" : ""}`}
+              onPointerEnter={() => setActiveIndex(index)}
+              onClick={() => activateRow(index)}
+            >
+              {item.icon ? <span className="picker-popover-icon">{item.icon}</span> : null}
+              <span className="picker-popover-label">{item.label}</span>
+              {item.sublabel ? (
+                <span className="picker-popover-sublabel">{item.sublabel}</span>
+              ) : null}
+            </button>
+          ))}
+          {showCreate ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={activeIndex === results.length}
+              data-active={activeIndex === results.length || undefined}
+              className={`picker-popover-item picker-popover-create ${activeIndex === results.length ? "active" : ""}`}
+              onPointerEnter={() => setActiveIndex(results.length)}
+              onClick={() => activateRow(results.length)}
+            >
+              <span className="picker-popover-icon">
+                <Plus size={13} />
+              </span>
+              <span className="picker-popover-label">
+                {createLabel ? createLabel(trimmedQuery) : `Create "${trimmedQuery}"`}
+              </span>
+            </button>
+          ) : null}
+          {totalRows === 0 ? <div className="picker-popover-empty">{emptyLabel}</div> : null}
+        </div>
       </div>
-    </div>
+    </FloatingPortal>
   );
 }

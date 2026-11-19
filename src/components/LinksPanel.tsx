@@ -32,9 +32,14 @@ export function LinksPanel({ entity, index, onOpenEntity }: LinksPanelProps) {
 
   if (!entity || !index) {
     return (
-      <div className="backlinks-panel relationship-panel">
-        <h4 className="backlinks-header">{t("Links")}</h4>
-        <p className="muted text-sm">{t("Open a note to see outgoing links.")}</p>
+      <div className="backlinks-panel relationship-panel relationships-panel-outgoing">
+        <h4 className="backlinks-header">
+          <Link2 className="relationship-section-icon" size={16} />
+          <span>{t("Links")}</span>
+        </h4>
+        <p className="muted text-sm relationship-empty-state">
+          {t("Open a note to see outgoing links.")}
+        </p>
       </div>
     );
   }
@@ -54,23 +59,30 @@ export function LinksPanel({ entity, index, onOpenEntity }: LinksPanelProps) {
 
   if (!links.length) {
     return (
-      <div className="backlinks-panel relationship-panel">
-        <h4 className="backlinks-header">{t("Links")}</h4>
-        <p className="muted text-sm">{t("No outgoing links from this note.")}</p>
+      <div className="backlinks-panel relationship-panel relationships-panel-outgoing">
+        <h4 className="backlinks-header">
+          <Link2 className="relationship-section-icon" size={16} />
+          <span>{t("Links")}</span>
+          <span className="muted relationship-count">0</span>
+        </h4>
+        <p className="muted text-sm relationship-empty-state">
+          {t("No outgoing links from this note.")}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="backlinks-panel relationship-panel">
+    <div className="backlinks-panel relationship-panel relationships-panel-outgoing">
       <button className="backlinks-header" onClick={() => setIsExpanded(!isExpanded)} type="button">
         {isExpanded ? (
           <ChevronDown className="icon-inline" size={16} />
         ) : (
           <ChevronRight className="icon-inline" size={16} />
         )}
+        <Link2 className="relationship-section-icon" size={16} />
         <h4 className="inline">
-          {t("Links")} <span className="muted">({links.length})</span>
+          {t("Links")} <span className="muted relationship-count">{links.length}</span>
         </h4>
       </button>
 
