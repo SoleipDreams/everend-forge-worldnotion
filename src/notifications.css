@@ -35,10 +35,7 @@
 }
 .ef-notification-center,
 .ef-notification-toast {
-  --notice-panel: var(
-    --ef-panel,
-    var(--panel-bg, var(--bg-secondary, #161b24))
-  );
+  --notice-panel: var(--ef-panel, var(--panel-bg, var(--bg-secondary, #161b24)));
   --notice-text: var(--ef-text, var(--text-primary, #e6e8ed));
   --notice-muted: var(--ef-muted, var(--text-muted, #a4aaba));
   --notice-border: var(--ef-border, var(--border-color, #ffffff18));

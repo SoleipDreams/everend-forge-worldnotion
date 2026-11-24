@@ -20,7 +20,14 @@ export interface InheritAppearanceDialogProps {
 }
 
 function optionLabel(option: InheritAppearanceOption): string {
-  return option.profile?.name ?? option.path.replace(/^browser:/, "").split(/[\\/]/).pop() ?? option.path;
+  return (
+    option.profile?.name ??
+    option.path
+      .replace(/^browser:/, "")
+      .split(/[\\/]/)
+      .pop() ??
+    option.path
+  );
 }
 
 export function InheritAppearanceDialog({
@@ -99,7 +106,11 @@ export function InheritAppearanceDialog({
           <button onClick={onCancel} className="modal-button modal-button-cancel" type="button">
             Cancel
           </button>
-          <button onClick={handleConfirm} className="modal-button modal-button-confirm" type="button">
+          <button
+            onClick={handleConfirm}
+            className="modal-button modal-button-confirm"
+            type="button"
+          >
             Continue
           </button>
         </div>

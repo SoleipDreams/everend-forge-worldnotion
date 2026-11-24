@@ -1676,225 +1676,225 @@ export function TimelineEditor({
                 />
               ) : selected ? (
                 <>
-                    <div className="timeline-inspector-heading">
-                      <h3>{t(selected.kind === "event" ? "Event" : "Period")}</h3>
-                      <button
-                        type="button"
-                        aria-label={t("Close item inspector")}
-                        onClick={() => updateSession({ selectedIds: [] })}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <label>
-                      {t("Title")}
-                      <input
-                        value={selected.title}
-                        onChange={(event) => patchItem({ title: event.target.value })}
-                      />
-                    </label>
-                    <label>
-                      {t("Description")}
-                      <textarea
-                        rows={3}
-                        value={selected.description ?? ""}
-                        onChange={(event) => patchItem({ description: event.target.value })}
-                      />
-                    </label>
+                  <div className="timeline-inspector-heading">
+                    <h3>{t(selected.kind === "event" ? "Event" : "Period")}</h3>
+                    <button
+                      type="button"
+                      aria-label={t("Close item inspector")}
+                      onClick={() => updateSession({ selectedIds: [] })}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <label>
+                    {t("Title")}
+                    <input
+                      value={selected.title}
+                      onChange={(event) => patchItem({ title: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    {t("Description")}
+                    <textarea
+                      rows={3}
+                      value={selected.description ?? ""}
+                      onChange={(event) => patchItem({ description: event.target.value })}
+                    />
+                  </label>
+                  <DateFields
+                    key={`${selected.id}:start`}
+                    calendar={document.calendar}
+                    ordinal={selected.start}
+                    precision={selected.precision}
+                    label={t(selected.kind === "period" ? "Start" : "Date")}
+                    draft={
+                      session.drafts?.[`timeline.date:${selected.id}:start`]?.value as
+                        CalendarDate | undefined
+                    }
+                    onDraftChange={(next) =>
+                      updateDraft(
+                        `timeline.date:${selected.id}:start`,
+                        next,
+                        `${selected.title} · ${t("Start")}`,
+                      )
+                    }
+                    onApply={(start, precision) => {
+                      if (selected.end && parseOrdinal(start) > parseOrdinal(selected.end)) {
+                        setError(t("Start must not be after the period end"));
+                        return false;
+                      }
+                      setError("");
+                      patchItem({ start, precision });
+                    }}
+                  />
+                  {selected.kind === "period" && (
                     <DateFields
-                      key={`${selected.id}:start`}
+                      key={`${selected.id}:end`}
                       calendar={document.calendar}
-                      ordinal={selected.start}
-                      precision={selected.precision}
-                      label={t(selected.kind === "period" ? "Start" : "Date")}
+                      ordinal={selected.end ?? selected.start}
+                      precision={selected.endPrecision ?? selected.precision}
+                      label={t("End")}
                       draft={
-                        session.drafts?.[`timeline.date:${selected.id}:start`]?.value as
+                        session.drafts?.[`timeline.date:${selected.id}:end`]?.value as
                           CalendarDate | undefined
                       }
                       onDraftChange={(next) =>
                         updateDraft(
-                          `timeline.date:${selected.id}:start`,
+                          `timeline.date:${selected.id}:end`,
                           next,
-                          `${selected.title} · ${t("Start")}`,
+                          `${selected.title} · ${t("End")}`,
                         )
                       }
-                      onApply={(start, precision) => {
-                        if (selected.end && parseOrdinal(start) > parseOrdinal(selected.end)) {
-                          setError(t("Start must not be after the period end"));
+                      onApply={(end, endPrecision) => {
+                        if (parseOrdinal(end) < parseOrdinal(selected.start)) {
+                          setError(t("End must not be before the period start"));
                           return false;
                         }
                         setError("");
-                        patchItem({ start, precision });
+                        patchItem({ end, endPrecision });
                       }}
                     />
-                    {selected.kind === "period" && (
-                      <DateFields
-                        key={`${selected.id}:end`}
-                        calendar={document.calendar}
-                        ordinal={selected.end ?? selected.start}
-                        precision={selected.endPrecision ?? selected.precision}
-                        label={t("End")}
-                        draft={
-                          session.drafts?.[`timeline.date:${selected.id}:end`]?.value as
-                            CalendarDate | undefined
-                        }
-                        onDraftChange={(next) =>
-                          updateDraft(
-                            `timeline.date:${selected.id}:end`,
-                            next,
-                            `${selected.title} · ${t("End")}`,
-                          )
-                        }
-                        onApply={(end, endPrecision) => {
-                          if (parseOrdinal(end) < parseOrdinal(selected.start)) {
-                            setError(t("End must not be before the period start"));
-                            return false;
-                          }
-                          setError("");
-                          patchItem({ end, endPrecision });
-                        }}
-                      />
-                    )}
-                    {error && (
-                      <p className="timeline-error" role="alert">
-                        {error}
-                      </p>
-                    )}
-                    <div className="timeline-nudge">
-                      <button
-                        type="button"
-                        title={t("Move one day earlier")}
-                        onClick={() => {
-                          const delta = ticksPerDay(document.calendar);
-                          patchItem({
-                            start: (parseOrdinal(selected.start) - delta).toString(),
-                            ...(selected.end
-                              ? { end: (parseOrdinal(selected.end) - delta).toString() }
-                              : {}),
-                          });
-                        }}
-                      >
-                        <ChevronLeft size={14} />
-                        {t("One day")}
-                      </button>
-                      <button
-                        type="button"
-                        title={t("Move one day later")}
-                        onClick={() => {
-                          const delta = ticksPerDay(document.calendar);
-                          patchItem({
-                            start: (parseOrdinal(selected.start) + delta).toString(),
-                            ...(selected.end
-                              ? { end: (parseOrdinal(selected.end) + delta).toString() }
-                              : {}),
-                          });
-                        }}
-                      >
-                        {t("One day")}
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
-                    <label>
-                      {t("Canon reference")}
-                      <input
-                        list={referenceListId}
-                        value={selected.reference ?? ""}
-                        placeholder={t("Entity id or note path")}
-                        onChange={(event) =>
-                          patchItem({ reference: event.target.value || undefined })
-                        }
-                      />
-                    </label>
-                    <datalist id={referenceListId}>
-                      {referenceChoices.map((entity) => (
-                        <option key={entity.path} value={entity.path}>
-                          {entity.name}
-                        </option>
-                      ))}
-                    </datalist>
-                    {selected.reference && (
-                      <>
-                        <button
-                          type="button"
-                          disabled={brokenReference}
-                          onClick={() => onOpenReference?.(selected.reference!)}
-                        >
-                          {t("Open linked note")}
-                        </button>
-                        {brokenReference && (
-                          <p className="timeline-hint">
-                            {t("Reference not found in this universe. It is preserved.")}
-                          </p>
-                        )}
-                      </>
-                    )}
-                    <label>
-                      {t("Image")}
-                      <input
-                        list={imageListId}
-                        value={selected.image ?? ""}
-                        placeholder={t("Vault-relative image path")}
-                        onChange={(event) => patchItem({ image: event.target.value || undefined })}
-                      />
-                    </label>
-                    <datalist id={imageListId}>
-                      {vaultIndex?.files
-                        .filter((file) => isImagePath(file.relativePath))
-                        .map((file) => (
-                          <option key={file.relativePath} value={file.relativePath} />
-                        ))}
-                    </datalist>
-                    <div className="timeline-date-grid">
-                      <label>
-                        {t("Color")}
-                        <input
-                          type="color"
-                          value={
-                            /^#[0-9a-f]{6}$/i.test(selected.color ?? "")
-                              ? selected.color
-                              : COLOR_PRESETS[0]
-                          }
-                          onChange={(event) => patchItem({ color: event.target.value })}
-                        />
-                      </label>
-                      <label>
-                        {t("Icon")}
-                        <WorldNotionDropdown
-                          value={selected.icon ?? "flag"}
-                          onChange={(event) => patchItem({ icon: event.target.value })}
-                        >
-                          {ICON_PRESETS.map((icon) => (
-                            <option key={icon}>{icon}</option>
-                          ))}
-                        </WorldNotionDropdown>
-                      </label>
-                    </div>
-                    <TimelineTags
-                      key={selected.id}
-                      tags={selected.tags}
-                      onChange={(tags) => patchItem({ tags })}
-                    />
-                    <label>
-                      {t("Lane")}
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder={t("Automatic")}
-                        value={selected.lane ?? ""}
-                        onChange={(event) =>
-                          patchItem({
-                            lane:
-                              event.target.value === ""
-                                ? undefined
-                                : Math.max(0, Math.floor(Number(event.target.value))),
-                          })
-                        }
-                      />
-                    </label>
-                    <button type="button" className="timeline-delete" onClick={deleteSelected}>
-                      <Trash2 size={14} />
-                      {t("Delete")} {t(selected.kind)}
+                  )}
+                  {error && (
+                    <p className="timeline-error" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <div className="timeline-nudge">
+                    <button
+                      type="button"
+                      title={t("Move one day earlier")}
+                      onClick={() => {
+                        const delta = ticksPerDay(document.calendar);
+                        patchItem({
+                          start: (parseOrdinal(selected.start) - delta).toString(),
+                          ...(selected.end
+                            ? { end: (parseOrdinal(selected.end) - delta).toString() }
+                            : {}),
+                        });
+                      }}
+                    >
+                      <ChevronLeft size={14} />
+                      {t("One day")}
                     </button>
+                    <button
+                      type="button"
+                      title={t("Move one day later")}
+                      onClick={() => {
+                        const delta = ticksPerDay(document.calendar);
+                        patchItem({
+                          start: (parseOrdinal(selected.start) + delta).toString(),
+                          ...(selected.end
+                            ? { end: (parseOrdinal(selected.end) + delta).toString() }
+                            : {}),
+                        });
+                      }}
+                    >
+                      {t("One day")}
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                  <label>
+                    {t("Canon reference")}
+                    <input
+                      list={referenceListId}
+                      value={selected.reference ?? ""}
+                      placeholder={t("Entity id or note path")}
+                      onChange={(event) =>
+                        patchItem({ reference: event.target.value || undefined })
+                      }
+                    />
+                  </label>
+                  <datalist id={referenceListId}>
+                    {referenceChoices.map((entity) => (
+                      <option key={entity.path} value={entity.path}>
+                        {entity.name}
+                      </option>
+                    ))}
+                  </datalist>
+                  {selected.reference && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={brokenReference}
+                        onClick={() => onOpenReference?.(selected.reference!)}
+                      >
+                        {t("Open linked note")}
+                      </button>
+                      {brokenReference && (
+                        <p className="timeline-hint">
+                          {t("Reference not found in this universe. It is preserved.")}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  <label>
+                    {t("Image")}
+                    <input
+                      list={imageListId}
+                      value={selected.image ?? ""}
+                      placeholder={t("Vault-relative image path")}
+                      onChange={(event) => patchItem({ image: event.target.value || undefined })}
+                    />
+                  </label>
+                  <datalist id={imageListId}>
+                    {vaultIndex?.files
+                      .filter((file) => isImagePath(file.relativePath))
+                      .map((file) => (
+                        <option key={file.relativePath} value={file.relativePath} />
+                      ))}
+                  </datalist>
+                  <div className="timeline-date-grid">
+                    <label>
+                      {t("Color")}
+                      <input
+                        type="color"
+                        value={
+                          /^#[0-9a-f]{6}$/i.test(selected.color ?? "")
+                            ? selected.color
+                            : COLOR_PRESETS[0]
+                        }
+                        onChange={(event) => patchItem({ color: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      {t("Icon")}
+                      <WorldNotionDropdown
+                        value={selected.icon ?? "flag"}
+                        onChange={(event) => patchItem({ icon: event.target.value })}
+                      >
+                        {ICON_PRESETS.map((icon) => (
+                          <option key={icon}>{icon}</option>
+                        ))}
+                      </WorldNotionDropdown>
+                    </label>
+                  </div>
+                  <TimelineTags
+                    key={selected.id}
+                    tags={selected.tags}
+                    onChange={(tags) => patchItem({ tags })}
+                  />
+                  <label>
+                    {t("Lane")}
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder={t("Automatic")}
+                      value={selected.lane ?? ""}
+                      onChange={(event) =>
+                        patchItem({
+                          lane:
+                            event.target.value === ""
+                              ? undefined
+                              : Math.max(0, Math.floor(Number(event.target.value))),
+                        })
+                      }
+                    />
+                  </label>
+                  <button type="button" className="timeline-delete" onClick={deleteSelected}>
+                    <Trash2 size={14} />
+                    {t("Delete")} {t(selected.kind)}
+                  </button>
                 </>
               ) : (
                 <div className="timeline-inspector-empty">

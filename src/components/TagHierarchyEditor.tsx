@@ -18,7 +18,14 @@ type TagNodeItemProps = {
   onAddChild: (parentId: string) => void;
 };
 
-function TagNodeItem({ node, depth, onUpdate, onDelete, onAddChild, locale = "en" }: TagNodeItemProps) {
+function TagNodeItem({
+  node,
+  depth,
+  onUpdate,
+  onDelete,
+  onAddChild,
+  locale = "en",
+}: TagNodeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(node.label);
@@ -47,7 +54,15 @@ function TagNodeItem({ node, depth, onUpdate, onDelete, onAddChild, locale = "en
             type="button"
             className="tag-node-toggle"
             onClick={() => setIsExpanded(!isExpanded)}
-            aria-label={isExpanded ? (locale === "es" ? "Contraer" : "Collapse") : (locale === "es" ? "Expandir" : "Expand")}
+            aria-label={
+              isExpanded
+                ? locale === "es"
+                  ? "Contraer"
+                  : "Collapse"
+                : locale === "es"
+                  ? "Expandir"
+                  : "Expand"
+            }
           >
             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
@@ -59,18 +74,21 @@ function TagNodeItem({ node, depth, onUpdate, onDelete, onAddChild, locale = "en
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder={(locale === "es" ? "Nombre de etiqueta" : "Tag label")}
+              placeholder={locale === "es" ? "Nombre de etiqueta" : "Tag label"}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSave();
-                if (e.key === "Escape") { e.stopPropagation(); handleCancel(); }
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  handleCancel();
+                }
               }}
             />
             <input
               type="color"
               value={color || "#6b7280"}
               onChange={(e) => setColor(e.target.value)}
-              title={(locale === "es" ? "Color de etiqueta" : "Tag color")}
+              title={locale === "es" ? "Color de etiqueta" : "Tag color"}
             />
             <button type="button" onClick={handleSave}>
               {locale === "es" ? "Guardar etiqueta" : "Save tag"}
@@ -89,10 +107,18 @@ function TagNodeItem({ node, depth, onUpdate, onDelete, onAddChild, locale = "en
               <span className="tag-node-path">{node.fullPath}</span>
             </div>
             <div className="tag-node-actions">
-              <button type="button" onClick={() => onAddChild(node.id)} title={locale === "es" ? "Añadir etiqueta hija" : "Add child tag"}>
+              <button
+                type="button"
+                onClick={() => onAddChild(node.id)}
+                title={locale === "es" ? "Añadir etiqueta hija" : "Add child tag"}
+              >
                 <Plus size={14} />
               </button>
-              <button type="button" onClick={() => setIsEditing(true)} title={locale === "es" ? "Editar etiqueta" : "Edit tag"}>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                title={locale === "es" ? "Editar etiqueta" : "Edit tag"}
+              >
                 <Edit2 size={14} />
               </button>
               <button
@@ -111,7 +137,8 @@ function TagNodeItem({ node, depth, onUpdate, onDelete, onAddChild, locale = "en
       {isExpanded && node.children.length > 0 && (
         <div className="tag-node-children">
           {node.children.map((child) => (
-            <TagNodeItem locale={locale}
+            <TagNodeItem
+              locale={locale}
               key={child.id}
               node={child}
               depth={depth + 1}
@@ -172,11 +199,16 @@ export function TagHierarchyEditor({ nodes, onChange, locale = "en" }: TagHierar
   };
 
   const handleDeleteNode = async (nodeId: string) => {
-    const confirmed = await confirmDialog((locale === "es" ? "¿Eliminar esta etiqueta y sus etiquetas hijas?" : "Delete this tag and all its children?"), {
-      title: (locale === "es" ? "Eliminar etiqueta" : "Delete tag"),
-      confirmLabel: (locale === "es" ? "Eliminar" : "Delete"),
-      destructive: true,
-    });
+    const confirmed = await confirmDialog(
+      locale === "es"
+        ? "¿Eliminar esta etiqueta y sus etiquetas hijas?"
+        : "Delete this tag and all its children?",
+      {
+        title: locale === "es" ? "Eliminar etiqueta" : "Delete tag",
+        confirmLabel: locale === "es" ? "Eliminar" : "Delete",
+        destructive: true,
+      },
+    );
     if (confirmed) {
       onChange(deleteNodeFromTree(nodes, nodeId));
     }
@@ -186,7 +218,10 @@ export function TagHierarchyEditor({ nodes, onChange, locale = "en" }: TagHierar
     const parent = findNodeById(nodes, parentId);
     if (!parent) return;
 
-    const childLabel = await promptDialog((locale === "es" ? "Introduce el nombre de la etiqueta:" : "Enter new tag label:"), (locale === "es" ? "Nombre de etiqueta" : "tag label"));
+    const childLabel = await promptDialog(
+      locale === "es" ? "Introduce el nombre de la etiqueta:" : "Enter new tag label:",
+      locale === "es" ? "Nombre de etiqueta" : "tag label",
+    );
     if (!childLabel?.trim()) return;
 
     const newChild: TagHierarchyNode = {
@@ -241,12 +276,15 @@ export function TagHierarchyEditor({ nodes, onChange, locale = "en" }: TagHierar
 
       {nodes.length === 0 ? (
         <p className="taxonomy-placeholder">
-          {locale === "es" ? "No hay etiquetas. Añade una etiqueta raíz o activa la detección automática." : "No tags defined yet. Add a root tag or enable auto-detection."}
+          {locale === "es"
+            ? "No hay etiquetas. Añade una etiqueta raíz o activa la detección automática."
+            : "No tags defined yet. Add a root tag or enable auto-detection."}
         </p>
       ) : (
         <div className="tag-hierarchy-tree">
           {nodes.map((node) => (
-            <TagNodeItem locale={locale}
+            <TagNodeItem
+              locale={locale}
               key={node.id}
               node={node}
               depth={0}

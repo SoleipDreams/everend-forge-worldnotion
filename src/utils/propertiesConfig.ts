@@ -73,7 +73,13 @@ export const SYSTEM_FRONTMATTER_KEYS = new Set(["folder"]);
 // These remain core index data, but relationship wiring is not a document
 // property users should configure. It must stay out of the normal and hidden
 // inspector views alike.
-export const NON_INSPECTOR_PROPERTY_IDS = new Set(["folder", "tags", "parentId", "childrenIds", VISUAL_DOCUMENT_KEY]);
+export const NON_INSPECTOR_PROPERTY_IDS = new Set([
+  "folder",
+  "tags",
+  "parentId",
+  "childrenIds",
+  VISUAL_DOCUMENT_KEY,
+]);
 const BASE_INSPECTOR_PROPERTY_IDS = new Set(["id", "name", "type", "status", "aliases"]);
 
 // System property comment for folder field
@@ -1479,7 +1485,9 @@ export function updateFrontmatterProperties(
     value,
   }));
   if (pathUpdates.some(({ path }) => isReservedVisualDocumentPath(path))) {
-    throw new Error("forgeView is reserved for visual documents and cannot be edited as a property.");
+    throw new Error(
+      "forgeView is reserved for visual documents and cannot be edited as a property.",
+    );
   }
   const currentKeys = Object.keys(parseFrontmatterRaw(frontmatterRaw));
   const topLevelKeys = uniqueInOrder([
@@ -1540,7 +1548,9 @@ export function getFrontmatterPropertyValues(
  * @returns Reordered frontmatter string with folder comment preserved/added
  */
 export function reorderFrontmatter(frontmatterRaw: string, expectedOrder: string[]): string {
-  if (Object.prototype.hasOwnProperty.call(parseFrontmatterRaw(frontmatterRaw), VISUAL_DOCUMENT_KEY)) {
+  if (
+    Object.prototype.hasOwnProperty.call(parseFrontmatterRaw(frontmatterRaw), VISUAL_DOCUMENT_KEY)
+  ) {
     return updateFrontmatterDocument(frontmatterRaw, [], expectedOrder);
   }
   const data = parseFrontmatterRaw(frontmatterRaw);

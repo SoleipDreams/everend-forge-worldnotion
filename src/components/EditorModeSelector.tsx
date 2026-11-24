@@ -33,8 +33,12 @@ export function EditorModeSelector({
         else onWritingModeChange(value);
       }}
     >
-      <option value="processed" disabled={disabled}>{labels.processed}</option>
-      <option value="semi" disabled={disabled}>{labels.semi}</option>
+      <option value="processed" disabled={disabled}>
+        {labels.processed}
+      </option>
+      <option value="semi" disabled={disabled}>
+        {labels.semi}
+      </option>
       <option value="source">{labels.source}</option>
     </WorldNotionDropdown>
   );

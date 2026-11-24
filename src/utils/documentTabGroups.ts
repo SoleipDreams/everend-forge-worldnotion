@@ -93,7 +93,10 @@ export function createGroupFromTabs(
     hash = Math.imul(hash, 16777619);
   }
   return {
-    id: uniqueGroupId(`doc-group-${(hash >>> 0).toString(36)}`, new Set(existingGroups.map((group) => group.id))),
+    id: uniqueGroupId(
+      `doc-group-${(hash >>> 0).toString(36)}`,
+      new Set(existingGroups.map((group) => group.id)),
+    ),
     name: "Group",
     color: DOCUMENT_TAB_GROUP_COLORS[existingGroups.length % DOCUMENT_TAB_GROUP_COLORS.length],
     collapsed: false,
@@ -101,10 +104,7 @@ export function createGroupFromTabs(
   };
 }
 
-export function groupDocumentTabs(
-  groups: DocumentTabGroup[],
-  paths: string[],
-): DocumentTabGroup[] {
+export function groupDocumentTabs(groups: DocumentTabGroup[], paths: string[]): DocumentTabGroup[] {
   const nextGroup = createGroupFromTabs(paths, groups);
   return [...removeTabsFromGroups(groups, paths), nextGroup];
 }
@@ -125,12 +125,11 @@ export function moveDocumentTabInGroups(
   const sourceGroup = groups.find((group) => group.tabPaths.includes(input.path));
   if (sourceGroup && sourceGroup.id === input.targetGroupId) {
     const remaining = sourceGroup.tabPaths.filter((path) => path !== input.path);
-    const targetIndex = input.targetPath
-      ? remaining.indexOf(input.targetPath)
-      : remaining.length;
-    const insertIndex = targetIndex === -1
-      ? remaining.length
-      : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
+    const targetIndex = input.targetPath ? remaining.indexOf(input.targetPath) : remaining.length;
+    const insertIndex =
+      targetIndex === -1
+        ? remaining.length
+        : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
     const tabPaths = [
       ...remaining.slice(0, insertIndex),
       input.path,
@@ -158,9 +157,10 @@ export function moveDocumentTabInGroups(
     const targetIndex = input.targetPath
       ? group.tabPaths.indexOf(input.targetPath)
       : group.tabPaths.length;
-    const insertIndex = targetIndex === -1
-      ? group.tabPaths.length
-      : Math.min(group.tabPaths.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
+    const insertIndex =
+      targetIndex === -1
+        ? group.tabPaths.length
+        : Math.min(group.tabPaths.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
     return {
       ...group,
       collapsed: false,
@@ -192,7 +192,12 @@ function uniqueGroupId(baseId: string, existingIds: Set<string>): string {
 }
 
 function safeId(value: string): string {
-  return value.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "pane";
+  return (
+    value
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase() || "pane"
+  );
 }
 
 export function updateGroupsForPathChange(

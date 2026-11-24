@@ -19,10 +19,7 @@ function makeTab(path: string, overrides: Partial<OpenTab> = {}): OpenTab {
 
 describe("useEditorDocumentController", () => {
   it("updates only the targeted tab and preserves dirty content when changing modes", () => {
-    let tabs = [
-      makeTab("A.md", { rawMarkdown: "# Draft", dirty: true }),
-      makeTab("B.md"),
-    ];
+    let tabs = [makeTab("A.md", { rawMarkdown: "# Draft", dirty: true }), makeTab("B.md")];
     const setTabs = (update: (current: OpenTab[]) => OpenTab[]) => {
       tabs = update(tabs);
     };

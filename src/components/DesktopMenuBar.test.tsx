@@ -10,7 +10,9 @@ describe("DesktopMenuBar", () => {
 
   it("routes the localized menu to the existing app commands", () => {
     const onCommand = vi.fn();
-    render(<DesktopMenuBar locale="es" onHome={vi.fn()} onCommand={onCommand} onEditCommand={vi.fn()} />);
+    render(
+      <DesktopMenuBar locale="es" onHome={vi.fn()} onCommand={onCommand} onEditCommand={vi.fn()} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Inicio y menú de la aplicación" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Archivo" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Guardar" }));
@@ -20,8 +22,20 @@ describe("DesktopMenuBar", () => {
 
   it("restores editor focus before executing an edit command", () => {
     let focused: Element | null = null;
-    const onEditCommand = vi.fn(() => { focused = document.activeElement; });
-    render(<><textarea aria-label="Editor" /><DesktopMenuBar locale="en" onHome={vi.fn()} onCommand={vi.fn()} onEditCommand={onEditCommand} /></>);
+    const onEditCommand = vi.fn(() => {
+      focused = document.activeElement;
+    });
+    render(
+      <>
+        <textarea aria-label="Editor" />
+        <DesktopMenuBar
+          locale="en"
+          onHome={vi.fn()}
+          onCommand={vi.fn()}
+          onEditCommand={onEditCommand}
+        />
+      </>,
+    );
     const editor = screen.getByRole("textbox", { name: "Editor" });
     editor.focus();
     const trigger = screen.getByRole("button", { name: "Home and application menu" });
@@ -36,7 +50,9 @@ describe("DesktopMenuBar", () => {
   });
 
   it("returns Escape focus to the menu trigger", () => {
-    render(<DesktopMenuBar locale="en" onHome={vi.fn()} onCommand={vi.fn()} onEditCommand={vi.fn()} />);
+    render(
+      <DesktopMenuBar locale="en" onHome={vi.fn()} onCommand={vi.fn()} onEditCommand={vi.fn()} />,
+    );
     const trigger = screen.getByRole("button", { name: "Home and application menu" });
     fireEvent.click(trigger);
     fireEvent.keyDown(document, { key: "Escape" });
@@ -47,7 +63,9 @@ describe("DesktopMenuBar", () => {
   it("keeps the browser and macOS Home action direct", () => {
     customChrome.mockReturnValue(false);
     const onHome = vi.fn();
-    render(<DesktopMenuBar locale="en" onHome={onHome} onCommand={vi.fn()} onEditCommand={vi.fn()} />);
+    render(
+      <DesktopMenuBar locale="en" onHome={onHome} onCommand={vi.fn()} onEditCommand={vi.fn()} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Home and application menu" }));
     expect(onHome).toHaveBeenCalledOnce();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();

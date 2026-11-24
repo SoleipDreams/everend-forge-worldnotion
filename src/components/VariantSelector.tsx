@@ -106,9 +106,7 @@ export function VariantSelector({
               {variant.label}
             </option>
           ))}
-          <option value={createVariantActionValue}>
-            ＋ {surfaceText("Create new variant…")}
-          </option>
+          <option value={createVariantActionValue}>＋ {surfaceText("Create new variant…")}</option>
         </WorldNotionDropdown>
         <button
           type="button"

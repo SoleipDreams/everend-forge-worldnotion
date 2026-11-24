@@ -267,12 +267,17 @@ export function indexVault(
   const visualDocuments = markdownFiles.flatMap((file): IndexedVisualDocument[] => {
     const result = readVisualDocument(file.content);
     if (result.status === "none") return [];
-    return [{
-      path: file.relativePath,
-      kind: result.status === "supported" ? result.document.kind : undefined,
-      name: result.status === "supported" && result.name ? result.name : file.relativePath.split("/").pop()?.replace(/\.md$/i, "") ?? file.relativePath,
-      result,
-    }];
+    return [
+      {
+        path: file.relativePath,
+        kind: result.status === "supported" ? result.document.kind : undefined,
+        name:
+          result.status === "supported" && result.name
+            ? result.name
+            : (file.relativePath.split("/").pop()?.replace(/\.md$/i, "") ?? file.relativePath),
+        result,
+      },
+    ];
   });
   findings.push(...entityIndex.findings);
 

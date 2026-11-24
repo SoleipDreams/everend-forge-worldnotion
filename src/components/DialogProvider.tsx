@@ -78,7 +78,13 @@ type PromptState = {
   resolve: (value: string | null) => void;
 };
 
-export function DialogProvider({ children, notifyAlerts = false }: { children: ReactNode; notifyAlerts?: boolean }) {
+export function DialogProvider({
+  children,
+  notifyAlerts = false,
+}: {
+  children: ReactNode;
+  notifyAlerts?: boolean;
+}) {
   const notify = useNotify();
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [alertState, setAlertState] = useState<AlertState | null>(null);
@@ -90,15 +96,22 @@ export function DialogProvider({ children, notifyAlerts = false }: { children: R
     });
   }, []);
 
-  const alertDialog = useCallback<AlertDialogFn>((message, options) => {
-    if (notifyAlerts) {
-      notify({ message, title: options?.title, kind: /required|unique|cannot|could not|failed/i.test(message) ? "warning" : "info" });
-      return Promise.resolve();
-    }
-    return new Promise((resolve) => {
-      setAlertState({ message, options, resolve });
-    });
-  }, [notify, notifyAlerts]);
+  const alertDialog = useCallback<AlertDialogFn>(
+    (message, options) => {
+      if (notifyAlerts) {
+        notify({
+          message,
+          title: options?.title,
+          kind: /required|unique|cannot|could not|failed/i.test(message) ? "warning" : "info",
+        });
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        setAlertState({ message, options, resolve });
+      });
+    },
+    [notify, notifyAlerts],
+  );
 
   const promptDialog = useCallback<PromptDialogFn>((title, placeholder, defaultValue) => {
     return new Promise((resolve) => {

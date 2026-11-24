@@ -159,11 +159,7 @@ export function toggleInlineFormat(view: EditorView, format: InlineFormat): bool
   );
   if (enclosing && selectedRange) {
     const span = formatSpan(enclosing, format);
-    if (
-      span &&
-      selectedRange.from >= span.contentFrom &&
-      selectedRange.to <= span.contentTo
-    ) {
+    if (span && selectedRange.from >= span.contentFrom && selectedRange.to <= span.contentTo) {
       unwrapSelectedFormat(view, span, selectedRange, selection.anchor <= selection.head);
       return true;
     }

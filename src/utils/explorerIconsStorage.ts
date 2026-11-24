@@ -18,14 +18,12 @@ const ICONS_STORAGE_PATH = ".everend/.worldnotion/explorer-icons.json";
  * Loads explorer icons from `.everend/.worldnotion/explorer-icons.json`.
  * Falls back to empty object if file doesn't exist or on parse error.
  */
-export async function loadExplorerIcons(
-  vault: VaultHandle,
-): Promise<ExplorerIconsData> {
+export async function loadExplorerIcons(vault: VaultHandle): Promise<ExplorerIconsData> {
   try {
     if (vault.kind === "browser") {
       return await loadExplorerIconsBrowser(vault.root);
     }
-    
+
     const result = await invoke<{ ok: boolean; content?: string; message?: string }>(
       "read_explorer_icons",
       { vaultPath: vault.rootPath },
@@ -57,10 +55,10 @@ export async function saveExplorerIcons(
     }
 
     const content = JSON.stringify(icons, null, 2);
-    const result = await invoke<{ ok: boolean; message?: string }>(
-      "save_explorer_icons",
-      { vaultPath: vault.rootPath, content },
-    );
+    const result = await invoke<{ ok: boolean; message?: string }>("save_explorer_icons", {
+      vaultPath: vault.rootPath,
+      content,
+    });
 
     if (!result.ok) {
       throw new Error(result.message || "Failed to save explorer icons");
@@ -74,9 +72,7 @@ export async function saveExplorerIcons(
 /**
  * Browser implementation: reads explorer icons from FileSystem Access API.
  */
-async function loadExplorerIconsBrowser(
-  root: BrowserDirectoryHandle,
-): Promise<ExplorerIconsData> {
+async function loadExplorerIconsBrowser(root: BrowserDirectoryHandle): Promise<ExplorerIconsData> {
   try {
     const fileHandle = await getBrowserFile(root, ICONS_STORAGE_PATH, false);
     const file = await fileHandle.getFile();

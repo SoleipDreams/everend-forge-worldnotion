@@ -8,11 +8,13 @@ import {
 } from "../utils/workspaceLayout";
 import { DockWorkspace } from "./DockWorkspace";
 
-function renderDockWorkspace(options: {
-  emptyDocuments?: boolean;
-  paths?: string[];
-  documentTabGroups?: DocumentTabGroup[];
-} = {}) {
+function renderDockWorkspace(
+  options: {
+    emptyDocuments?: boolean;
+    paths?: string[];
+    documentTabGroups?: DocumentTabGroup[];
+  } = {},
+) {
   const documentTabs = (options.emptyDocuments ? [] : (options.paths ?? ["A.md", "B.md"])).map(
     (path) => ({
       path,
@@ -61,21 +63,57 @@ function mockDockGroupRects() {
       toJSON: () => rect,
     }));
     const bar = group.querySelector<HTMLElement>(".dock-tab-bar");
-    const barRect = { left: rect.left, top: 0, right: rect.right, bottom: 40, width: rect.width, height: 40 };
-    if (bar) bar.getBoundingClientRect = vi.fn(() => ({ ...barRect, x: barRect.left, y: barRect.top, toJSON: () => barRect }));
+    const barRect = {
+      left: rect.left,
+      top: 0,
+      right: rect.right,
+      bottom: 40,
+      width: rect.width,
+      height: 40,
+    };
+    if (bar)
+      bar.getBoundingClientRect = vi.fn(() => ({
+        ...barRect,
+        x: barRect.left,
+        y: barRect.top,
+        toJSON: () => barRect,
+      }));
     const content = group.querySelector<HTMLElement>(".dock-group-content");
-    const contentRect = { left: rect.left, top: 40, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height - 40 };
-    if (content) content.getBoundingClientRect = vi.fn(() => ({ ...contentRect, x: contentRect.left, y: contentRect.top, toJSON: () => contentRect }));
+    const contentRect = {
+      left: rect.left,
+      top: 40,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height - 40,
+    };
+    if (content)
+      content.getBoundingClientRect = vi.fn(() => ({
+        ...contentRect,
+        x: contentRect.left,
+        y: contentRect.top,
+        toJSON: () => contentRect,
+      }));
 
     [...group.querySelectorAll<HTMLElement>(".dock-tab-document")].forEach((tab, index) => {
       const isGrouped = Boolean(tab.closest(".dock-document-tab-group"));
       const left = isGrouped ? 310 + index * 90 : 240 + index * 100;
       const tabRect = { left, top: 2, right: left + 92, bottom: 38, width: 92, height: 36 };
-      tab.getBoundingClientRect = vi.fn(() => ({ ...tabRect, x: tabRect.left, y: tabRect.top, toJSON: () => tabRect }));
+      tab.getBoundingClientRect = vi.fn(() => ({
+        ...tabRect,
+        x: tabRect.left,
+        y: tabRect.top,
+        toJSON: () => tabRect,
+      }));
     });
     [...group.querySelectorAll<HTMLElement>(".dock-document-tab-group")].forEach((tabGroup) => {
       const groupRect = { left: 230, top: 1, right: 390, bottom: 39, width: 160, height: 38 };
-      tabGroup.getBoundingClientRect = vi.fn(() => ({ ...groupRect, x: groupRect.left, y: groupRect.top, toJSON: () => groupRect }));
+      tabGroup.getBoundingClientRect = vi.fn(() => ({
+        ...groupRect,
+        x: groupRect.left,
+        y: groupRect.top,
+        toJSON: () => groupRect,
+      }));
     });
   }
 }
@@ -186,7 +224,13 @@ describe("DockWorkspace", () => {
     const { handlers } = renderDockWorkspace({
       paths: ["A.md", "B.md", "C.md"],
       documentTabGroups: [
-        { id: "lore", name: "Lore", color: "#4f8cff", collapsed: false, tabPaths: ["A.md", "B.md"] },
+        {
+          id: "lore",
+          name: "Lore",
+          color: "#4f8cff",
+          collapsed: false,
+          tabPaths: ["A.md", "B.md"],
+        },
       ],
     });
     mockDockGroupRects();

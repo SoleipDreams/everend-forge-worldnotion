@@ -1,6 +1,7 @@
 import packageJson from "../package.json";
 
-const FEEDBACK_URL = import.meta.env.VITE_FEEDBACK_URL || "https://everend-forge-feedback.pages.dev/new";
+const FEEDBACK_URL =
+  import.meta.env.VITE_FEEDBACK_URL || "https://everend-forge-feedback.pages.dev/new";
 
 export function feedbackUrl(screen: string) {
   const url = new URL(FEEDBACK_URL);

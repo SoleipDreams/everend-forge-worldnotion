@@ -71,9 +71,7 @@ export function EditorDocumentSurface({
         }
       >
         {banner ? <div className="editor-banner-column">{banner}</div> : null}
-        <div className="editor-document-column">
-          {children}
-        </div>
+        <div className="editor-document-column">{children}</div>
         {settings.outlineGuideEnabled ? outline : null}
       </div>
       {visualAction || showModeSelector || showSourceViewSelector ? (

@@ -90,7 +90,9 @@ export function ImageAssetCard({
       `${usageLabels.pathBranching}: ${usage.pathBranchingReferenceCount}${variantUsage}`,
     );
   }
-  const usageSummary = usageSummaryParts.length ? usageSummaryParts.join(" · ") : usageLabels.unused;
+  const usageSummary = usageSummaryParts.length
+    ? usageSummaryParts.join(" · ")
+    : usageLabels.unused;
 
   return (
     <article
@@ -148,11 +150,7 @@ export function ImageAssetCard({
               <>
                 <span className="image-asset-card-usage-heading">{usageLabels.pathBranching}</span>
                 {usage.pathBranchingLocations.map((location) => (
-                  <span
-                    key={location}
-                    className="image-asset-card-usage-location"
-                    title={location}
-                  >
+                  <span key={location} className="image-asset-card-usage-location" title={location}>
                     {location}
                   </span>
                 ))}

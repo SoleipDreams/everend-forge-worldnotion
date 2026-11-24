@@ -73,7 +73,8 @@ function semanticWikilinkEditFilter(): Extension {
     const labelOffset = nextLabel ? 2 + target.length + 1 : 0;
     if (isFormat && nextLabel) {
       const selection = transaction.state.selection.main;
-      const mapPosition = (position: number) => element.from + labelOffset + position - visible.from;
+      const mapPosition = (position: number) =>
+        element.from + labelOffset + position - visible.from;
       return {
         changes: { from: element.from, to: element.to, insert: replacement },
         selection: {

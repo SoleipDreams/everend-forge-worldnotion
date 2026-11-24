@@ -25,7 +25,9 @@ function listFromFrontmatter(value: unknown, fallback: string[] = []): string[] 
   return fallback;
 }
 
-function extractVariants(data: Record<string, unknown>): import("../domain.js").Variant[] | undefined {
+function extractVariants(
+  data: Record<string, unknown>,
+): import("../domain.js").Variant[] | undefined {
   const raw = data.variants;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const variants: import("../domain.js").Variant[] = [];
@@ -98,7 +100,14 @@ export function selectLiveEntity(
 ): Entity | undefined {
   const indexEntity = index?.entities.find((entity) => entity.path === selectedPath);
   const activeTabForSelected = tabs.find((tab) => tab.path === selectedPath);
-  if (hasVisualDocumentMarker(activeTabForSelected?.rawMarkdown ?? index?.markdownFiles.find(file => file.relativePath === selectedPath)?.content ?? "")) return undefined;
+  if (
+    hasVisualDocumentMarker(
+      activeTabForSelected?.rawMarkdown ??
+        index?.markdownFiles.find((file) => file.relativePath === selectedPath)?.content ??
+        "",
+    )
+  )
+    return undefined;
 
   if (!activeTabForSelected) {
     return indexEntity;

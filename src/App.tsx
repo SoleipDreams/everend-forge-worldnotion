@@ -85,7 +85,12 @@ import { FontSelector } from "./components/FontSelector";
 import { InputDialog } from "./components/InputDialog";
 import { InheritAppearanceDialog } from "./components/InheritAppearanceDialog";
 import { useToast, ToastProvider } from "./components/ToastProvider";
-import { NotificationProvider, NotificationBell, useNotificationMessage, useNotify } from "./notifications";
+import {
+  NotificationProvider,
+  NotificationBell,
+  useNotificationMessage,
+  useNotify,
+} from "./notifications";
 import { useAppDialogs, DialogProvider } from "./components/DialogProvider";
 import { useDismissableMenu } from "./hooks/useDismissableMenu";
 import { useInputDialog } from "./hooks/useInputDialog";
@@ -620,7 +625,10 @@ function WorldnotionWorkbench({
   const interfaceLocale = resolveInterfaceLocale(
     suiteChrome?.suiteSettings?.localePreference ?? settings.localePreference ?? "system",
   );
-  useEffect(() => onInterfaceLocaleChange(interfaceLocale), [interfaceLocale, onInterfaceLocaleChange]);
+  useEffect(
+    () => onInterfaceLocaleChange(interfaceLocale),
+    [interfaceLocale, onInterfaceLocaleChange],
+  );
   const editorModeText = worldnotionEditorModeCopy(interfaceLocale);
   const surfaceText = (text: string) => worldnotionSurfaceText(interfaceLocale, text);
   const activeTheme = (suiteChrome?.suiteSettings?.style ?? settings.theme) as ThemeId;
@@ -678,10 +686,14 @@ function WorldnotionWorkbench({
   const [activeWorkspacePreset, setActiveWorkspacePreset] =
     useState<ActiveWorkspacePreset>("default");
   const [showSettings, setShowSettings] = useState(false);
-  useEffect(() => suiteChrome?.registerSettingsOpener?.((section) => {
-    if (section) setSettingsInitialSection(section);
-    setShowSettings(true);
-  }), [suiteChrome?.registerSettingsOpener]);
+  useEffect(
+    () =>
+      suiteChrome?.registerSettingsOpener?.((section) => {
+        if (section) setSettingsInitialSection(section);
+        setShowSettings(true);
+      }),
+    [suiteChrome?.registerSettingsOpener],
+  );
   const [settingsMounted, setSettingsMounted] = useState(false);
   useEffect(() => {
     if (showSettings) setSettingsMounted(true);
@@ -1094,10 +1106,26 @@ function WorldnotionWorkbench({
     if (uiRoot.current)
       uiRoot.current.dataset.theme = suiteChrome?.suiteSettings?.style ?? settings.theme;
     if (uiRoot.current)
-      uiRoot.current.dataset.ambientBackground = String(suiteChrome?.suiteSettings?.ambientBackground ?? settings.ambientBackground !== false);
-    if (uiRoot.current) uiRoot.current.dataset.backgroundScene = normalizeBackgroundScene(suiteChrome?.suiteSettings?.backgroundScene ?? settings.backgroundScene);
+      uiRoot.current.dataset.ambientBackground = String(
+        suiteChrome?.suiteSettings?.ambientBackground ?? settings.ambientBackground !== false,
+      );
+    if (uiRoot.current)
+      uiRoot.current.dataset.backgroundScene = normalizeBackgroundScene(
+        suiteChrome?.suiteSettings?.backgroundScene ?? settings.backgroundScene,
+      );
     if (!suiteChrome) document.documentElement.dataset.theme = settings.theme;
-    if (uiRoot.current) { if (suiteChrome?.suiteSettings) uiRoot.current.style.removeProperty("--ef-primary-font"); else uiRoot.current.style.setProperty("--ef-primary-font", ({sans:"Inter, system-ui, sans-serif",serif:"Georgia, serif",humanist:"Atkinson Hyperlegible, Trebuchet MS, sans-serif"}[settings.interfaceFont ?? "sans"])); }
+    if (uiRoot.current) {
+      if (suiteChrome?.suiteSettings) uiRoot.current.style.removeProperty("--ef-primary-font");
+      else
+        uiRoot.current.style.setProperty(
+          "--ef-primary-font",
+          {
+            sans: "Inter, system-ui, sans-serif",
+            serif: "Georgia, serif",
+            humanist: "Atkinson Hyperlegible, Trebuchet MS, sans-serif",
+          }[settings.interfaceFont ?? "sans"],
+        );
+    }
     saveSettings(settings);
   }, [settings, suiteChrome, uiRoot]);
 
@@ -1317,14 +1345,26 @@ function WorldnotionWorkbench({
     if (!suiteChrome?.settingsHost || !index?.rootPath) return;
     const root = index.rootPath;
     const refresh = (event: Event) => {
-      if ((event as CustomEvent<{path:string}>).detail?.path !== root) return;
-      void readUniverseProfileSource(root).then(source => { const profile = source ? JSON.parse(source) as UniverseProfile : undefined; setIndex(current => current?.rootPath === root ? {...current, universeProfile:profile} : current); }).catch(error => console.warn("Could not refresh universe profile.", error));
+      if ((event as CustomEvent<{ path: string }>).detail?.path !== root) return;
+      void readUniverseProfileSource(root)
+        .then((source) => {
+          const profile = source ? (JSON.parse(source) as UniverseProfile) : undefined;
+          setIndex((current) =>
+            current?.rootPath === root ? { ...current, universeProfile: profile } : current,
+          );
+        })
+        .catch((error) => console.warn("Could not refresh universe profile.", error));
     };
-    window.addEventListener("everend-forge:profile-saved",refresh);
-    return () => window.removeEventListener("everend-forge:profile-saved",refresh);
+    window.addEventListener("everend-forge:profile-saved", refresh);
+    return () => window.removeEventListener("everend-forge:profile-saved", refresh);
   }, [suiteChrome?.settingsHost !== undefined, index?.rootPath]);
   const universeSettings = useMemo(() => {
-    if (!index || (suiteChrome?.sharedUniversePath && index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/"))) return undefined;
+    if (
+      !index ||
+      (suiteChrome?.sharedUniversePath &&
+        index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/"))
+    )
+      return undefined;
     return {
       name: universeDisplayName(index),
       rootPath: index.rootPath,
@@ -2351,16 +2391,11 @@ function WorldnotionWorkbench({
           ? ` También se guardarán los cambios sin guardar de ${dirtyDocuments} notas abiertas.`
           : ` Unsaved changes in ${dirtyDocuments} open notes will also be saved.`
         : "";
-      const confirmed = await confirmDialog(
-        `${summary}${unsavedNote}`,
-        {
-          title:
-            interfaceLocale === "es"
-              ? "Revincular referencias de imagen"
-              : "Relink image references",
-          confirmLabel: interfaceLocale === "es" ? "Revincular" : "Relink",
-        },
-      );
+      const confirmed = await confirmDialog(`${summary}${unsavedNote}`, {
+        title:
+          interfaceLocale === "es" ? "Revincular referencias de imagen" : "Relink image references",
+        confirmLabel: interfaceLocale === "es" ? "Revincular" : "Relink",
+      });
       if (!confirmed) return;
 
       const vault = vaultHandleFor(index.rootPath, browserRoot);
@@ -2402,6 +2437,7 @@ function WorldnotionWorkbench({
         if (rollbackErrors.length) {
           throw new Error(
             `${error instanceof Error ? error.message : String(error)}. Some notes could not be restored: ${rollbackErrors.join("; ")}`,
+            { cause: error },
           );
         }
         throw error;
@@ -2766,7 +2802,11 @@ function WorldnotionWorkbench({
 
   async function performUniverseProfileSave(profile: UniverseProfile) {
     if (!index) throw new Error("Open a universe before saving its profile.");
-    if (suiteChrome?.sharedUniversePath && index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/")) throw new Error("The selected universe is still loading.");
+    if (
+      suiteChrome?.sharedUniversePath &&
+      index.rootPath.replace(/\\/g, "/") !== suiteChrome.sharedUniversePath.replace(/\\/g, "/")
+    )
+      throw new Error("The selected universe is still loading.");
     const locales = normalizeLocaleList(
       profile.localization?.primaryLocale ?? navigator.language ?? "en",
       profile.localization?.locales ?? [],
@@ -2774,13 +2814,29 @@ function WorldnotionWorkbench({
     const patch = {
       name: profile.name?.trim() || undefined,
       icon: profile.icon,
-      ...(JSON.stringify(profile.localization) !== JSON.stringify(index.universeProfile?.localization) && profile.localization ? { localization: {
-            primaryLocale: locales[0],
-            locales,
-            localeNames: normalizeLocaleNames(profile.localization.localeNames, locales),
-          } } : {}),
+      ...(JSON.stringify(profile.localization) !==
+        JSON.stringify(index.universeProfile?.localization) && profile.localization
+        ? {
+            localization: {
+              primaryLocale: locales[0],
+              locales,
+              localeNames: normalizeLocaleNames(profile.localization.localeNames, locales),
+            },
+          }
+        : {}),
     };
-    const latestSource = browserRoot ? await (async () => { try { return await (await (await getBrowserFile(browserRoot, ".everend/universe.json")).getFile()).text(); } catch (error) { if (error instanceof DOMException && error.name === "NotFoundError") return undefined; throw error; } })() : await readUniverseProfileSource(index.rootPath);
+    const latestSource = browserRoot
+      ? await (async () => {
+          try {
+            return await (
+              await (await getBrowserFile(browserRoot, ".everend/universe.json")).getFile()
+            ).text();
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "NotFoundError") return undefined;
+            throw error;
+          }
+        })()
+      : await readUniverseProfileSource(index.rootPath);
     const normalizedProfile = mergeUniverseProfile(latestSource, patch) as UniverseProfile;
     const content = `${JSON.stringify(normalizedProfile, null, 2)}\n`;
     try {
@@ -2847,7 +2903,9 @@ function WorldnotionWorkbench({
       await reindexUniverseMetadata();
       showToast("Properties configuration saved.", "success");
       suiteChrome?.onCanonSaved?.(index.rootPath);
-      const pathBranchingTypes = new Set(normalizedProperties.entityTypes.definitions.map((type) => type.id));
+      const pathBranchingTypes = new Set(
+        normalizedProperties.entityTypes.definitions.map((type) => type.id),
+      );
       if (pathBranchingTypes.has("character") && pathBranchingTypes.has("location")) {
         reportLearning("pathbranching-properties-ready");
       }
@@ -3216,7 +3274,8 @@ function WorldnotionWorkbench({
     setLoadState("ready");
     setErrorMessage("");
     notify({
-      message: "Esta carpeta será la raíz de tu universo. Todas las aplicaciones de Everend Forge trabajarán sobre ella.",
+      message:
+        "Esta carpeta será la raíz de tu universo. Todas las aplicaciones de Everend Forge trabajarán sobre ella.",
       kind: "success",
       silent: true,
       unread: false,
@@ -3461,28 +3520,73 @@ function WorldnotionWorkbench({
     openDocument(nextIndex, path);
     setSettings((current) => recordFileAccessInSettings(current, nextIndex.rootPath, path));
   }
-  useEffect(() => suiteChrome?.registerCanonEntityOpener?.(async target => {
-    if (!index) return false;
-    const entity = index.entities.find(item => item.id === target.entityId);
-    if (!entity) { showToast(interfaceLocale === 'es' ? 'No se encontró el personaje en este universo.' : 'Character not found in this universe.', 'warning'); return true; }
-    const currentRaw = tabsRef.current.find(tab => tab.path === entity.path)?.rawMarkdown ?? entity.file.content;
-    if (target.variantId && !readNoteVariants(parseFrontmatterRaw(rawToEditorParts(currentRaw).frontmatterRaw))[target.variantId]) {
-      showToast(interfaceLocale === 'es' ? 'La variante seleccionada ya no existe. Actualiza la ficha antes de editarla.' : 'The selected variant no longer exists. Refresh the sheet before editing it.', 'warning');
-      return true;
-    }
-    openOrCreateTab(entity.path);
-    setSelectedPath(entity.path);
-    setExplorerSelection([]);
-    setView('workspace');
-    if (!layoutHasPanel(workspaceLayout, 'inspector')) toggleDockPanel('inspector');
-    setCanonFocusPropertyId(target.propertyId);
-    setSettings(current => {
-      const session = current.sessions[index.rootPath] ?? { rootPath: index.rootPath, tabs: [] };
-      return { ...current, sessions: { ...current.sessions, [index.rootPath]: { ...session, variantSelections: { ...session.variantSelections, [entity.path]: target.variantId ?? BASE_VARIANT_ID } } } };
-    });
-    return true;
-  }), [suiteChrome?.registerCanonEntityOpener, index, tabs, workspaceLayout]);
-  useEffect(() => suiteChrome?.registerCanonPropertiesOpener?.(() => { openSettingsAt('utils', 'blank'); }), [suiteChrome?.registerCanonPropertiesOpener, index]);
+  useEffect(
+    () =>
+      suiteChrome?.registerCanonEntityOpener?.(async (target) => {
+        if (!index) return false;
+        const entity = index.entities.find((item) => item.id === target.entityId);
+        if (!entity) {
+          showToast(
+            interfaceLocale === "es"
+              ? "No se encontró el personaje en este universo."
+              : "Character not found in this universe.",
+            "warning",
+          );
+          return true;
+        }
+        const currentRaw =
+          tabsRef.current.find((tab) => tab.path === entity.path)?.rawMarkdown ??
+          entity.file.content;
+        if (
+          target.variantId &&
+          !readNoteVariants(parseFrontmatterRaw(rawToEditorParts(currentRaw).frontmatterRaw))[
+            target.variantId
+          ]
+        ) {
+          showToast(
+            interfaceLocale === "es"
+              ? "La variante seleccionada ya no existe. Actualiza la ficha antes de editarla."
+              : "The selected variant no longer exists. Refresh the sheet before editing it.",
+            "warning",
+          );
+          return true;
+        }
+        openOrCreateTab(entity.path);
+        setSelectedPath(entity.path);
+        setExplorerSelection([]);
+        setView("workspace");
+        if (!layoutHasPanel(workspaceLayout, "inspector")) toggleDockPanel("inspector");
+        setCanonFocusPropertyId(target.propertyId);
+        setSettings((current) => {
+          const session = current.sessions[index.rootPath] ?? {
+            rootPath: index.rootPath,
+            tabs: [],
+          };
+          return {
+            ...current,
+            sessions: {
+              ...current.sessions,
+              [index.rootPath]: {
+                ...session,
+                variantSelections: {
+                  ...session.variantSelections,
+                  [entity.path]: target.variantId ?? BASE_VARIANT_ID,
+                },
+              },
+            },
+          };
+        });
+        return true;
+      }),
+    [suiteChrome?.registerCanonEntityOpener, index, tabs, workspaceLayout],
+  );
+  useEffect(
+    () =>
+      suiteChrome?.registerCanonPropertiesOpener?.(() => {
+        openSettingsAt("utils", "blank");
+      }),
+    [suiteChrome?.registerCanonPropertiesOpener, index],
+  );
 
   const resolveWikilink = (label: string) => resolveWikilinkInIndex(index, label);
 
@@ -3497,10 +3601,7 @@ function WorldnotionWorkbench({
       const addedResolvedLink = Array.from(
         nextMarkdown.matchAll(/\[\[([^\]]+)\]\]/g),
         (match) => match[1],
-      ).some(
-        (link) =>
-          !oldLinks.has(link) && resolveWikilink(link.split("|")[0].split("#")[0]),
-      );
+      ).some((link) => !oldLinks.has(link) && resolveWikilink(link.split("|")[0].split("#")[0]));
       if (addedResolvedLink) reportLearning("reference-added", path);
     },
   });
@@ -3518,8 +3619,8 @@ function WorldnotionWorkbench({
     if (typeof frontmatter.type === "string") {
       reportLearning(`entity-type-saved:${frontmatter.type.toLowerCase()}`, path);
     }
-    const containsResolvedReference = Array.from(content.matchAll(/\[\[([^\]]+)\]\]/g)).some((match) =>
-      Boolean(resolveWikilink(match[1].split("|")[0].split("#")[0].trim())),
+    const containsResolvedReference = Array.from(content.matchAll(/\[\[([^\]]+)\]\]/g)).some(
+      (match) => Boolean(resolveWikilink(match[1].split("|")[0].split("#")[0].trim())),
     );
     if (containsResolvedReference) reportLearning("reference-saved", path);
   }
@@ -3598,12 +3699,7 @@ function WorldnotionWorkbench({
               propertiesConfig,
               typeId,
             )
-          : removeFrontmatterProperty(
-              parts.frontmatterRaw,
-              propertyId,
-              propertiesConfig,
-              typeId,
-            );
+          : removeFrontmatterProperty(parts.frontmatterRaw, propertyId, propertiesConfig, typeId);
     const nextMarkdown = joinMarkdown(nextYaml, parts.bodyMarkdown);
     if (nextMarkdown === tab.rawMarkdown) return;
 
@@ -3678,12 +3774,7 @@ function WorldnotionWorkbench({
           }),
         },
       };
-      propertiesConfig = updateEntityTypePresentation(
-        propertiesConfig,
-        typeId,
-        role,
-        propertyId,
-      );
+      propertiesConfig = updateEntityTypePresentation(propertiesConfig, typeId, role, propertyId);
       await savePropertiesConfig(propertiesConfig);
     }
 
@@ -4234,7 +4325,8 @@ function WorldnotionWorkbench({
   function updateActiveFrontmatter(frontmatterRaw: string, options?: { persist?: boolean }) {
     if (!activeTabPath) return;
     const previous = tabsRef.current.find((tab) => tab.path === activeTabPath);
-    if (previous && rawToEditorParts(previous.rawMarkdown).frontmatterRaw !== frontmatterRaw) reportLearning("property-edited", activeTabPath);
+    if (previous && rawToEditorParts(previous.rawMarkdown).frontmatterRaw !== frontmatterRaw)
+      reportLearning("property-edited", activeTabPath);
     let nextContent: string | undefined;
     setTabs((current) =>
       current.map((tab) => {
@@ -4738,10 +4830,7 @@ function WorldnotionWorkbench({
         tabs: result.tabs,
         activeTabPath: result.activePath,
         documentTabGroups: removeTabFromGroups(current.documentTabGroups, path),
-        workspaceLayout: closeDockLayoutTab(
-          current.workspaceLayout,
-          documentDockTabId(path),
-        ),
+        workspaceLayout: closeDockLayoutTab(current.workspaceLayout, documentDockTabId(path)),
       };
     });
     if (nextActivePath !== activeTabPath) {
@@ -4892,9 +4981,10 @@ function WorldnotionWorkbench({
     const targetIndex = input.targetPath
       ? remaining.findIndex((tab) => tab.path === input.targetPath)
       : remaining.length;
-    const insertIndex = targetIndex === -1
-      ? remaining.length
-      : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
+    const insertIndex =
+      targetIndex === -1
+        ? remaining.length
+        : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
     return [...remaining.slice(0, insertIndex), movingTab, ...remaining.slice(insertIndex)];
   }
 
@@ -4916,9 +5006,10 @@ function WorldnotionWorkbench({
           : input.targetGroupId
             ? documentGroupIdForPath(
                 current.workspaceLayout,
-                current.documentTabGroups.find((group) => group.id === input.targetGroupId)?.tabPaths[0] ?? "",
+                current.documentTabGroups.find((group) => group.id === input.targetGroupId)
+                  ?.tabPaths[0] ?? "",
               )
-          : sourcePaneId) ??
+            : sourcePaneId) ??
         sourcePaneId;
       const dockPosition = input.dockPosition ?? "center";
       const nextLayout = moveDockTab(current.workspaceLayout, {
@@ -4964,7 +5055,10 @@ function WorldnotionWorkbench({
     updateWorkspaceDocumentState((current) => ({
       ...current,
       documentTabGroups: normalizeDocumentTabGroups(
-        [...removeTabFromGroups(current.documentTabGroups, path), createGroupFromTab(path, current.documentTabGroups)],
+        [
+          ...removeTabFromGroups(current.documentTabGroups, path),
+          createGroupFromTab(path, current.documentTabGroups),
+        ],
         current.tabs,
         current.workspaceLayout,
       ),
@@ -5170,9 +5264,8 @@ function WorldnotionWorkbench({
         break;
       case "paragraphSpacing":
         if (editorViewRef.current) {
-          const { paragraphLinePositions, paragraphSpacingEffect } = await import(
-            "./utils/paragraphSpacing"
-          );
+          const { paragraphLinePositions, paragraphSpacingEffect } =
+            await import("./utils/paragraphSpacing");
           const view = editorViewRef.current;
           const position = paragraphLinePositions(view.state.doc, view.state.selection.main.head);
           if (position) {
@@ -5500,13 +5593,18 @@ function WorldnotionWorkbench({
   );
 
   useLearningAdapter(suiteChrome?.learning, {
-    introduction: worldnotionIntroduction, lessons: worldnotionLessons,
-    available: Boolean(index && loadState !== "loading"), busy: showFeedback,
-    section: learningSection, subjectId: activeTabPath,
-    openSection: section => {
+    introduction: worldnotionIntroduction,
+    lessons: worldnotionLessons,
+    available: Boolean(index && loadState !== "loading"),
+    busy: showFeedback,
+    section: learningSection,
+    subjectId: activeTabPath,
+    openSection: (section) => {
       if (!index) return;
       if (section === "property-schema") {
-        const configuredTypes = new Set(index.propertiesConfig?.entityTypes.definitions.map((type) => type.id) ?? []);
+        const configuredTypes = new Set(
+          index.propertiesConfig?.entityTypes.definitions.map((type) => type.id) ?? [],
+        );
         if (configuredTypes.has("character") && configuredTypes.has("location")) {
           reportLearning("pathbranching-properties-ready");
         }
@@ -5515,7 +5613,8 @@ function WorldnotionWorkbench({
       }
       setShowSettings(false);
       setView("workspace");
-      const kind = section === "properties" ? "inspector" : section === "references" ? "links" : "explorer";
+      const kind =
+        section === "properties" ? "inspector" : section === "references" ? "links" : "explorer";
       if (!layoutHasPanel(workspaceLayout, kind)) toggleDockPanel(kind);
       setLearningSection(section);
     },
@@ -5561,38 +5660,42 @@ function WorldnotionWorkbench({
     </div>
   );
 
-
-  const renderedSettings = <>        {showSettings || settingsMounted || suiteChrome?.settingsHost ? (
-          <Suspense fallback={<LazyPanelFallback label="Loading settings..." />}>
-            <SettingsModal
-              key={index?.rootPath ?? "application"}
-              hidden={!showSettings}
-              settings={settings}
-              universe={universeSettings}
-              initialSection={settingsInitialSection}
-              initialPropertiesMode={settingsInitialPropertiesMode}
-              onChange={handleSettingsChange}
-              onSaveUniverseProfile={saveUniverseProfile}
-              onSavePropertiesConfig={savePropertiesConfig}
-              onInitializePropertiesWorkspace={initializeUniverseProperties}
-              onScanFrontmatterNormalization={scanFrontmatterNormalization}
-              onApplyFrontmatterNormalization={applyFrontmatterNormalization}
-              onScanPropertyNormalization={scanPropertyNormalization}
-              onApplyPropertyNormalization={applyFrontmatterNormalization}
-              onScanPropertyStructureMigration={scanPropertyStructureMigration}
-              onApplyPropertyStructureMigration={applyPropertyStructureMigration}
-              onClose={() => setShowSettings(false)}
-              onRevealUniverse={() => {
-                void revealExplorerPath();
-              }}
-              onOpenUniverseNote={openUniverseNote}
-              onResetOnboarding={restartWorldNotionOnboarding}
-              revealUniverseLabel={labels.revealUniverse}
-              suiteSettings={suiteChrome?.suiteSettings}
-              settingsHost={suiteChrome?.settingsHost}
-            />
-          </Suspense>
-        ) : null}</>;
+  const renderedSettings = (
+    <>
+      {" "}
+      {showSettings || settingsMounted || suiteChrome?.settingsHost ? (
+        <Suspense fallback={<LazyPanelFallback label="Loading settings..." />}>
+          <SettingsModal
+            key={index?.rootPath ?? "application"}
+            hidden={!showSettings}
+            settings={settings}
+            universe={universeSettings}
+            initialSection={settingsInitialSection}
+            initialPropertiesMode={settingsInitialPropertiesMode}
+            onChange={handleSettingsChange}
+            onSaveUniverseProfile={saveUniverseProfile}
+            onSavePropertiesConfig={savePropertiesConfig}
+            onInitializePropertiesWorkspace={initializeUniverseProperties}
+            onScanFrontmatterNormalization={scanFrontmatterNormalization}
+            onApplyFrontmatterNormalization={applyFrontmatterNormalization}
+            onScanPropertyNormalization={scanPropertyNormalization}
+            onApplyPropertyNormalization={applyFrontmatterNormalization}
+            onScanPropertyStructureMigration={scanPropertyStructureMigration}
+            onApplyPropertyStructureMigration={applyPropertyStructureMigration}
+            onClose={() => setShowSettings(false)}
+            onRevealUniverse={() => {
+              void revealExplorerPath();
+            }}
+            onOpenUniverseNote={openUniverseNote}
+            onResetOnboarding={restartWorldNotionOnboarding}
+            revealUniverseLabel={labels.revealUniverse}
+            suiteSettings={suiteChrome?.suiteSettings}
+            settingsHost={suiteChrome?.settingsHost}
+          />
+        </Suspense>
+      ) : null}
+    </>
+  );
 
   if (!suiteChrome && !initialReady) {
     return (
@@ -5618,7 +5721,6 @@ function WorldnotionWorkbench({
       </>
     );
   }
-
 
   if (view === "home" || !index) {
     return (
@@ -5750,7 +5852,6 @@ function WorldnotionWorkbench({
                 <span>Templates</span>
               </div>
             </div>
-
 
             {loadState === "loading" ? (
               <div className="loading-banner">Loading universe...</div>
@@ -6260,7 +6361,7 @@ function WorldnotionWorkbench({
     const isJsonDocument = isJsonPath(documentTab.path);
     const isXmlDocument = isXmlPath(documentTab.path);
     const sourceView = settings.editor.showModeTabs
-      ? documentTab.sourceView ?? (isJsonDocument ? "json" : isXmlDocument ? "xml" : "raw")
+      ? (documentTab.sourceView ?? (isJsonDocument ? "json" : isXmlDocument ? "xml" : "raw"))
       : isJsonDocument
         ? "json"
         : isXmlDocument
@@ -6334,7 +6435,7 @@ function WorldnotionWorkbench({
           typeLabel={documentPresentation.type.label}
           hasCoverRole={Boolean(
             documentPresentation.coverPropertyId ||
-              (canWrite && documentPresentation.canStartBanner),
+            (canWrite && documentPresentation.canStartBanner),
           )}
           coverPath={documentPresentation.coverPath}
           imageLabels={
@@ -6390,7 +6491,13 @@ function WorldnotionWorkbench({
         key={`${index?.rootPath}:${documentTab.path}`}
         document={documentTab}
         settings={settings.editor}
-        shellRef={documentTab.path === activeTabPath ? element => { editorShellRef.current = element; } : undefined}
+        shellRef={
+          documentTab.path === activeTabPath
+            ? (element) => {
+                editorShellRef.current = element;
+              }
+            : undefined
+        }
         onActivate={() => {
           if (documentTab.path !== activeTabPath) activateTab(documentTab.path);
         }}
@@ -6454,7 +6561,10 @@ function WorldnotionWorkbench({
                 ["bold", "italic", "link"].includes(command.id),
               ).map((command) => renderToolbarButton(command))}
               <details className="floating-format-group floating-format-more">
-                <summary title={surfaceText("More formatting")} aria-label={surfaceText("More formatting")}>
+                <summary
+                  title={surfaceText("More formatting")}
+                  aria-label={surfaceText("More formatting")}
+                >
                   <MoreHorizontal size={14} />
                 </summary>
                 <div>
@@ -6487,9 +6597,7 @@ function WorldnotionWorkbench({
                 const shellLeft = shellRect?.left ?? 0;
                 const shellTop = shellRect?.top ?? 0;
                 const toolbarWidth = 380;
-                const rightSpace = shellRect
-                  ? shellRect.right - floatingToolbarRect.right
-                  : 0;
+                const rightSpace = shellRect ? shellRect.right - floatingToolbarRect.right : 0;
                 const placeBesideSelection = rightSpace >= toolbarWidth + 12;
                 const naturalLeft = placeBesideSelection
                   ? floatingToolbarRect.right - shellLeft + 8
@@ -6519,7 +6627,9 @@ function WorldnotionWorkbench({
         }
         saveError={renderDocumentSaveError(documentTab.path)}
         recovery={renderVisualRecovery(documentTab.path)}
-        loading={loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null}
+        loading={
+          loadState === "loading" ? <div className="loading-banner">Loading universe...</div> : null
+        }
         banner={documentBanner}
         outline={
           settings.editor.outlineGuideEnabled && documentOutline.length ? (
@@ -6738,14 +6848,12 @@ function WorldnotionWorkbench({
     </section>
   );
 
-  const activeVisualDocument = activeTab
-    ? readVisualDocument(activeTab.rawMarkdown)
-    : undefined;
+  const activeVisualDocument = activeTab ? readVisualDocument(activeTab.rawMarkdown) : undefined;
   const visualDocumentEditorVisible = Boolean(
     activeTab &&
-      activeVisualDocument?.status === "supported" &&
-      activeTab.mode === "write" &&
-      activeTab.visualMode !== "markdown",
+    activeVisualDocument?.status === "supported" &&
+    activeTab.mode === "write" &&
+    activeTab.visualMode !== "markdown",
   );
   const inspectorPanel =
     activeTab && activeVisualDocument?.status !== "none" ? (
@@ -6976,8 +7084,7 @@ function WorldnotionWorkbench({
           targetGroupId: request.documentDrop.targetDocumentGroupId ?? null,
           targetDockGroupId: request.targetGroupId,
           createGroupWithTarget:
-            request.documentDrop.side === "center" &&
-            !request.documentDrop.targetDocumentGroupId
+            request.documentDrop.side === "center" && !request.documentDrop.targetDocumentGroupId
               ? request.documentDrop.targetPath
               : undefined,
         });
@@ -7060,10 +7167,13 @@ function WorldnotionWorkbench({
     <WorldnotionLocaleProvider value={interfaceLocale}>
       <main
         className="app-shell dock-app-shell"
-        onFocusCapture={event => {
-          const target = (event.target as HTMLElement).closest("[data-onboarding-target]")?.getAttribute("data-onboarding-target");
+        onFocusCapture={(event) => {
+          const target = (event.target as HTMLElement)
+            .closest("[data-onboarding-target]")
+            ?.getAttribute("data-onboarding-target");
           if (target === "worldnotion.inspector") setLearningSection("properties");
-          else if (target === "worldnotion.document" || target === "worldnotion.explorer") setLearningSection("notes");
+          else if (target === "worldnotion.document" || target === "worldnotion.explorer")
+            setLearningSection("notes");
         }}
         style={{ "--dock-tab-scale": settings.editor.dockTabScale } as CSSProperties}
       >
@@ -7074,16 +7184,18 @@ function WorldnotionWorkbench({
         >
           <div className="dock-top-left">
             {forgeNavigation}
-            {(
+            {
               <>
-                {!suiteChrome ? <DesktopMenuBar
-                  locale={interfaceLocale}
-                  onHome={async () => {
-                    if (await universeSwitchGuardRef.current()) setView("home");
-                  }}
-                  onCommand={handleNativeMenuCommand}
-                  onEditCommand={handleDesktopEditCommand}
-                /> : null}
+                {!suiteChrome ? (
+                  <DesktopMenuBar
+                    locale={interfaceLocale}
+                    onHome={async () => {
+                      if (await universeSwitchGuardRef.current()) setView("home");
+                    }}
+                    onCommand={handleNativeMenuCommand}
+                    onEditCommand={handleDesktopEditCommand}
+                  />
+                ) : null}
 
                 <div className="dock-top-divider" />
 
@@ -7118,7 +7230,7 @@ function WorldnotionWorkbench({
                   <ExternalLink size={14} />
                 </button>
               </>
-            )}
+            }
           </div>
 
           <div className="dock-top-right">
@@ -7134,7 +7246,9 @@ function WorldnotionWorkbench({
                 }}
               >
                 <option value="default">{surfaceText("Default")}</option>
-                {activeWorkspacePreset === "custom" ? <option value="custom">{surfaceText("Custom")}</option> : null}
+                {activeWorkspacePreset === "custom" ? (
+                  <option value="custom">{surfaceText("Custom")}</option>
+                ) : null}
                 <option value="writing">{surfaceText("Writing")}</option>
                 <option value="graph">{surfaceText("Flow Map")}</option>
                 <option value="focus">{surfaceText("Focus")}</option>
@@ -7172,7 +7286,11 @@ function WorldnotionWorkbench({
                       <X size={14} />
                     </button>
                   </div>
-                  <div className="dock-panel-menu-options" role="group" aria-label={surfaceText("Toggle panels")}>
+                  <div
+                    className="dock-panel-menu-options"
+                    role="group"
+                    aria-label={surfaceText("Toggle panels")}
+                  >
                     {panelMenuItems.map((item) => (
                       <button
                         key={item.kind}
@@ -7230,7 +7348,9 @@ function WorldnotionWorkbench({
                   onClose={() => getCurrentWindow().close()}
                 />
               </>
-            ) : <NotificationBell locale={interfaceLocale} />}
+            ) : (
+              <NotificationBell locale={interfaceLocale} />
+            )}
           </div>
         </div>
         {visualRecoveryProblem ? (
@@ -7512,12 +7632,14 @@ function WorldnotionWorkbench({
             }
             canConvertToTemplate={Boolean(
               contextMenu.targetKind === "file" &&
-                index &&
-                contextMenu.targetPath.toLocaleLowerCase().endsWith(".md") &&
-                !contextMenu.targetPath.toLocaleLowerCase().startsWith(".everend/templates/") &&
-                !index.visualDocuments?.some((document) => document.path === contextMenu.targetPath) &&
-                index.entities.find((entity) => entity.path === contextMenu.targetPath)?.type !==
-                  "folder-description",
+              index &&
+              contextMenu.targetPath.toLocaleLowerCase().endsWith(".md") &&
+              !contextMenu.targetPath.toLocaleLowerCase().startsWith(".everend/templates/") &&
+              !index.visualDocuments?.some(
+                (document) => document.path === contextMenu.targetPath,
+              ) &&
+              index.entities.find((entity) => entity.path === contextMenu.targetPath)?.type !==
+                "folder-description",
             )}
             onAction={handleContextMenuAction}
             onClose={() => setContextMenu(null)}
@@ -7577,7 +7699,9 @@ function WorldnotionWorkbench({
                 onClick={() => addTabToDocumentGroup(tabContextMenu.path, group.id)}
               >
                 <Circle size={16} style={{ color: group.color }} />
-                <span>{surfaceText("Add to")} {group.name}</span>
+                <span>
+                  {surfaceText("Add to")} {group.name}
+                </span>
               </button>
             ))}
             {documentTabGroups.some((group) => group.tabPaths.includes(tabContextMenu.path)) ? (
@@ -7666,13 +7790,21 @@ function WorldnotionWorkbench({
 export default function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {}) {
   const uiRoot = useRef<HTMLDivElement>(null);
   const drafts = useRef(new UniverseDraftRegistry());
-  const [dialogLocale, setDialogLocale] = useState(() => resolveInterfaceLocale(suiteChrome?.suiteSettings?.localePreference ?? loadSettings().localePreference ?? "system"));
+  const [dialogLocale, setDialogLocale] = useState(() =>
+    resolveInterfaceLocale(
+      suiteChrome?.suiteSettings?.localePreference ?? loadSettings().localePreference ?? "system",
+    ),
+  );
   return (
     <div
       ref={uiRoot}
       className="forge-worldnotion"
-      data-ambient-background={suiteChrome?.suiteSettings?.ambientBackground ?? loadSettings().ambientBackground !== false}
-      data-background-scene={normalizeBackgroundScene(suiteChrome?.suiteSettings?.backgroundScene ?? loadSettings().backgroundScene)}
+      data-ambient-background={
+        suiteChrome?.suiteSettings?.ambientBackground ?? loadSettings().ambientBackground !== false
+      }
+      data-background-scene={normalizeBackgroundScene(
+        suiteChrome?.suiteSettings?.backgroundScene ?? loadSettings().backgroundScene,
+      )}
       data-theme={suiteChrome?.suiteSettings?.style ?? loadSettings().theme}
       data-suite-embedded={Boolean(suiteChrome)}
       data-app-active={!suiteChrome || suiteChrome.active}
@@ -7681,11 +7813,19 @@ export default function App({ suiteChrome }: { suiteChrome?: SuiteChrome } = {})
       <AppInteractionContext.Provider value={!suiteChrome || suiteChrome.active}>
         <WindowChromeSetup enabled={!suiteChrome} />
         <UniverseDraftContext.Provider value={drafts.current}>
-          <NotificationProvider host={suiteChrome?.notifications} source="WorldNotion" active={!suiteChrome || suiteChrome.active}>
+          <NotificationProvider
+            host={suiteChrome?.notifications}
+            source="WorldNotion"
+            active={!suiteChrome || suiteChrome.active}
+          >
             <ToastProvider integrated>
               <WorldnotionLocaleProvider value={dialogLocale}>
                 <DialogProvider notifyAlerts>
-                  <WorldnotionWorkbench suiteChrome={suiteChrome} uiRoot={uiRoot} onInterfaceLocaleChange={setDialogLocale} />
+                  <WorldnotionWorkbench
+                    suiteChrome={suiteChrome}
+                    uiRoot={uiRoot}
+                    onInterfaceLocaleChange={setDialogLocale}
+                  />
                 </DialogProvider>
               </WorldnotionLocaleProvider>
             </ToastProvider>

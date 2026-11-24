@@ -45,7 +45,9 @@ describe("SettingsModal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Language and appearance" }));
     expect(screen.getByRole("option", { name: "Everend Forge Light" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Everend Forge Dark" })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Active style"), { target: { value: "forge-mono-dark" } });
+    fireEvent.change(screen.getByLabelText("Active style"), {
+      target: { value: "forge-mono-dark" },
+    });
     expect(onChange).toHaveBeenCalledWith({ ...settings, theme: "forge-mono-dark" });
   });
 
@@ -104,9 +106,7 @@ describe("SettingsModal", () => {
 
     fireEvent.change(screen.getByLabelText("Universe name"), { target: { value: "New name" } });
     expect(drafts.hasDrafts()).toBe(true);
-    await act(async () =>
-      fireEvent.click(screen.getByRole("button", { name: "Save" })),
-    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect(screen.getByRole("alert").textContent).toContain("Write failed");
     expect(screen.getByLabelText("Universe name")).toHaveValue("New name");
     expect(drafts.hasDrafts()).toBe(true);

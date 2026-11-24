@@ -110,7 +110,10 @@ export function loadSettings(): AppSettingsV4 {
     return {
       localePreference: normalizeLocalePreference(parsed.localePreference),
       theme: normalizeThemeId(parsed.theme),
-      interfaceFont: parsed.interfaceFont === "serif" || parsed.interfaceFont === "humanist" ? parsed.interfaceFont : "sans",
+      interfaceFont:
+        parsed.interfaceFont === "serif" || parsed.interfaceFont === "humanist"
+          ? parsed.interfaceFont
+          : "sans",
       ambientBackground: parsed.ambientBackground !== false,
       backgroundScene: normalizeBackgroundScene(parsed.backgroundScene),
       recentUniverse: parsed.recentUniverse,

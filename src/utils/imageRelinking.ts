@@ -543,7 +543,8 @@ export function getImageUsageByPath(
       const canonRef = entry as Record<string, unknown>;
       if (typeof canonRef.id !== "string") return;
       const entity = entitiesById.get(canonRef.id);
-      const typeId = entity?.type ?? (typeof canonRef.kind === "string" ? canonRef.kind : undefined);
+      const typeId =
+        entity?.type ?? (typeof canonRef.kind === "string" ? canonRef.kind : undefined);
       if (!typeId) return;
       const entityType = entityTypes.find((candidate) => candidate.id === typeId);
       const presentation = entityType?.presentation;
@@ -558,13 +559,15 @@ export function getImageUsageByPath(
       const frontmatterValue =
         indexedFrontmatter && Object.keys(indexedFrontmatter).length
           ? indexedFrontmatter
-          : canonRef.frontmatter ?? canonRef.properties;
+          : (canonRef.frontmatter ?? canonRef.properties);
       const frontmatter =
         frontmatterValue && typeof frontmatterValue === "object" && !Array.isArray(frontmatterValue)
           ? (frontmatterValue as Record<string, unknown>)
           : undefined;
       if (!frontmatter) return;
-      const canonPath = entity?.path ?? (typeof canonRef.canonSourcePath === "string" ? canonRef.canonSourcePath : "");
+      const canonPath =
+        entity?.path ??
+        (typeof canonRef.canonSourcePath === "string" ? canonRef.canonSourcePath : "");
       const imagePathsByVariant = new Map<string, Set<string>>();
       const variants = readNoteVariants(frontmatter);
       pathBranchingCanonVariantLabelsById.set(

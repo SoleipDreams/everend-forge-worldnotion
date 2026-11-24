@@ -8,22 +8,22 @@ const es: Record<string, string> = {
   "Invented language": "Idioma inventado",
   "Invented language name": "Nombre del idioma inventado",
   "Add invented language": "Añadir idioma inventado",
-  "Remove": "Quitar",
-  "Add": "Añadir",
+  Remove: "Quitar",
+  Add: "Añadir",
   "Universe name": "Nombre del universo",
   "Save customization": "Guardar personalización",
   "Use PNG or JPG": "Usar PNG o JPG",
   "Branching authoring": "Autoría de ramificación",
   "Event categories": "Categorías de eventos",
-  "Label": "Nombre",
-  "Color": "Color",
-  "Terminal": "Terminal",
-  "Delete": "Eliminar",
+  Label: "Nombre",
+  Color: "Color",
+  Terminal: "Terminal",
+  Delete: "Eliminar",
   "Add Category": "Añadir categoría",
   "Canvas information": "Información del canvas",
   "Speech beat counter": "Contador de segmentos de diálogo",
   "Markdown working copies": "Copias de trabajo Markdown",
-  "Workspace": "Espacio de trabajo",
+  Workspace: "Espacio de trabajo",
   "Theme mode": "Modo del tema",
   "Active style": "Tema",
   "Switch to light": "Cambiar a claro",
@@ -41,9 +41,9 @@ const es: Record<string, string> = {
   "Recent universes": "Universos recientes",
   "No recent universes yet.": "No hay universos recientes.",
   "Open universe folder": "Abrir carpeta del universo",
-  "Sequences": "Secuencias",
-  "Branches": "Ramas",
-  "Events": "Eventos",
+  Sequences: "Secuencias",
+  Branches: "Ramas",
+  Events: "Eventos",
   "Errors / warnings": "Errores / avisos",
   "Open a universe folder to begin.": "Abre una carpeta de universo para comenzar.",
   "Dock & Tabs": "Paneles y pestañas",
@@ -52,61 +52,178 @@ const es: Record<string, string> = {
   "Persist tabs": "Conservar pestañas",
   "Reuse open tabs": "Reutilizar pestañas abiertas",
   "Keyboard Shortcuts": "Atajos de teclado",
-  "Focus a shortcut field and press the desired keys.": "Selecciona un campo de atajo y pulsa las teclas deseadas.",
+  "Focus a shortcut field and press the desired keys.":
+    "Selecciona un campo de atajo y pulsa las teclas deseadas.",
   "Reset defaults": "Restablecer valores predeterminados",
-  "Unassigned": "Sin asignar",
-  "Explorer": "Explorador",
+  Unassigned: "Sin asignar",
+  Explorer: "Explorador",
   "Frontmatter utilities": "Mantenimiento de metadatos",
   "Upgrade property structure": "Actualizar estructura de propiedades",
   "Add missing frontmatter": "Añadir metadatos faltantes",
   "Normalize properties": "Normalizar propiedades",
-  "Plugins": "Plugins",
+  Plugins: "Plugins",
   "AI Advisor providers": "Proveedores del asesor IA",
-  "Choose which web providers appear in the Advisor tab.": "Elige los proveedores web disponibles en el asesor.",
+  "Choose which web providers appear in the Advisor tab.":
+    "Elige los proveedores web disponibles en el asesor.",
   "New provider name": "Nombre del nuevo proveedor",
   "New provider URL": "URL del nuevo proveedor",
   "Provider name": "Nombre del proveedor",
   "Provider URL": "URL del proveedor",
-  "Name": "Nombre",
-  "URL": "URL",
-  "Enabled": "Activado",
-  "Cancel": "Cancelar",
-  "Apply": "Aplicar",
-  "Save": "Guardar",
-  "Scan": "Analizar",
+  Name: "Nombre",
+  URL: "URL",
+  Enabled: "Activado",
+  Cancel: "Cancelar",
+  Apply: "Aplicar",
+  Save: "Guardar",
+  Scan: "Analizar",
   "Select all": "Seleccionar todo",
   "Deselect all": "Deseleccionar todo",
-  "Preview": "Vista previa",
-  "Sequence": "Secuencia",
-  "Start": "Inicio",
-  "Branch": "Rama",
-  "Event": "Evento",
-  "Decision": "Decisión",
-  "Outcome": "Desenlace",
-  "Ink": "Ink",
-  "Knowledge": "Conocimiento",
+  Preview: "Vista previa",
+  Sequence: "Secuencia",
+  Start: "Inicio",
+  Branch: "Rama",
+  Event: "Evento",
+  Decision: "Decisión",
+  Outcome: "Desenlace",
+  Ink: "Ink",
+  Knowledge: "Conocimiento",
   "Runtime action": "Acción de ejecución",
-  "Style": "Tema",
-  "Primary typeface": "Fuente de lectura"
+  Style: "Tema",
+  "Primary typeface": "Fuente de lectura",
 };
-Object.assign(es,{"Universe":"Universo","Entities":"Entidades","Files":"Archivos","Templates":"Plantillas","Properties":"Propiedades","Personalize this universe":"Personalizar este universo","WorldNotion can create `.everend/universe.json` and `.everend/properties.json` to start organizing this space with editable properties. Your Markdown files stay untouched.":"WorldNotion puede crear el perfil y el esquema de propiedades del universo para organizarlo. Se conservan tus archivos Markdown.","Open universe note":"Abrir nota del universo","Editing Behavior":"Comportamiento de edición","Display Options":"Opciones de visualización","Navigation Tools":"Herramientas de navegación","Confirm dirty close":"Confirmar cierre de pestañas sin guardar","Universe-wide tools to keep every note's YAML frontmatter valid, complete, and consistently ordered. Changes are previewed first and applied only to the files you choose.":"Revisa y completa los metadatos YAML del universo. Los cambios se previsualizan y se aplican a los archivos que elijas.","Preview the move from flat 2.0 keys to nested 3.0 group objects. Nothing changes until you confirm the preview.":"Previsualiza la conversión de propiedades planas 2.0 a grupos anidados 3.0 antes de confirmar los cambios.","affected note":"nota afectada","Confirm upgrade to 3.0":"Confirmar actualización a 3.0","No note values need moving; only the schema will be upgraded.":"Solo se actualizará el esquema; los valores de las notas ya tienen la estructura correcta.","Scans this universe for Markdown files without valid frontmatter, detects normal notes and folder notes, and previews the metadata it will add.":"Busca archivos Markdown sin metadatos válidos y previsualiza los campos que se añadirán a las notas y carpetas.","Clear":"Limpiar","Apply selected":"Aplicar a la selección","Apply all":"Aplicar a todos","folder:":"carpeta:","Run a scan to preview files that need frontmatter.":"Ejecuta el análisis para previsualizar los archivos que necesitan metadatos.","Checks every note against the universe schema: fills missing core and required fields with defaults and reorders frontmatter keys to the schema order. The note body is never touched.":"Comprueba las notas con el esquema del universo, completa los campos obligatorios y ordena las propiedades. Se conserva el cuerpo de cada nota.","Every note already matches the universe schema. ✓":"Todas las notas coinciden con el esquema del universo. ✓","Run a scan to preview notes whose properties drift from the schema.":"Ejecuta el análisis para previsualizar las notas cuyas propiedades difieren del esquema.","Help & Documentation":"Ayuda y documentación","Get started with WorldNotion or reset the onboarding guide.":"Consulta la guía de WorldNotion o reinicia el tutorial.","Restart Onboarding":"Reiniciar tutorial","Manage WorldNotion editor plugins and preview planned Everend runtime adapters.":"Administra los plugins del editor y consulta los adaptadores previstos para Everend.","Filter plugins":"Filtrar plugins","Documentation only for now. Engine adapters are not installed or executed in v1.":"Disponible como documentación. Los adaptadores de motores no se instalan ni ejecutan en esta versión.","Core plugin. Protected to keep editing and navigation behavior stable.":"Plugin esencial. Permanece activo para mantener las funciones de edición y navegación.","WorldNotion stores only provider names, links, enabled state, and your selected provider. It does not store passwords, cookies, API keys, or chat content.":"WorldNotion guarda el nombre, enlace y estado de cada proveedor, junto con tu selección. Las credenciales y conversaciones permanecen en el servicio web.","Web link":"Enlace web","Use a valid http(s) link before opening this provider.":"Introduce un enlace HTTP o HTTPS válido antes de abrir este proveedor.","HTTP is unencrypted; use HTTPS except for local services.":"HTTP no está cifrado; usa HTTPS salvo para servicios locales.","Add provider":"Añadir proveedor","Any http(s) chat, research, or local web service can be added.":"Puedes añadir servicios web de chat, investigación o servicios locales mediante HTTP o HTTPS.","Enter a name and a valid http(s) URL.":"Introduce un nombre y una URL HTTP o HTTPS válida.","Project-level categories used by event nodes. Terminal categories cannot create outgoing transitions.":"Categorías de eventos de este proyecto. Las categorías terminales no permiten transiciones de salida.","Choose which icon-and-number metrics appear on event and decision nodes.":"Elige las métricas que aparecen en los nodos de eventos y decisiones.","The default maximum per speech beat is saved with the universe. You can also right-click a speech beat counter on the canvas to edit it; individual events can still override it from the event editor.":"El límite predeterminado de cada segmento de diálogo se guarda con el universo. Puedes ajustarlo desde el contador del canvas o personalizarlo por evento.","Characters":"Caracteres","Words":"Palabras","Canon Markdown remains owned by WorldNotion. Editable variants are saved as working copies.":"WorldNotion administra el canon Markdown. Las variantes editables se guardan como copias de trabajo.","Canvas node types use these colors as their left outline.":"El borde izquierdo de cada nodo usa el color de su tipo.","Everend PathBranching opens the latest valid universe automatically on startup.":"PathBranching abre automáticamente el último universo válido al iniciar.","remove":"quitar","Mode":"Modo","Live":"En vivo","Manual export":"Exportación manual","Endpoint":"Dirección del servicio","Daemon executable":"Ejecutable del daemon","Profile":"Perfil","Project ID":"ID del proyecto","Story ID":"ID de la historia","Show daemon terminal":"Mostrar terminal del daemon","Refresh status":"Actualizar estado","Connect":"Conectar","Disconnect":"Desconectar","Unity pairing code":"Código de vinculación de Unity","Session":"Sesión","Connected clients":"Clientes conectados","Remote revision":"Revisión remota","Auto-sync snapshot":"Sincronizar automáticamente","Output root":"Carpeta de salida","Locale":"Idioma","Source folder":"Carpeta de origen","Publish snapshot":"Publicar instantánea","Export offline bundle":"Exportar paquete sin conexión","Start service":"Iniciar servicio","Stop service":"Detener servicio"});
-Object.assign(es,{"Create properties setup":"Crear esquema de propiedades","Reveal universe folder in Explorer":"Mostrar carpeta del universo","e.g. Eldarin":"p. ej. Eldarin","Not created yet":"Todavía no creado","Clean":"Sin incidencias","On":"Activado","Off":"Desactivado"," - in use":" · en uso","Endpoint":"Dirección","Profile":"Perfil","Show daemon terminal":"Mostrar terminal del daemon","Unity pairing code":"Código de emparejamiento de Unity","Connected clients":"Clientes conectados","Remote revision":"Revisión remota","Auto-sync snapshot":"Sincronizar snapshot automáticamente","Output root":"Carpeta de salida","Source folder":"Carpeta de origen"});
-Object.assign(es,{
+Object.assign(es, {
+  Universe: "Universo",
+  Entities: "Entidades",
+  Files: "Archivos",
+  Templates: "Plantillas",
+  Properties: "Propiedades",
+  "Personalize this universe": "Personalizar este universo",
+  "WorldNotion can create `.everend/universe.json` and `.everend/properties.json` to start organizing this space with editable properties. Your Markdown files stay untouched.":
+    "WorldNotion puede crear el perfil y el esquema de propiedades del universo para organizarlo. Se conservan tus archivos Markdown.",
+  "Open universe note": "Abrir nota del universo",
+  "Editing Behavior": "Comportamiento de edición",
+  "Display Options": "Opciones de visualización",
+  "Navigation Tools": "Herramientas de navegación",
+  "Confirm dirty close": "Confirmar cierre de pestañas sin guardar",
+  "Universe-wide tools to keep every note's YAML frontmatter valid, complete, and consistently ordered. Changes are previewed first and applied only to the files you choose.":
+    "Revisa y completa los metadatos YAML del universo. Los cambios se previsualizan y se aplican a los archivos que elijas.",
+  "Preview the move from flat 2.0 keys to nested 3.0 group objects. Nothing changes until you confirm the preview.":
+    "Previsualiza la conversión de propiedades planas 2.0 a grupos anidados 3.0 antes de confirmar los cambios.",
+  "affected note": "nota afectada",
+  "Confirm upgrade to 3.0": "Confirmar actualización a 3.0",
+  "No note values need moving; only the schema will be upgraded.":
+    "Solo se actualizará el esquema; los valores de las notas ya tienen la estructura correcta.",
+  "Scans this universe for Markdown files without valid frontmatter, detects normal notes and folder notes, and previews the metadata it will add.":
+    "Busca archivos Markdown sin metadatos válidos y previsualiza los campos que se añadirán a las notas y carpetas.",
+  Clear: "Limpiar",
+  "Apply selected": "Aplicar a la selección",
+  "Apply all": "Aplicar a todos",
+  "folder:": "carpeta:",
+  "Run a scan to preview files that need frontmatter.":
+    "Ejecuta el análisis para previsualizar los archivos que necesitan metadatos.",
+  "Checks every note against the universe schema: fills missing core and required fields with defaults and reorders frontmatter keys to the schema order. The note body is never touched.":
+    "Comprueba las notas con el esquema del universo, completa los campos obligatorios y ordena las propiedades. Se conserva el cuerpo de cada nota.",
+  "Every note already matches the universe schema. ✓":
+    "Todas las notas coinciden con el esquema del universo. ✓",
+  "Run a scan to preview notes whose properties drift from the schema.":
+    "Ejecuta el análisis para previsualizar las notas cuyas propiedades difieren del esquema.",
+  "Help & Documentation": "Ayuda y documentación",
+  "Get started with WorldNotion or reset the onboarding guide.":
+    "Consulta la guía de WorldNotion o reinicia el tutorial.",
+  "Restart Onboarding": "Reiniciar tutorial",
+  "Manage WorldNotion editor plugins and preview planned Everend runtime adapters.":
+    "Administra los plugins del editor y consulta los adaptadores previstos para Everend.",
+  "Filter plugins": "Filtrar plugins",
+  "Documentation only for now. Engine adapters are not installed or executed in v1.":
+    "Disponible como documentación. Los adaptadores de motores no se instalan ni ejecutan en esta versión.",
+  "Core plugin. Protected to keep editing and navigation behavior stable.":
+    "Plugin esencial. Permanece activo para mantener las funciones de edición y navegación.",
+  "WorldNotion stores only provider names, links, enabled state, and your selected provider. It does not store passwords, cookies, API keys, or chat content.":
+    "WorldNotion guarda el nombre, enlace y estado de cada proveedor, junto con tu selección. Las credenciales y conversaciones permanecen en el servicio web.",
+  "Web link": "Enlace web",
+  "Use a valid http(s) link before opening this provider.":
+    "Introduce un enlace HTTP o HTTPS válido antes de abrir este proveedor.",
+  "HTTP is unencrypted; use HTTPS except for local services.":
+    "HTTP no está cifrado; usa HTTPS salvo para servicios locales.",
+  "Add provider": "Añadir proveedor",
+  "Any http(s) chat, research, or local web service can be added.":
+    "Puedes añadir servicios web de chat, investigación o servicios locales mediante HTTP o HTTPS.",
+  "Enter a name and a valid http(s) URL.": "Introduce un nombre y una URL HTTP o HTTPS válida.",
+  "Project-level categories used by event nodes. Terminal categories cannot create outgoing transitions.":
+    "Categorías de eventos de este proyecto. Las categorías terminales no permiten transiciones de salida.",
+  "Choose which icon-and-number metrics appear on event and decision nodes.":
+    "Elige las métricas que aparecen en los nodos de eventos y decisiones.",
+  "The default maximum per speech beat is saved with the universe. You can also right-click a speech beat counter on the canvas to edit it; individual events can still override it from the event editor.":
+    "El límite predeterminado de cada segmento de diálogo se guarda con el universo. Puedes ajustarlo desde el contador del canvas o personalizarlo por evento.",
+  Characters: "Caracteres",
+  Words: "Palabras",
+  "Canon Markdown remains owned by WorldNotion. Editable variants are saved as working copies.":
+    "WorldNotion administra el canon Markdown. Las variantes editables se guardan como copias de trabajo.",
+  "Canvas node types use these colors as their left outline.":
+    "El borde izquierdo de cada nodo usa el color de su tipo.",
+  "Everend PathBranching opens the latest valid universe automatically on startup.":
+    "PathBranching abre automáticamente el último universo válido al iniciar.",
+  remove: "quitar",
+  Mode: "Modo",
+  Live: "En vivo",
+  "Manual export": "Exportación manual",
+  Endpoint: "Dirección del servicio",
+  "Daemon executable": "Ejecutable del daemon",
+  Profile: "Perfil",
+  "Project ID": "ID del proyecto",
+  "Story ID": "ID de la historia",
+  "Show daemon terminal": "Mostrar terminal del daemon",
+  "Refresh status": "Actualizar estado",
+  Connect: "Conectar",
+  Disconnect: "Desconectar",
+  "Unity pairing code": "Código de vinculación de Unity",
+  Session: "Sesión",
+  "Connected clients": "Clientes conectados",
+  "Remote revision": "Revisión remota",
+  "Auto-sync snapshot": "Sincronizar automáticamente",
+  "Output root": "Carpeta de salida",
+  Locale: "Idioma",
+  "Source folder": "Carpeta de origen",
+  "Publish snapshot": "Publicar instantánea",
+  "Export offline bundle": "Exportar paquete sin conexión",
+  "Start service": "Iniciar servicio",
+  "Stop service": "Detener servicio",
+});
+Object.assign(es, {
+  "Create properties setup": "Crear esquema de propiedades",
+  "Reveal universe folder in Explorer": "Mostrar carpeta del universo",
+  "e.g. Eldarin": "p. ej. Eldarin",
+  "Not created yet": "Todavía no creado",
+  Clean: "Sin incidencias",
+  On: "Activado",
+  Off: "Desactivado",
+  " - in use": " · en uso",
+  Endpoint: "Dirección",
+  Profile: "Perfil",
+  "Show daemon terminal": "Mostrar terminal del daemon",
+  "Unity pairing code": "Código de emparejamiento de Unity",
+  "Connected clients": "Clientes conectados",
+  "Remote revision": "Revisión remota",
+  "Auto-sync snapshot": "Sincronizar snapshot automáticamente",
+  "Output root": "Carpeta de salida",
+  "Source folder": "Carpeta de origen",
+});
+Object.assign(es, {
   "Search plugins": "Buscar plugins",
-  "Navigation": "Navegación",
-  "Visual": "Visual",
-  "Integrations": "Integraciones",
+  Navigation: "Navegación",
+  Visual: "Visual",
+  Integrations: "Integraciones",
   "Runtime Adapters": "Adaptadores de ejecución",
-  "Core": "Esencial",
-  "Optional": "Opcional",
-  "Planned": "Previsto",
-  "Enabled": "Activado",
-  "Disabled": "Desactivado",
-  "Active": "Activo",
+  Core: "Esencial",
+  Optional: "Opcional",
+  Planned: "Previsto",
+  Enabled: "Activado",
+  Disabled: "Desactivado",
+  Active: "Activo",
   "Always active": "Siempre activo",
-  "Unavailable": "No disponible",
-  "Wikilinks": "Enlaces wiki",
-  "Footnotes": "Notas al pie",
+  Unavailable: "No disponible",
+  Wikilinks: "Enlaces wiki",
+  Footnotes: "Notas al pie",
   "Code Folding": "Plegado de código",
   "Font Family Rendering": "Representación de fuentes",
   "Image Rendering": "Representación de imágenes",
@@ -116,24 +233,39 @@ Object.assign(es,{
   "Godot Adapter": "Adaptador de Godot",
   "Unreal Adapter": "Adaptador de Unreal",
   "AI Advisor": "Asesor IA",
-  "Resolves and opens [[note links]] inside the write editor.": "Resuelve y abre enlaces [[a notas]] dentro del editor de escritura.",
-  "Styles Markdown footnote references while writing.": "Da formato a las referencias de notas al pie de Markdown mientras escribes.",
-  "Adds fold gutters and folding keybindings for structured Markdown.": "Añade controles de plegado y atajos para organizar Markdown.",
-  "Renders portable font-family spans in Write mode.": "Muestra los cambios de tipografía compatibles en el modo de escritura.",
-  "Renders standard Markdown images inline in Write mode (live preview).": "Muestra imágenes Markdown en el modo de escritura con vista previa en vivo.",
-  "Shows a lightweight document title header inside Write mode.": "Muestra el título del documento en el modo de escritura.",
-  "Creates and highlights portable GitHub-Flavored Markdown tables in Write mode.": "Crea y resalta tablas compatibles con GitHub-Flavored Markdown en el modo de escritura.",
-  "Planned engine adapter for runtime packages exported by PathBranching.": "Adaptador de motor previsto para paquetes de ejecución exportados por PathBranching.",
-  "Opens isolated provider webviews for ChatGPT, Claude, Gemini, DeepSeek, and more.": "Abre espacios web aislados para ChatGPT, Claude, Gemini, DeepSeek y otros servicios.",
+  "Resolves and opens [[note links]] inside the write editor.":
+    "Resuelve y abre enlaces [[a notas]] dentro del editor de escritura.",
+  "Styles Markdown footnote references while writing.":
+    "Da formato a las referencias de notas al pie de Markdown mientras escribes.",
+  "Adds fold gutters and folding keybindings for structured Markdown.":
+    "Añade controles de plegado y atajos para organizar Markdown.",
+  "Renders portable font-family spans in Write mode.":
+    "Muestra los cambios de tipografía compatibles en el modo de escritura.",
+  "Renders standard Markdown images inline in Write mode (live preview).":
+    "Muestra imágenes Markdown en el modo de escritura con vista previa en vivo.",
+  "Shows a lightweight document title header inside Write mode.":
+    "Muestra el título del documento en el modo de escritura.",
+  "Creates and highlights portable GitHub-Flavored Markdown tables in Write mode.":
+    "Crea y resalta tablas compatibles con GitHub-Flavored Markdown en el modo de escritura.",
+  "Planned engine adapter for runtime packages exported by PathBranching.":
+    "Adaptador de motor previsto para paquetes de ejecución exportados por PathBranching.",
+  "Opens isolated provider webviews for ChatGPT, Claude, Gemini, DeepSeek, and more.":
+    "Abre espacios web aislados para ChatGPT, Claude, Gemini, DeepSeek y otros servicios.",
 });
 export function translateSettings(value: string, locale: "en" | "es"): string {
   if (locale !== "es") return value;
   const normalized = value.replace(/\s+/g, " ").trim();
   if (es[normalized]) return es[normalized];
-  const control = worldnotionSettingsPages.flatMap(page => page.controls).find(control => control.label.en === normalized);
+  const control = worldnotionSettingsPages
+    .flatMap((page) => page.controls)
+    .find((control) => control.label.en === normalized);
   if (control) return control.label.es;
   const icon = /^Use (book|globe|castle|sparkles) icon$/.exec(normalized);
-  if (icon) return "Usar icono " + ({book:"libro",globe:"mundo",castle:"castillo",sparkles:"destellos"}[icon[1]] ?? icon[1]);
+  if (icon)
+    return (
+      "Usar icono " +
+      ({ book: "libro", globe: "mundo", castle: "castillo", sparkles: "destellos" }[icon[1]] ??
+        icon[1])
+    );
   return value;
 }
-

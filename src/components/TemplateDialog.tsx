@@ -123,7 +123,9 @@ export function TemplateDialog({
   return (
     <div className="template-dialog-overlay" onClick={onClose}>
       <div
-        ref={dialogRef} tabIndex={-1} className="template-dialog"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="template-dialog"
         role="dialog"
         aria-modal="true"
         aria-label={t("Property Templates")}

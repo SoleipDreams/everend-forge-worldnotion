@@ -81,9 +81,7 @@ export function BacklinksPanel({ entity, allEntities, onOpenEntity }: BacklinksP
           <span>{t("Backlinks")}</span>
           <span className="muted relationship-count">0</span>
         </h4>
-        <p className="muted text-sm relationship-empty-state">
-          {t("No backlinks to this note.")}
-        </p>
+        <p className="muted text-sm relationship-empty-state">{t("No backlinks to this note.")}</p>
       </div>
     );
   }

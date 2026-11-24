@@ -3263,9 +3263,9 @@
 }
 
 @container explorer-row (min-width: 180px) {
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
-    .tree-node-buttons.has-folder-note,
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
+  .forge-worldnotion .tree-button:not(:hover):not(:focus-within) .tree-node-buttons.has-folder-note,
+  .forge-worldnotion
+    .tree-button:not(:hover):not(:focus-within)
     .tree-node-buttons.has-onboarding-target {
     max-width: 18px;
     overflow: hidden;
@@ -3279,10 +3279,12 @@
     visibility: visible;
   }
 
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
+  .forge-worldnotion
+    .tree-button:not(:hover):not(:focus-within)
     .tree-node-buttons.has-folder-note
     .tree-inline-button:not(.folder-description-button),
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
+  .forge-worldnotion
+    .tree-button:not(:hover):not(:focus-within)
     .tree-node-buttons.has-onboarding-target
     .tree-inline-button:not([data-onboarding-target="worldnotion.create-folder-note-trigger"]) {
     opacity: 0;
@@ -3290,10 +3292,12 @@
     visibility: hidden;
   }
 
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
+  .forge-worldnotion
+    .tree-button:not(:hover):not(:focus-within)
     .tree-node-buttons.has-folder-note
     .folder-description-button,
-  .forge-worldnotion .tree-button:not(:hover):not(:focus-within)
+  .forge-worldnotion
+    .tree-button:not(:hover):not(:focus-within)
     .tree-node-buttons.has-onboarding-target
     .tree-inline-button[data-onboarding-target="worldnotion.create-folder-note-trigger"] {
     opacity: 0.82;
@@ -4885,10 +4889,7 @@
   margin-top: 0;
 }
 
-.forge-worldnotion
-  .inspector
-  section
-  > :is(.variant-selector-shell, .metadata-editor) {
+.forge-worldnotion .inspector section > :is(.variant-selector-shell, .metadata-editor) {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -8414,7 +8415,9 @@
 }
 
 .forge-worldnotion .document-header-presentation .document-header-title:hover,
-.forge-worldnotion .document-header-presentation .document-header-title[contenteditable="true"]:focus {
+.forge-worldnotion
+  .document-header-presentation
+  .document-header-title[contenteditable="true"]:focus {
   padding: 2px 4px;
   margin: -2px -4px;
 }
@@ -13366,7 +13369,10 @@
   bottom: -1px;
 }
 
-.forge-worldnotion .property-row-wrapper.drop-inside-target > .property-row.property-row-group > .property-row-group-controls {
+.forge-worldnotion
+  .property-row-wrapper.drop-inside-target
+  > .property-row.property-row-group
+  > .property-row-group-controls {
   border-radius: 6px;
   background: color-mix(in srgb, var(--wn-accent) 10%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wn-accent) 48%, transparent);
@@ -15665,19 +15671,26 @@
     background-color 0.16s ease;
 }
 
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover::before {
+.forge-worldnotion
+  .editor-surface
+  .document-presentation.document-presentation-empty-cover::before {
   content: none;
 }
 
 .forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:hover,
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:focus-within {
+.forge-worldnotion
+  .editor-surface
+  .document-presentation.document-presentation-empty-cover:focus-within {
   height: clamp(48px, 6vw, 64px);
   margin-bottom: 8px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--wn-accent) 9%, transparent);
 }
 
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover .document-presentation-cover.document-presentation-cover-empty {
+.forge-worldnotion
+  .editor-surface
+  .document-presentation.document-presentation-empty-cover
+  .document-presentation-cover.document-presentation-cover-empty {
   position: absolute;
   top: 0;
   left: 0;
@@ -15689,8 +15702,14 @@
   transition: opacity 0.14s ease;
 }
 
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:hover .document-presentation-cover.document-presentation-cover-empty,
-.forge-worldnotion .editor-surface .document-presentation.document-presentation-empty-cover:focus-within .document-presentation-cover.document-presentation-cover-empty {
+.forge-worldnotion
+  .editor-surface
+  .document-presentation.document-presentation-empty-cover:hover
+  .document-presentation-cover.document-presentation-cover-empty,
+.forge-worldnotion
+  .editor-surface
+  .document-presentation.document-presentation-empty-cover:focus-within
+  .document-presentation-cover.document-presentation-cover-empty {
   opacity: 1;
   pointer-events: auto;
   height: 100%;
@@ -15698,7 +15717,10 @@
   outline: none;
 }
 
-.forge-worldnotion .editor-surface.page-style-system .document-presentation.document-presentation-empty-cover .document-presentation-cover.document-presentation-cover-empty {
+.forge-worldnotion
+  .editor-surface.page-style-system
+  .document-presentation.document-presentation-empty-cover
+  .document-presentation-cover.document-presentation-cover-empty {
   height: 28px;
 }
 
@@ -15867,7 +15889,10 @@
 }
 
 .forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:hover .outline-item,
-.forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:focus-within .outline-item {
+.forge-worldnotion
+  .editor-surface.outline-visible
+  .outline-guide-notion:focus-within
+  .outline-item {
   height: auto;
   min-height: 0;
   margin: 0;
@@ -15879,13 +15904,22 @@
   line-height: 1.4;
 }
 
-.forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:hover .outline-item::before,
-.forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:focus-within .outline-item::before {
+.forge-worldnotion
+  .editor-surface.outline-visible
+  .outline-guide-notion:hover
+  .outline-item::before,
+.forge-worldnotion
+  .editor-surface.outline-visible
+  .outline-guide-notion:focus-within
+  .outline-item::before {
   display: none;
 }
 
 .forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:hover .outline-item-text,
-.forge-worldnotion .editor-surface.outline-visible .outline-guide-notion:focus-within .outline-item-text {
+.forge-worldnotion
+  .editor-surface.outline-visible
+  .outline-guide-notion:focus-within
+  .outline-item-text {
   width: auto;
   height: auto;
   font-size: inherit;
@@ -15983,7 +16017,10 @@
 }
 
 /* Keep the note title aligned with the text column beside its portrait. */
-.forge-worldnotion .editor-surface.mode-write .cm-content .document-header-presentation.has-portrait {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .document-header-presentation.has-portrait {
   width: 100%;
   margin-left: 0;
   text-align: left;
@@ -15998,7 +16035,10 @@
 }
 
 @media (max-width: 560px) {
-  .forge-worldnotion .editor-surface.mode-write .cm-content .document-header-presentation.has-portrait {
+  .forge-worldnotion
+    .editor-surface.mode-write
+    .cm-content
+    .document-header-presentation.has-portrait {
     width: 100%;
     margin-left: 0;
   }
@@ -16040,7 +16080,11 @@
   pointer-events: auto;
 }
 
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty
+  .cm-presentation-portrait-add {
   box-sizing: border-box;
   width: 0;
   height: 0;
@@ -16051,12 +16095,20 @@
   transition: opacity 0.12s ease;
 }
 
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add > span {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty
+  .cm-presentation-portrait-add
+  > span {
   display: none;
 }
 
 .forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover,
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:focus-within {
   width: clamp(144px, 20%, 224px);
   max-width: 36%;
   height: auto;
@@ -16067,29 +16119,62 @@
   background: color-mix(in srgb, var(--wn-accent) 9%, transparent);
 }
 
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add,
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:hover
+  .cm-presentation-portrait-add,
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:focus-within
+  .cm-presentation-portrait-add {
   width: 100%;
   height: 100%;
   padding: 10px;
   transition-delay: 0.18s;
 }
 
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add > span,
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add > span {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:hover
+  .cm-presentation-portrait-add
+  > span,
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:focus-within
+  .cm-presentation-portrait-add
+  > span {
   display: inline;
 }
 
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover .cm-presentation-portrait-add,
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within .cm-presentation-portrait-add,
-.forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty .cm-presentation-portrait-add:focus-visible {
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:hover
+  .cm-presentation-portrait-add,
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty:focus-within
+  .cm-presentation-portrait-add,
+.forge-worldnotion
+  .editor-surface.mode-write
+  .cm-content
+  .cm-presentation-portrait-empty
+  .cm-presentation-portrait-add:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
 
 @media (max-width: 560px) {
   .forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:hover,
-  .forge-worldnotion .editor-surface.mode-write .cm-content .cm-presentation-portrait-empty:focus-within {
+  .forge-worldnotion
+    .editor-surface.mode-write
+    .cm-content
+    .cm-presentation-portrait-empty:focus-within {
     width: clamp(112px, 30%, 156px);
   }
 }
@@ -16103,11 +16188,15 @@
   padding-top: var(--wn-empty-banner-inset);
 }
 
-.forge-worldnotion .editor-surface.mode-write:has(.document-presentation-empty-cover) .document-presentation-empty-cover:not(:hover):not(:focus-within) .document-presentation-cover.document-presentation-cover-empty {
+.forge-worldnotion
+  .editor-surface.mode-write:has(.document-presentation-empty-cover)
+  .document-presentation-empty-cover:not(:hover):not(:focus-within)
+  .document-presentation-cover.document-presentation-cover-empty {
   height: var(--wn-empty-banner-inset);
 }
 
-.forge-worldnotion .editor-surface.page-style-system.mode-write:has(.document-presentation-empty-cover) {
+.forge-worldnotion
+  .editor-surface.page-style-system.mode-write:has(.document-presentation-empty-cover) {
   --wn-empty-banner-inset: 14px;
 }
 
@@ -16201,12 +16290,19 @@
 }
 
 /* Keep cover actions inside the image so they don't add a toolbar row below it. */
-.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) {
+.forge-worldnotion
+  .editor-surface.has-banner
+  .editor-banner-column
+  > .document-presentation:not(.document-presentation-empty-cover) {
   position: relative;
   margin-bottom: 8px;
 }
 
-.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) .document-presentation-image-actions {
+.forge-worldnotion
+  .editor-surface.has-banner
+  .editor-banner-column
+  > .document-presentation:not(.document-presentation-empty-cover)
+  .document-presentation-image-actions {
   position: absolute;
   right: 8px;
   bottom: 8px;
@@ -16227,15 +16323,27 @@
     transform 0.16s ease;
 }
 
-.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover):hover .document-presentation-image-actions,
-.forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover):focus-within .document-presentation-image-actions {
+.forge-worldnotion
+  .editor-surface.has-banner
+  .editor-banner-column
+  > .document-presentation:not(.document-presentation-empty-cover):hover
+  .document-presentation-image-actions,
+.forge-worldnotion
+  .editor-surface.has-banner
+  .editor-banner-column
+  > .document-presentation:not(.document-presentation-empty-cover):focus-within
+  .document-presentation-image-actions {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
 @media (hover: none) {
-  .forge-worldnotion .editor-surface.has-banner .editor-banner-column > .document-presentation:not(.document-presentation-empty-cover) .document-presentation-image-actions {
+  .forge-worldnotion
+    .editor-surface.has-banner
+    .editor-banner-column
+    > .document-presentation:not(.document-presentation-empty-cover)
+    .document-presentation-image-actions {
     opacity: 1;
     pointer-events: auto;
     transform: none;
@@ -16243,7 +16351,10 @@
 }
 
 /* Bring the document title closer to a present cover, and reclaim a little more room without one. */
-.forge-worldnotion .editor-surface.mode-write.has-banner:not(:has(.document-presentation-empty-cover)) .editor-document-column .cm-content {
+.forge-worldnotion
+  .editor-surface.mode-write.has-banner:not(:has(.document-presentation-empty-cover))
+  .editor-document-column
+  .cm-content {
   padding-top: clamp(16px, 1.6vw, 22px);
 }
 

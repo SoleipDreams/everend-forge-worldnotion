@@ -176,7 +176,11 @@ export function setVariantOverride(
   propertyId: string,
   value: unknown | undefined,
 ): NoteVariants {
-  if (variantId === BASE_VARIANT_ID || ["id", "type", "variants"].includes(propertyId) || isReservedVisualDocumentPath(getPropertyStoragePath(config, propertyId))) {
+  if (
+    variantId === BASE_VARIANT_ID ||
+    ["id", "type", "variants"].includes(propertyId) ||
+    isReservedVisualDocumentPath(getPropertyStoragePath(config, propertyId))
+  ) {
     throw new Error("This property cannot be overridden by a variant.");
   }
   const variants = readNoteVariants(frontmatter);

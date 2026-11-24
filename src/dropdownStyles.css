@@ -18,7 +18,9 @@
   background-position:
     calc(100% - 15px) 50%,
     calc(100% - 10px) 50%;
-  background-size: 5px 5px, 5px 5px;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   background-origin: padding-box, padding-box;
   background-clip: padding-box, padding-box;
@@ -27,7 +29,9 @@
   font-family: inherit;
   line-height: 1.35;
   cursor: pointer;
-  transition: background-color 140ms ease, border-color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
 }
 
 #root .forge-worldnotion select:not([multiple]):not([size]):hover:not(:disabled) {

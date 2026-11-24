@@ -183,8 +183,7 @@
   background: var(--ef-panel, var(--wn-panel));
 }
 
-.forge-worldnotion[data-window-chrome="true"]
-  .wn-window-title-controls > button {
+.forge-worldnotion[data-window-chrome="true"] .wn-window-title-controls > button {
   flex: 0 0 30px;
   width: 30px;
   min-width: 30px;

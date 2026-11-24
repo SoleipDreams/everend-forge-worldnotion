@@ -1,6 +1,11 @@
 import { WorldNotionDropdown } from "../SettingsDropdown.js";
 import { useEffect, useMemo, useState } from "react";
-import { DragDropProvider, type DragEndEvent, type DragMoveEvent, DragOverlay } from "@dnd-kit/react";
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  type DragMoveEvent,
+  DragOverlay,
+} from "@dnd-kit/react";
 import { isSortable } from "@dnd-kit/react/sortable";
 import { focusAppElement } from "../hooks/useAppInteraction";
 import { useWorldnotionUi } from "../i18n";
@@ -167,11 +172,17 @@ export function MetadataEditor({
     setCollapsedGroups(new Set());
     setCollapsedSections(new Set());
     setShowHiddenProperties(true);
-    const frame = requestAnimationFrame(() => requestAnimationFrame(() => {
-      const target = document.querySelector<HTMLElement>(`[data-property-id="${CSS.escape(focusPropertyId)}"]`);
-      target?.scrollIntoView({ block: 'nearest' });
-      target?.querySelector<HTMLElement>('input,button,select,textarea')?.focus({ preventScroll: true });
-    }));
+    const frame = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const target = document.querySelector<HTMLElement>(
+          `[data-property-id="${CSS.escape(focusPropertyId)}"]`,
+        );
+        target?.scrollIntoView({ block: "nearest" });
+        target
+          ?.querySelector<HTMLElement>("input,button,select,textarea")
+          ?.focus({ preventScroll: true });
+      }),
+    );
     return () => cancelAnimationFrame(frame);
   }, [focusPropertyId, entity.id]);
 
@@ -646,30 +657,32 @@ export function MetadataEditor({
     });
   };
 
-  const propertySections = useMemo(
-    () => {
-      const sections = buildInspectorPropertySections(propertiesConfig, entity.type, getPropertyValues(), {
+  const propertySections = useMemo(() => {
+    const sections = buildInspectorPropertySections(
+      propertiesConfig,
+      entity.type,
+      getPropertyValues(),
+      {
         includeHidden: showHiddenProperties,
         includeInactiveConditions: showHiddenProperties,
-      });
-      return sections.map((section) => {
-        if (section.id !== "main") return section;
-        const typeNode = section.nodes.find((node) => node.property.id === "type");
-        if (!typeNode || section.nodes[0] === typeNode) return section;
-        return {
-          ...section,
-          nodes: [typeNode, ...section.nodes.filter((node) => node !== typeNode)],
-        };
-      });
-    },
-    [
-      entity.customProperties,
-      entity.type,
-      frontmatterData,
-      propertiesConfig,
-      showHiddenProperties,
-    ],
-  );
+      },
+    );
+    return sections.map((section) => {
+      if (section.id !== "main") return section;
+      const typeNode = section.nodes.find((node) => node.property.id === "type");
+      if (!typeNode || section.nodes[0] === typeNode) return section;
+      return {
+        ...section,
+        nodes: [typeNode, ...section.nodes.filter((node) => node !== typeNode)],
+      };
+    });
+  }, [
+    entity.customProperties,
+    entity.type,
+    frontmatterData,
+    propertiesConfig,
+    showHiddenProperties,
+  ]);
 
   const isProtectedProperty = (propertyId: string): boolean => {
     if (ENTITY_FRONTMATTER_FIELD_IDS.has(propertyId)) return true;
@@ -757,10 +770,7 @@ export function MetadataEditor({
     ) {
       return false;
     }
-    if (
-      sourceData.parentId !== targetData.parentId &&
-      isProtectedProperty(sourceData.propertyId)
-    ) {
+    if (sourceData.parentId !== targetData.parentId && isProtectedProperty(sourceData.propertyId)) {
       return false;
     }
     return !wouldCreateGroupCycle(sourceData.propertyId, targetData.parentId);
@@ -772,9 +782,7 @@ export function MetadataEditor({
 
     if (source && target) {
       const sourceData = source.data as InspectorPropertyDragData;
-      const targetData = target.data as
-        | InspectorPropertyDragData
-        | InspectorPropertyGroupDropData;
+      const targetData = target.data as InspectorPropertyDragData | InspectorPropertyGroupDropData;
 
       if (
         sourceData.kind === "property" &&

@@ -103,8 +103,7 @@ export function useNotificationMessage(
   const current = useRef(options);
   current.current = options;
   useEffect(() => {
-    if (message && message !== previous.current)
-      notify({ ...current.current, message, kind });
+    if (message && message !== previous.current) notify({ ...current.current, message, kind });
     previous.current = message;
   }, [message, kind, notify]);
 }
@@ -129,13 +128,7 @@ export function NotificationBell({
     if (!host) store.setLocale(locale);
   }, [store, host, locale]);
   useLayoutEffect(() => {
-    if (
-      host ||
-      !active ||
-      !trigger.current ||
-      !trigger.current.getClientRects().length
-    )
-      return;
+    if (host || !active || !trigger.current || !trigger.current.getClientRects().length) return;
     const style = getComputedStyle(trigger.current),
       theme: Record<string, string> = {};
     for (const name of [
@@ -249,9 +242,7 @@ export function NotificationBell({
               </button>
               <button
                 type="button"
-                aria-label={
-                  es ? "Vaciar notificaciones" : "Clear notifications"
-                }
+                aria-label={es ? "Vaciar notificaciones" : "Clear notifications"}
                 disabled={!data.entries.length}
                 onClick={store.clear}
               >
@@ -259,9 +250,7 @@ export function NotificationBell({
               </button>
               <button
                 type="button"
-                aria-label={
-                  es ? "Cerrar notificaciones" : "Close notifications"
-                }
+                aria-label={es ? "Cerrar notificaciones" : "Close notifications"}
                 onClick={close}
               >
                 <X size={16} />
@@ -270,31 +259,24 @@ export function NotificationBell({
             <div className="ef-notification-list">
               {!data.entries.length && (
                 <p className="ef-notification-empty">
-                  {es
-                    ? "No hay notificaciones en esta sesión."
-                    : "No notifications this session."}
+                  {es ? "No hay notificaciones en esta sesión." : "No notifications this session."}
                 </p>
               )}
               {data.entries.map((entry) => {
                 const Icon = icons[entry.kind];
                 return (
-                  <article
-                    key={entry.id}
-                    className={`ef-notification-entry kind-${entry.kind}`}
-                  >
+                  <article key={entry.id} className={`ef-notification-entry kind-${entry.kind}`}>
                     <Icon size={16} aria-hidden="true" />
                     <div>
                       {entry.title && <strong>{entry.title}</strong>}
                       <p>{entry.message}</p>
                       <small>
                         {entry.source && <span>{entry.source} · </span>}
-                        <time
-                          dateTime={new Date(entry.createdAt).toISOString()}
-                        >
-                          {new Date(entry.createdAt).toLocaleTimeString(
-                            es ? "es" : "en",
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
+                        <time dateTime={new Date(entry.createdAt).toISOString()}>
+                          {new Date(entry.createdAt).toLocaleTimeString(es ? "es" : "en", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </time>
                         {entry.count > 1 && ` · ×${entry.count}`}
                       </small>
@@ -338,12 +320,7 @@ function NotificationToasts() {
   const data = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const entry = data.entries.find((item) => item.id === data.toast);
   return active && entry ? (
-    <TransientNotification
-      key={entry.id}
-      store={store}
-      entry={entry}
-      locale={data.locale}
-    />
+    <TransientNotification key={entry.id} store={store} entry={entry} locale={data.locale} />
   ) : null;
 }
 function TransientNotification({
@@ -368,10 +345,7 @@ function TransientNotification({
   useEffect(() => {
     if (paused) return;
     const start = Date.now();
-    const timer = window.setTimeout(
-      () => store.dismissToast(entry.id),
-      remaining.current,
-    );
+    const timer = window.setTimeout(() => store.dismissToast(entry.id), remaining.current);
     return () => {
       window.clearTimeout(timer);
       remaining.current = Math.max(0, remaining.current - (Date.now() - start));
@@ -387,8 +361,7 @@ function TransientNotification({
       onPointerLeave={() => setHovered(false)}
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget))
-          setFocused(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
     >
       <Icon size={18} aria-hidden="true" />

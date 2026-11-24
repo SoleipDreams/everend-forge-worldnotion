@@ -164,7 +164,10 @@ export function LegacyMetadataFields({
           <label>
             <span>Type</span>
             {entityTypes.length > 0 ? (
-              <WorldNotionDropdown value={entity.type} onChange={(e) => onUpdate({ type: e.target.value })}>
+              <WorldNotionDropdown
+                value={entity.type}
+                onChange={(e) => onUpdate({ type: e.target.value })}
+              >
                 {entityTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.label}
@@ -186,7 +189,10 @@ export function LegacyMetadataFields({
           <label>
             <span>Status</span>
             {statuses.length > 0 ? (
-              <WorldNotionDropdown value={entity.status} onChange={(e) => onUpdate({ status: e.target.value })}>
+              <WorldNotionDropdown
+                value={entity.status}
+                onChange={(e) => onUpdate({ status: e.target.value })}
+              >
                 {statuses.map((status) => (
                   <option key={status.id} value={status.id}>
                     {status.label}

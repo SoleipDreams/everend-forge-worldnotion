@@ -12,11 +12,7 @@ describe("FileField", () => {
     });
 
     render(
-      <FileField
-        value="References/Attachment.md"
-        onChange={onChange}
-        vaultIndex={vaultIndex}
-      />,
+      <FileField value="References/Attachment.md" onChange={onChange} vaultIndex={vaultIndex} />,
     );
 
     const trigger = screen.getByRole("button", { name: /References\/Attachment\.md/ });

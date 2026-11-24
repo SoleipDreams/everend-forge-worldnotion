@@ -50,11 +50,7 @@ export type PropertyEditorPopoverProps = {
   onChangeType: (type: CustomFieldType) => void;
   onUpdate: (patch: { description?: string; required?: boolean }) => void;
   onUpdateOptions: (options: EditableOption[]) => void;
-  onSetPresentationRole?: (
-    typeId: string,
-    role: PresentationRole,
-    propertyId?: string,
-  ) => void;
+  onSetPresentationRole?: (typeId: string, role: PresentationRole, propertyId?: string) => void;
   onSetConditions?: (conditions: Record<string, string[]>) => void;
   onSetAppliesTo?: (typeIds: string[] | undefined) => void;
   onMoveParent: (parentId: string | null) => void;
@@ -498,16 +494,16 @@ export function PropertyEditorPopover({
                           {(["portrait", "cover"] as PresentationRole[]).map((role) => {
                             const roleLabel = role === "portrait" ? "Portrait" : "Banner";
                             const currentPropertyId =
-                              role === "portrait"
-                                ? type.portraitPropertyId
-                                : type.coverPropertyId;
+                              role === "portrait" ? type.portraitPropertyId : type.coverPropertyId;
                             return (
                               <label key={role}>
                                 <span>{roleLabel}</span>
                                 <WorldNotionDropdown
                                   aria-label={`${type.label} ${roleLabel.toLowerCase()} image`}
                                   value={currentPropertyId ?? ""}
-                                  disabled={!onSetPresentationRole || type.imageProperties.length === 0}
+                                  disabled={
+                                    !onSetPresentationRole || type.imageProperties.length === 0
+                                  }
                                   onChange={(event) =>
                                     onSetPresentationRole?.(
                                       type.id,
@@ -521,7 +517,9 @@ export function PropertyEditorPopover({
                                   !type.imageProperties.some(
                                     (imageProperty) => imageProperty.id === currentPropertyId,
                                   ) ? (
-                                    <option value={currentPropertyId}>Unavailable image field</option>
+                                    <option value={currentPropertyId}>
+                                      Unavailable image field
+                                    </option>
                                   ) : null}
                                   {type.imageProperties.map((imageProperty) => (
                                     <option key={imageProperty.id} value={imageProperty.id}>

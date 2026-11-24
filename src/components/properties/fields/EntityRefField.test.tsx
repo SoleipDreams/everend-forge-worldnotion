@@ -2,7 +2,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { CustomFieldDefinition } from "../../../editorTypes";
 import { makeEntity, makeVaultIndex } from "../../../test/fixtures";
-import { EntityRefField, entityPickerItems, parseEntityRef, buildEntityRef } from "./EntityRefField";
+import {
+  EntityRefField,
+  entityPickerItems,
+  parseEntityRef,
+  buildEntityRef,
+} from "./EntityRefField";
 import { EntityRefListField } from "./EntityRefListField";
 
 const refProperty: CustomFieldDefinition = {
@@ -96,7 +101,7 @@ describe("EntityRefField", () => {
         }),
       ],
     });
-    
+
     const { container } = render(
       <EntityRefField
         property={refProperty}

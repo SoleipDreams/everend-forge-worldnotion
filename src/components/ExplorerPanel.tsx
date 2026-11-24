@@ -288,13 +288,8 @@ export function ExplorerPanel({
       const file = filesByPath.get(path);
       if (!file) return [];
       const name =
-        entitiesByPath.get(path)?.name ??
-        visualDocumentsByPath.get(path)?.name ??
-        fileTitle(path);
-      if (
-        normalizedQuery &&
-        !`${name} ${path}`.toLocaleLowerCase().includes(normalizedQuery)
-      ) {
+        entitiesByPath.get(path)?.name ?? visualDocumentsByPath.get(path)?.name ?? fileTitle(path);
+      if (normalizedQuery && !`${name} ${path}`.toLocaleLowerCase().includes(normalizedQuery)) {
         return [];
       }
       return [{ file, name }];
@@ -310,9 +305,7 @@ export function ExplorerPanel({
     const options = new Map<string, EcosystemPropertyOption>();
     ECOSYSTEM_BASE_PROPERTIES.forEach((property) => options.set(property.id, property));
     listAllProperties(index.propertiesConfig)
-      .filter(
-        (property) => !NON_INSPECTOR_PROPERTY_IDS.has(property.id) && property.id !== "type",
-      )
+      .filter((property) => !NON_INSPECTOR_PROPERTY_IDS.has(property.id) && property.id !== "type")
       .forEach((property) =>
         options.set(property.id, { id: property.id, label: property.label ?? property.id }),
       );
@@ -339,8 +332,7 @@ export function ExplorerPanel({
           .join(" ")
           .toLocaleLowerCase()
           .includes(normalizedQuery);
-      const matchesType =
-        ecosystemTypeFilter === "all" || entity.type === ecosystemTypeFilter;
+      const matchesType = ecosystemTypeFilter === "all" || entity.type === ecosystemTypeFilter;
       const filterResults = activeFilters.map((filter) => {
         const value =
           filter.propertyId === "all"
@@ -365,14 +357,7 @@ export function ExplorerPanel({
         (ecosystemMatchMode === "all" ? filterResults.every(Boolean) : filterResults.some(Boolean));
       return matchesQuery && matchesType && matchesProperties;
     });
-  }, [
-    ecosystemFilters,
-    ecosystemGroups,
-    ecosystemMatchMode,
-    ecosystemTypeFilter,
-    index,
-    query,
-  ]);
+  }, [ecosystemFilters, ecosystemGroups, ecosystemMatchMode, ecosystemTypeFilter, index, query]);
   const filteredEcosystemGroups = useMemo(() => {
     const groups = new Map<string, Entity[]>();
     ecosystemEntities.forEach((entity) => {
@@ -441,7 +426,10 @@ export function ExplorerPanel({
   useEffect(() => {
     if (!ecosystemFilterOpen || !appActive) return;
     const handleClickOutside = (event: Event) => {
-      if (ecosystemFilterRef.current && !ecosystemFilterRef.current.contains(event.target as Node)) {
+      if (
+        ecosystemFilterRef.current &&
+        !ecosystemFilterRef.current.contains(event.target as Node)
+      ) {
         setEcosystemFilterOpen(false);
       }
     };
@@ -655,7 +643,8 @@ export function ExplorerPanel({
                       type="button"
                       onClick={() => {
                         // Use legacy string actions for depth 1-3, dynamic object for depth > 3
-                        const action: ExplorerTreeAction | { action: "expandDepth"; depth: number } =
+                        const action:
+                          ExplorerTreeAction | { action: "expandDepth"; depth: number } =
                           depth === 1
                             ? "expandDepth1"
                             : depth === 2
@@ -736,9 +725,7 @@ export function ExplorerPanel({
                 <div className="ecosystem-gallery favorites-gallery">
                   {favoriteItems.map((favorite) => {
                     const entity =
-                      favorite.kind === "file"
-                        ? entitiesByPath.get(favorite.path)
-                        : undefined;
+                      favorite.kind === "file" ? entitiesByPath.get(favorite.path) : undefined;
                     if (entity) {
                       return (
                         <EcosystemGalleryCard
@@ -748,7 +735,7 @@ export function ExplorerPanel({
                           typeLabel={
                             notesEntityTypes.has(entity.type)
                               ? t("Notes")
-                              : entityTypesById.get(entity.type)?.label ?? entity.type
+                              : (entityTypesById.get(entity.type)?.label ?? entity.type)
                           }
                           color={
                             notesEntityTypes.has(entity.type)
@@ -1042,14 +1029,13 @@ export function ExplorerPanel({
                   .map(([groupId, entities]) => {
                     const type =
                       ecosystemGroupBy === "type" ? entityTypesById.get(groupId) : undefined;
-                    const isNotesGroup =
-                      ecosystemGroupBy === "type" && groupId === NOTES_GROUP_ID;
+                    const isNotesGroup = ecosystemGroupBy === "type" && groupId === NOTES_GROUP_ID;
                     const groupLabel =
                       ecosystemGroupBy === "type" && groupId === "_untyped"
-                          ? "Sin tipo"
-                          : ecosystemGroupBy === "type"
-                            ? (type?.label ?? groupId)
-                            : groupId;
+                        ? "Sin tipo"
+                        : ecosystemGroupBy === "type"
+                          ? (type?.label ?? groupId)
+                          : groupId;
 
                     return (
                       <div key={groupId} className="ecosystem-group">
@@ -1085,7 +1071,7 @@ export function ExplorerPanel({
                                 typeLabel={
                                   notesEntityTypes.has(entity.type)
                                     ? ""
-                                    : entityTypesById.get(entity.type)?.label ?? entity.type
+                                    : (entityTypesById.get(entity.type)?.label ?? entity.type)
                                 }
                                 color={
                                   notesEntityTypes.has(entity.type)
@@ -1203,76 +1189,76 @@ export function ExplorerPanel({
               <div
                 className={`explorer-tree-surface ${visibleRows.length ? "has-items" : "is-empty"}`}
               >
-              {activeSection === "allFiles" && !visibleRows.length ? (
-                <button
-                  type="button"
-                  className="explorer-create-item-button"
-                  aria-label={t("Create a folder or note")}
-                  title={t("Create a folder or note")}
-                  onClick={(event) => {
-                    const rect = event.currentTarget.getBoundingClientRect();
-                    onOpenCreateMenu?.(rect.left, rect.bottom + 4);
+                {activeSection === "allFiles" && !visibleRows.length ? (
+                  <button
+                    type="button"
+                    className="explorer-create-item-button"
+                    aria-label={t("Create a folder or note")}
+                    title={t("Create a folder or note")}
+                    onClick={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      onOpenCreateMenu?.(rect.left, rect.bottom + 4);
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                ) : null}
+                <div
+                  className={`tree-list ${pointerDragActive ? "is-pointer-dragging" : ""}`}
+                  data-tree-root-drop="true"
+                  onContextMenu={(event) => onContextMenu(event, "", "empty")}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const fromPath = event.dataTransfer.getData("text/plain");
+                    const fromKind = event.dataTransfer.getData("application/worldnotion-kind") as
+                      "file" | "folder" | "";
+                    if (fromPath) onDragMove(fromPath, "", fromKind || undefined);
                   }}
                 >
-                  <Plus size={14} />
-                </button>
-              ) : null}
-              <div
-                className={`tree-list ${pointerDragActive ? "is-pointer-dragging" : ""}`}
-                data-tree-root-drop="true"
-                onContextMenu={(event) => onContextMenu(event, "", "empty")}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const fromPath = event.dataTransfer.getData("text/plain");
-                  const fromKind = event.dataTransfer.getData("application/worldnotion-kind") as
-                    "file" | "folder" | "";
-                  if (fromPath) onDragMove(fromPath, "", fromKind || undefined);
-                }}
-              >
-                {visibleRows.length ? (
-                  <>
-                    {virtualWindow.before > 0 ? (
-                      <div style={{ height: virtualWindow.before }} />
-                    ) : null}
-                    {virtualWindow.rows.map((row) => (
-                      <ExplorerTreeRow
-                        key={row.path}
-                        row={row}
-                        selectedPath={selectedPath}
-                        multiSelectedPaths={multiSelectedPaths}
-                        pointerDragTargetPath={pointerDragTargetPath}
-                        openTabPaths={openTabPaths}
-                        dirtyTabPaths={dirtyTabPaths}
-                        favoritePaths={favoritePaths}
-                        focusedFolderPath={focusedFolderPath}
-                        folderNotesEnabled={folderNotesEnabled}
-                        onSelectPath={onSelectPath}
-                        onSelectFolder={onSelectFolder}
-                        onToggleMultiSelection={onToggleMultiSelection}
-                        onToggleExpand={onToggleExpand}
-                        onContextMenu={onContextMenu}
-                        onToggleFavorite={onToggleFavorite}
-                        onToggleFolderFocus={onToggleFolderFocus}
-                        onOpenFolderDescription={onOpenFolderDescription}
-                        onDragMove={onDragMove}
-                        onPointerDragStart={onPointerDragStart}
-                        isPointerClickSuppressed={isPointerClickSuppressed}
-                        entityTagColors={entityTagColors}
-                        customIcons={customIcons}
-                      />
-                    ))}
-                    {virtualWindow.after > 0 ? (
-                      <div style={{ height: virtualWindow.after }} />
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="explorer-empty-state">Crea tu carpeta o nota</p>
-                )}
-              </div>
+                  {visibleRows.length ? (
+                    <>
+                      {virtualWindow.before > 0 ? (
+                        <div style={{ height: virtualWindow.before }} />
+                      ) : null}
+                      {virtualWindow.rows.map((row) => (
+                        <ExplorerTreeRow
+                          key={row.path}
+                          row={row}
+                          selectedPath={selectedPath}
+                          multiSelectedPaths={multiSelectedPaths}
+                          pointerDragTargetPath={pointerDragTargetPath}
+                          openTabPaths={openTabPaths}
+                          dirtyTabPaths={dirtyTabPaths}
+                          favoritePaths={favoritePaths}
+                          focusedFolderPath={focusedFolderPath}
+                          folderNotesEnabled={folderNotesEnabled}
+                          onSelectPath={onSelectPath}
+                          onSelectFolder={onSelectFolder}
+                          onToggleMultiSelection={onToggleMultiSelection}
+                          onToggleExpand={onToggleExpand}
+                          onContextMenu={onContextMenu}
+                          onToggleFavorite={onToggleFavorite}
+                          onToggleFolderFocus={onToggleFolderFocus}
+                          onOpenFolderDescription={onOpenFolderDescription}
+                          onDragMove={onDragMove}
+                          onPointerDragStart={onPointerDragStart}
+                          isPointerClickSuppressed={isPointerClickSuppressed}
+                          entityTagColors={entityTagColors}
+                          customIcons={customIcons}
+                        />
+                      ))}
+                      {virtualWindow.after > 0 ? (
+                        <div style={{ height: virtualWindow.after }} />
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="explorer-empty-state">Crea tu carpeta o nota</p>
+                  )}
+                </div>
               </div>
             )}
           </section>
@@ -1284,7 +1270,11 @@ export function ExplorerPanel({
         className={`templates-dock explorer-footer-dock ${footerDockExpanded ? "expanded" : ""}`}
       >
         <div className="templates-dock-header">
-          <div className="explorer-footer-switcher" role="group" aria-label={t("Explorer shortcuts")}>
+          <div
+            className="explorer-footer-switcher"
+            role="group"
+            aria-label={t("Explorer shortcuts")}
+          >
             <button
               type="button"
               className={`explorer-footer-tab ${footerDockExpanded && footerDockView === "recent" ? "active" : ""}`}

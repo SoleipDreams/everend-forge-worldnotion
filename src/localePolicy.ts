@@ -48,7 +48,11 @@ export function setDocumentLocale(locale: Locale) {
   document.documentElement.dir = "ltr";
 }
 
-export function formatDate(value: Date | number | string, locale: Locale, options?: Intl.DateTimeFormatOptions) {
+export function formatDate(
+  value: Date | number | string,
+  locale: Locale,
+  options?: Intl.DateTimeFormatOptions,
+) {
   return new Intl.DateTimeFormat(locale, options).format(new Date(value));
 }
 
@@ -56,27 +60,32 @@ export function formatNumber(value: number, locale: Locale, options?: Intl.Numbe
   return new Intl.NumberFormat(locale, options).format(value);
 }
 
-export function formatList(values: readonly string[], locale: Locale, options?: Intl.ListFormatOptions) {
+export function formatList(
+  values: readonly string[],
+  locale: Locale,
+  options?: Intl.ListFormatOptions,
+) {
   return new Intl.ListFormat(locale, options).format(values);
 }
 
 export function interpolate(template: string, values: Record<string, string | number> = {}) {
-  return template.replace(/{{\s*([\w.-]+)\s*}}/g, (_, key: string) => String(values[key] ?? `{{${key}}}`));
+  return template.replace(/{{\s*([\w.-]+)\s*}}/g, (_, key: string) =>
+    String(values[key] ?? `{{${key}}}`),
+  );
 }
 
 function lookup(catalog: TranslationCatalog, key: string): string | undefined {
-  const value = key.split(".").reduce<TranslationValue | undefined>(
-    (current, part) => (current && typeof current !== "string" ? current[part] : undefined),
-    catalog,
-  );
+  const value = key
+    .split(".")
+    .reduce<TranslationValue | undefined>(
+      (current, part) => (current && typeof current !== "string" ? current[part] : undefined),
+      catalog,
+    );
   return typeof value === "string" ? value : undefined;
 }
 
 /** Small i18next-compatible translation adapter for static resource catalogs. */
-export function createTranslator(
-  resources: Record<Locale, TranslationCatalog>,
-  locale: Locale,
-) {
+export function createTranslator(resources: Record<Locale, TranslationCatalog>, locale: Locale) {
   return (key: string, values?: Record<string, string | number>) =>
     interpolate(lookup(resources[locale], key) ?? lookup(resources.en, key) ?? key, values);
 }
@@ -99,10 +108,16 @@ export function assertCatalogParity(source: TranslationCatalog, translation: Tra
   const mismatched = [...sourceLeaves].flatMap(([key, text]) => {
     const translated = translationLeaves.get(key);
     if (!translated) return [];
-    const tokens = (input: string) => [...input.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((match) => match[1]).sort().join(",");
+    const tokens = (input: string) =>
+      [...input.matchAll(/{{\s*([\w.-]+)\s*}}/g)]
+        .map((match) => match[1])
+        .sort()
+        .join(",");
     return tokens(text) === tokens(translated) ? [] : [key];
   });
   if (missing.length || extra.length || mismatched.length) {
-    throw new Error(`Invalid i18n catalog: missing=[${missing.join(", ")}], extra=[${extra.join(", ")}], interpolations=[${mismatched.join(", ")}]`);
+    throw new Error(
+      `Invalid i18n catalog: missing=[${missing.join(", ")}], extra=[${extra.join(", ")}], interpolations=[${mismatched.join(", ")}]`,
+    );
   }
 }

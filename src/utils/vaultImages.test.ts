@@ -32,9 +32,7 @@ describe("isImagePath / isExternalUrl", () => {
 
 describe("normalizeVaultImagePath", () => {
   it("normalizes Windows separators, encoding, and safe parent segments", () => {
-    expect(normalizeVaultImagePath(".\\attachments\\my%20art.png")).toBe(
-      "attachments/my art.png",
-    );
+    expect(normalizeVaultImagePath(".\\attachments\\my%20art.png")).toBe("attachments/my art.png");
     expect(normalizeVaultImagePath("Characters/../attachments/hero.png")).toBe(
       "attachments/hero.png",
     );

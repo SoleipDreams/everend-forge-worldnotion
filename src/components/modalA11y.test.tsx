@@ -26,13 +26,15 @@ describe("accesibilidad de modales", () => {
   it("UnsavedChangesDialog enfoca Guardar, expone alertdialog y cierra con Escape", () => {
     const onCancel = vi.fn();
     render(
-      <WorldnotionLocaleProvider value="es"><UnsavedChangesDialog
-        isOpen
-        fileName="Mara.md"
-        onDiscard={vi.fn()}
-        onSave={async () => {}}
-        onCancel={onCancel}
-      /></WorldnotionLocaleProvider>,
+      <WorldnotionLocaleProvider value="es">
+        <UnsavedChangesDialog
+          isOpen
+          fileName="Mara.md"
+          onDiscard={vi.fn()}
+          onSave={async () => {}}
+          onCancel={onCancel}
+        />
+      </WorldnotionLocaleProvider>,
     );
 
     const dialog = screen.getByRole("alertdialog", { name: "Cambios sin guardar" });

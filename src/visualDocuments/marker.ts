@@ -18,5 +18,5 @@ export function hasVisualDocumentMarker(markdown: string): boolean {
 }
 
 export function isReservedVisualDocumentPath(path: readonly string[] | string): boolean {
-  return (typeof path === "string" ? path : path[0] ?? "").split(".")[0] === VISUAL_DOCUMENT_KEY;
+  return (typeof path === "string" ? path : (path[0] ?? "")).split(".")[0] === VISUAL_DOCUMENT_KEY;
 }

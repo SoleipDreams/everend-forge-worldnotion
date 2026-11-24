@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type {
-  AppSettingsV4,
-  DocumentTabGroup,
-  OpenTab,
-  WorkspaceLayoutV1,
-} from "../editorTypes";
+import type { AppSettingsV4, DocumentTabGroup, OpenTab, WorkspaceLayoutV1 } from "../editorTypes";
 import { serializeWorkspaceSession } from "../utils/tabUtils";
 import { normalizeDocumentTabGroups } from "../utils/documentTabGroups";
 import { explorerAncestorsForPath } from "../utils/explorerSelectors";
@@ -38,19 +33,16 @@ function normalizeWorkspaceDocumentState(
     activePathToSync,
   );
   const orderedTabs = orderOpenTabsByLayout(state.tabs, workspaceLayout);
-  const tabs = orderedTabs.every((tab, index) => tab === state.tabs[index]) &&
+  const tabs =
+    orderedTabs.every((tab, index) => tab === state.tabs[index]) &&
     orderedTabs.length === state.tabs.length
-    ? state.tabs
-    : orderedTabs;
+      ? state.tabs
+      : orderedTabs;
   return {
     ...state,
     tabs,
     workspaceLayout,
-    documentTabGroups: normalizeDocumentTabGroups(
-      state.documentTabGroups,
-      tabs,
-      workspaceLayout,
-    ),
+    documentTabGroups: normalizeDocumentTabGroups(state.documentTabGroups, tabs, workspaceLayout),
   };
 }
 
@@ -79,13 +71,12 @@ export function useWorkspaceState({
   setSettings,
   onTabsChange,
 }: UseWorkspaceStateParams) {
-  const [workspaceDocumentState, setWorkspaceDocumentState] = useState<WorkspaceDocumentState>(
-    () =>
-      normalizeWorkspaceDocumentState({
-        tabs: [],
-        documentTabGroups: [],
-        workspaceLayout: createDefaultWorkspaceLayout(),
-      }),
+  const [workspaceDocumentState, setWorkspaceDocumentState] = useState<WorkspaceDocumentState>(() =>
+    normalizeWorkspaceDocumentState({
+      tabs: [],
+      documentTabGroups: [],
+      workspaceLayout: createDefaultWorkspaceLayout(),
+    }),
   );
   const { tabs, documentTabGroups, activeTabPath, workspaceLayout } = workspaceDocumentState;
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -110,12 +101,15 @@ export function useWorkspaceState({
     setWorkspaceDocumentState(next);
   }, []);
 
-  const setTabs = useCallback<Dispatch<SetStateAction<OpenTab[]>>>((update) => {
-    updateWorkspaceDocumentState((current) => ({
-      ...current,
-      tabs: typeof update === "function" ? update(current.tabs) : update,
-    }));
-  }, [updateWorkspaceDocumentState]);
+  const setTabs = useCallback<Dispatch<SetStateAction<OpenTab[]>>>(
+    (update) => {
+      updateWorkspaceDocumentState((current) => ({
+        ...current,
+        tabs: typeof update === "function" ? update(current.tabs) : update,
+      }));
+    },
+    [updateWorkspaceDocumentState],
+  );
   const setDocumentTabGroups = useCallback<Dispatch<SetStateAction<DocumentTabGroup[]>>>(
     (update) => {
       updateWorkspaceDocumentState((current) => ({

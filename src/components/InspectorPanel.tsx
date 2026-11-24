@@ -162,9 +162,7 @@ export function InspectorPanel({
             </div>
             <div>
               <h3>{ui.setupProperties}</h3>
-              <p>
-                {ui.propertiesSetupDescription}
-              </p>
+              <p>{ui.propertiesSetupDescription}</p>
             </div>
             <div className="inspector-setup-actions">
               <button

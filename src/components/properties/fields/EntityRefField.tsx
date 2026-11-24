@@ -50,15 +50,15 @@ export function EntityRefField({
   const anchorRef = useRef<HTMLButtonElement>(null);
   const variantAnchorRef = useRef<HTMLButtonElement>(null);
   const variantMenuRef = useRef<HTMLDivElement>(null);
-  
+
   const stringValue = typeof value === "string" ? value : "";
   const { entityId, variantId } = parseEntityRef(stringValue);
-  
+
   const resolved = useMemo(
     () => (entityId ? findEntityById(vaultIndex, entityId) : undefined),
     [entityId, vaultIndex],
   );
-  
+
   const items = useMemo(
     () => entityPickerItems(vaultIndex, property.targetTypes),
     [property.targetTypes, vaultIndex],
@@ -67,11 +67,7 @@ export function EntityRefField({
   const { refs: variantRefs, floatingStyles: variantFloatingStyles } = useFloating({
     open: variantOpen,
     placement: "bottom-start",
-    middleware: [
-      offset(4),
-      flip({ padding: 8 }),
-      shift({ padding: 8 }),
-    ],
+    middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 
@@ -79,8 +75,10 @@ export function EntityRefField({
     variantRefs.setReference(variantAnchorRef.current);
     variantRefs.setFloating(variantMenuRef.current);
   }, [variantRefs, variantOpen]);
-  
-  const displayLabel = resolved ? entityRefDisplayLabel(vaultIndex, stringValue) : stringValue || "";
+
+  const displayLabel = resolved
+    ? entityRefDisplayLabel(vaultIndex, stringValue)
+    : stringValue || "";
 
   return (
     <div className="entity-ref-field">
@@ -146,7 +144,7 @@ export function EntityRefField({
         onClose={() => setOpen(false)}
       />
       {resolved && resolved.variants && resolved.variants.length > 0 ? (
-        <div 
+        <div
           ref={variantMenuRef}
           className={`entity-ref-variant-menu ${variantOpen ? "open" : ""}`}
           style={variantFloatingStyles}

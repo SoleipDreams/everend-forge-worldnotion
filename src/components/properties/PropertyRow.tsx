@@ -3,13 +3,7 @@ import { useDroppable } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { CollisionPriority } from "@dnd-kit/abstract";
 import { OptimisticSortingPlugin } from "@dnd-kit/dom/sortable";
-import {
-  ChevronDown,
-  ChevronRight,
-  Plus,
-  RotateCcw,
-  Wand2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, RotateCcw, Wand2 } from "lucide-react";
 import type { BasePropertyDefinition, CustomFieldDefinition } from "../../editorTypes";
 import { useWorldnotionUi } from "../../i18n";
 import type { InspectorPropertyTreeNode } from "../../utils/propertiesConfig";
@@ -143,9 +137,7 @@ export function PropertyRow({
     },
     disabled: !node.conditionActive || isPinnedProperty,
   });
-  const {
-    ref: groupDropRef,
-  } = useDroppable<InspectorPropertyGroupDropData>({
+  const { ref: groupDropRef } = useDroppable<InspectorPropertyGroupDropData>({
     id: `group-drop:${property.id}`,
     data: {
       kind: "group",
@@ -245,7 +237,9 @@ export function PropertyRow({
               title={propertyActionHint}
               aria-label={`Edit ${propertyLabel}`}
               aria-haspopup="dialog"
-              aria-keyshortcuts={isPinnedProperty ? undefined : "Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"}
+              aria-keyshortcuts={
+                isPinnedProperty ? undefined : "Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"
+              }
               onClick={(event) => handlers.onOpenPropertyEditor(property.id, event.currentTarget)}
             >
               {/* eslint-disable-next-line react-hooks/static-components */}
@@ -263,7 +257,9 @@ export function PropertyRow({
               title={propertyActionHint}
               aria-label={`Edit ${propertyLabel}`}
               aria-haspopup="dialog"
-              aria-keyshortcuts={isPinnedProperty ? undefined : "Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"}
+              aria-keyshortcuts={
+                isPinnedProperty ? undefined : "Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"
+              }
               onClick={(event) => handlers.onOpenPropertyEditor(property.id, event.currentTarget)}
             >
               {/* eslint-disable-next-line react-hooks/static-components */}

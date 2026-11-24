@@ -105,7 +105,11 @@ export function validatePropertyStructure(definitions: PropertyDefinition[]): Va
 export function validatePropertyDefinition(definition: PropertyDefinition): ValidationError[] {
   const errors: ValidationError[] = [];
   if (definition.id === "forgeView" || definition.id.startsWith("forgeView.")) {
-    errors.push({ type: "invalid-configuration", propertyId: definition.id, message: "forgeView is reserved for visual documents." });
+    errors.push({
+      type: "invalid-configuration",
+      propertyId: definition.id,
+      message: "forgeView is reserved for visual documents.",
+    });
   }
 
   // Required fields

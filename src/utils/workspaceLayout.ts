@@ -51,10 +51,15 @@ export function documentDockTabId(path: string): string {
   return `document:${path}`;
 }
 
-export function isDockMoveAllowedAroundDocumentAnchor(input: MoveDockTabInput, layout?: WorkspaceLayoutV1): boolean {
+export function isDockMoveAllowedAroundDocumentAnchor(
+  input: MoveDockTabInput,
+  layout?: WorkspaceLayoutV1,
+): boolean {
   if (!input.tabId.startsWith("document:")) return true;
   return (
-    (layout ? groupCanHostDocument(findGroup(layout.root, input.targetGroupId)) : input.targetGroupId === DOCUMENT_GROUP_ID) &&
+    (layout
+      ? groupCanHostDocument(findGroup(layout.root, input.targetGroupId))
+      : input.targetGroupId === DOCUMENT_GROUP_ID) &&
     ["center", "left", "right", "top", "bottom"].includes(input.position)
   );
 }
@@ -78,7 +83,10 @@ function createDockGroup(id: string, tabs: DockTabRef[], activeTabId?: string): 
     tabs,
     activeTabId:
       activeTabId && tabs.some((tab) => tab.id === activeTabId) ? activeTabId : tabs[0]?.id,
-    role: id === DOCUMENT_GROUP_ID || tabs.some((tab) => tab.kind === "document") ? "documents" : "panels",
+    role:
+      id === DOCUMENT_GROUP_ID || tabs.some((tab) => tab.kind === "document")
+        ? "documents"
+        : "panels",
   };
 }
 
@@ -306,7 +314,12 @@ export function moveDockTab(layout: WorkspaceLayoutV1, input: MoveDockTabInput):
   if (!isDockMoveAllowedAroundDocumentAnchor(input, layout)) {
     return normalizeWorkspaceLayout(layout);
   }
-  if (input.sourceGroupId === input.targetGroupId && input.position !== "center" && findGroup(layout.root, input.sourceGroupId)?.tabs.length === 1) return layout;
+  if (
+    input.sourceGroupId === input.targetGroupId &&
+    input.position !== "center" &&
+    findGroup(layout.root, input.sourceGroupId)?.tabs.length === 1
+  )
+    return layout;
 
   if (input.position === "center" && input.sourceGroupId === input.targetGroupId) {
     return reorderTabWithinGroup(layout, input);
@@ -326,7 +339,13 @@ export function moveDockTab(layout: WorkspaceLayoutV1, input: MoveDockTabInput):
 
   const nextRoot =
     input.position === "center"
-      ? insertTabIntoGroup(removed.node, targetGroupId, removed.tab, input.targetTabId, input.targetSide)
+      ? insertTabIntoGroup(
+          removed.node,
+          targetGroupId,
+          removed.tab,
+          input.targetTabId,
+          input.targetSide,
+        )
       : splitGroupWithTab(removed.node, targetGroupId, removed.tab, input.position);
 
   return normalizeWorkspaceLayout({
@@ -361,12 +380,19 @@ export function closeDockTab(layout: WorkspaceLayoutV1, tabId: string): Workspac
   const normalized = normalizeWorkspaceLayout({
     ...layout,
     root: removed.node,
-    activeGroupId: findGroup(removed.node, groupId) ? groupId : (findFirstDocumentGroupId(removed.node) ?? findFirstGroupId(removed.node) ?? DOCUMENT_GROUP_ID),
+    activeGroupId: findGroup(removed.node, groupId)
+      ? groupId
+      : (findFirstDocumentGroupId(removed.node) ??
+        findFirstGroupId(removed.node) ??
+        DOCUMENT_GROUP_ID),
   });
   // Closing the final writing tab recreates the empty writing pane. Keep that
   // pane focused rather than transferring document commands to the explorer.
   return tabId.startsWith("document:") && !documentPathsInLayout(normalized).length
-    ? { ...normalized, activeGroupId: findFirstDocumentGroupId(normalized.root) ?? normalized.activeGroupId }
+    ? {
+        ...normalized,
+        activeGroupId: findFirstDocumentGroupId(normalized.root) ?? normalized.activeGroupId,
+      }
     : normalized;
 }
 
@@ -544,9 +570,10 @@ function reorderTabWithinGroup(
       const targetIndex = input.targetTabId
         ? remaining.findIndex((tab) => tab.id === input.targetTabId)
         : remaining.length;
-      const insertIndex = targetIndex === -1
-        ? remaining.length
-        : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
+      const insertIndex =
+        targetIndex === -1
+          ? remaining.length
+          : Math.min(remaining.length, targetIndex + (input.targetSide === "after" ? 1 : 0));
       return {
         ...group,
         tabs: [...remaining.slice(0, insertIndex), movingTab, ...remaining.slice(insertIndex)],
@@ -569,9 +596,10 @@ function insertTabIntoGroup(
     const targetIndex = targetTabId
       ? existingTabs.findIndex((candidate) => candidate.id === targetTabId)
       : existingTabs.length;
-    const insertIndex = targetIndex === -1
-      ? existingTabs.length
-      : Math.min(existingTabs.length, targetIndex + (targetSide === "after" ? 1 : 0));
+    const insertIndex =
+      targetIndex === -1
+        ? existingTabs.length
+        : Math.min(existingTabs.length, targetIndex + (targetSide === "after" ? 1 : 0));
     return {
       ...group,
       tabs: [...existingTabs.slice(0, insertIndex), tab, ...existingTabs.slice(insertIndex)],
@@ -721,7 +749,9 @@ function findFirstGroupId(node: DockNode): string | undefined {
 
 function findFirstDocumentGroupId(node: DockNode): string | undefined {
   if (node.type === "group") {
-    return node.role === "documents" || node.tabs.some((tab) => tab.kind === "document") || node.id === DOCUMENT_GROUP_ID
+    return node.role === "documents" ||
+      node.tabs.some((tab) => tab.kind === "document") ||
+      node.id === DOCUMENT_GROUP_ID
       ? node.id
       : undefined;
   }
@@ -736,24 +766,51 @@ function findFirstPanelGroupId(node: DockNode): string | undefined {
 }
 
 function groupCanHostDocument(group: DockGroupNode | undefined): boolean {
-  return Boolean(group && (group.role === "documents" || group.id === DOCUMENT_GROUP_ID || group.tabs.some((tab) => tab.kind === "document")));
+  return Boolean(
+    group &&
+    (group.role === "documents" ||
+      group.id === DOCUMENT_GROUP_ID ||
+      group.tabs.some((tab) => tab.kind === "document")),
+  );
 }
 
-export function documentGroupIdForPath(layout: WorkspaceLayoutV1, path: string): string | undefined {
+export function documentGroupIdForPath(
+  layout: WorkspaceLayoutV1,
+  path: string,
+): string | undefined {
   return findGroupIdForTab(layout.root, documentDockTabId(path));
 }
 
 /** Open a linked note beside its visual document, preserving an existing pane. */
-export function openDocumentBeside(layout: WorkspaceLayoutV1, path: string, originPath: string): WorkspaceLayoutV1 {
+export function openDocumentBeside(
+  layout: WorkspaceLayoutV1,
+  path: string,
+  originPath: string,
+): WorkspaceLayoutV1 {
   const next = addDocumentToLayout(layout, path);
   if (path === originPath) return next;
   const sourceGroupId = documentGroupIdForPath(next, path);
   const targetGroupId = documentGroupIdForPath(next, originPath);
   if (!sourceGroupId || !targetGroupId) return next;
-  const beside = sourceGroupId !== targetGroupId ? next : moveDockTab(next, { tabId: documentDockTabId(path), sourceGroupId, targetGroupId, targetTabId: documentDockTabId(originPath), position: "right" });
+  const beside =
+    sourceGroupId !== targetGroupId
+      ? next
+      : moveDockTab(next, {
+          tabId: documentDockTabId(path),
+          sourceGroupId,
+          targetGroupId,
+          targetTabId: documentDockTabId(originPath),
+          position: "right",
+        });
   // Adding then extracting the linked tab must not select an unrelated tab in
   // its old pane. The source stays visible while the linked pane takes focus.
-  return { ...beside, root: updateGroup(beside.root, targetGroupId, group => ({ ...group, activeTabId: documentDockTabId(originPath) })) };
+  return {
+    ...beside,
+    root: updateGroup(beside.root, targetGroupId, (group) => ({
+      ...group,
+      activeTabId: documentDockTabId(originPath),
+    })),
+  };
 }
 
 function nextGroupId(groupId: string, tabId: string): string {

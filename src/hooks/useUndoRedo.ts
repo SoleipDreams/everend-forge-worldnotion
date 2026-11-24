@@ -17,18 +17,21 @@ export function useUndoRedo(options: UseUndoRedoOptions = {}) {
   const [undoStack, setUndoStack] = useState<UndoRedoAction[]>([]);
   const [redoStack, setRedoStack] = useState<UndoRedoAction[]>([]);
 
-  const recordAction = useCallback((action: UndoRedoAction) => {
-    setUndoStack((current) => {
-      const next = [...current, action];
-      // Keep only last maxHistorySize items
-      if (next.length > maxHistorySize) {
-        return next.slice(-maxHistorySize);
-      }
-      return next;
-    });
-    // Clear redo stack when new action is recorded
-    setRedoStack([]);
-  }, [maxHistorySize]);
+  const recordAction = useCallback(
+    (action: UndoRedoAction) => {
+      setUndoStack((current) => {
+        const next = [...current, action];
+        // Keep only last maxHistorySize items
+        if (next.length > maxHistorySize) {
+          return next.slice(-maxHistorySize);
+        }
+        return next;
+      });
+      // Clear redo stack when new action is recorded
+      setRedoStack([]);
+    },
+    [maxHistorySize],
+  );
 
   const undo = useCallback(() => {
     setUndoStack((current) => {

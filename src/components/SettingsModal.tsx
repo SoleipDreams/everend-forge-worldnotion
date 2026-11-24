@@ -138,7 +138,7 @@ function UniverseLanguageSettings({
     });
   };
 
-  return settingsContent((
+  return settingsContent(
     <div className="locale-settings-fields">
       <label>
         <span>Primary language</span>
@@ -182,7 +182,8 @@ function UniverseLanguageSettings({
         ) : (
           <p>None yet.</p>
         )}
-        <WorldNotionDropdown aria-label="Additional languages"
+        <WorldNotionDropdown
+          aria-label="Additional languages"
           value=""
           onChange={(event) => {
             if (event.target.value) update(locales[0], [...locales, event.target.value]);
@@ -220,8 +221,9 @@ function UniverseLanguageSettings({
           Add invented language
         </button>
       </div>
-    </div>
-  ), locale);
+    </div>,
+    locale,
+  );
 }
 
 function eventToShortcut(event: KeyboardEvent) {
@@ -469,15 +471,30 @@ type SettingsSection =
   | "ai-advisor"
   | "help";
 
-
 const primaryFontOptions = [
   ["sans", "Sans serif"],
   ["serif", "Serif editorial"],
   ["humanist", "Humanist"],
 ] as const;
 
-const integratedSettingsPages = worldnotionSettingsPages.filter(item => !["worldnotion.general","worldnotion.help"].includes(item.id));
-const legacyHostPages = [...worldnotionSettingsPages, ...["language","update","license"].map(id => ({ id: "suite."+id, owner: "suite", group: {en:"General",es:"General"}, title: id === "language" ? {en:"Suite preferences",es:"Preferencias de la Suite"} : id === "update" ? {en:"Updates",es:"Actualizaciones"} : {en:"License",es:"Licencia"}, controls: [] }))];
+const integratedSettingsPages = worldnotionSettingsPages.filter(
+  (item) => !["worldnotion.general", "worldnotion.help"].includes(item.id),
+);
+const legacyHostPages = [
+  ...worldnotionSettingsPages,
+  ...["language", "update", "license"].map((id) => ({
+    id: "suite." + id,
+    owner: "suite",
+    group: { en: "General", es: "General" },
+    title:
+      id === "language"
+        ? { en: "Suite preferences", es: "Preferencias de la Suite" }
+        : id === "update"
+          ? { en: "Updates", es: "Actualizaciones" }
+          : { en: "License", es: "Licencia" },
+    controls: [],
+  })),
+];
 
 export function SettingsModal({
   settings,
@@ -503,16 +520,20 @@ export function SettingsModal({
   suiteSettings,
   settingsHost,
 }: SettingsModalProps) {
-  const [localPage, setLocalPage] = useState(() => worldnotionSettingsPage(initialSection ?? "appearance-behavior"));
+  const [localPage, setLocalPage] = useState(() =>
+    worldnotionSettingsPage(initialSection ?? "appearance-behavior"),
+  );
   const page = settingsHost?.page ?? localPage;
   const section = page === "suite.language" ? "suite" : page.split(".").at(-1)!;
-  const activeSection = ["document","editor","workspace","shortcuts"].includes(section) ? "appearance-behavior" : section;
-  const appearanceBehaviorTab = section === "document" ? "appearance" : section === "editor" ? "editor" : "workspace";
+  const activeSection = ["document", "editor", "workspace", "shortcuts"].includes(section)
+    ? "appearance-behavior"
+    : section;
+  const appearanceBehaviorTab =
+    section === "document" ? "appearance" : section === "editor" ? "editor" : "workspace";
   const interfaceLocale = resolveInterfaceLocale(
     suiteSettings?.localePreference ?? settings.localePreference ?? "system",
   );
   const t = (text: string) => worldnotionSurfaceText(interfaceLocale, text);
-
 
   const interfaceCopy = interfaceLocaleCopy(interfaceLocale);
   const settingsText = worldnotionSettingsCopy(interfaceLocale);
@@ -567,11 +588,17 @@ export function SettingsModal({
   const [aiProviderError, setAiProviderError] = useState("");
 
   useEffect(() => {
-    if (initialSection && !hidden && !settingsHost) setLocalPage(worldnotionSettingsPage(initialSection));
+    if (initialSection && !hidden && !settingsHost)
+      setLocalPage(worldnotionSettingsPage(initialSection));
   }, [initialSection, hidden, settingsHost?.open]);
-  useEffect(() => { if (!hidden && settingsHost) settingsHost.open(worldnotionSettingsPage(initialSection)); }, [hidden, initialSection, settingsHost?.open]);
+  useEffect(() => {
+    if (!hidden && settingsHost) settingsHost.open(worldnotionSettingsPage(initialSection));
+  }, [hidden, initialSection, settingsHost?.open]);
   const wasHostVisible = useRef(false);
-  useEffect(() => { if (wasHostVisible.current && !settingsHost?.visible) onClose(); wasHostVisible.current = Boolean(settingsHost?.visible); }, [settingsHost?.visible]);
+  useEffect(() => {
+    if (wasHostVisible.current && !settingsHost?.visible) onClose();
+    wasHostVisible.current = Boolean(settingsHost?.visible);
+  }, [settingsHost?.visible]);
 
   useEffect(() => {
     if (!universe) return;
@@ -784,1406 +811,1527 @@ export function SettingsModal({
   }
 
   const discardDrafts = () => {
-    setProfileDraft({ ...universe?.profile, name: universe?.profile?.name ?? universe?.name, icon: universe?.profile?.icon ?? {type:"preset",value:"book"} });
-    setPropertiesDraft(universe?.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode));
-    setProfileDirty(false); setPropertiesDirty(false); setDraftSaveError("");
+    setProfileDraft({
+      ...universe?.profile,
+      name: universe?.profile?.name ?? universe?.name,
+      icon: universe?.profile?.icon ?? { type: "preset", value: "book" },
+    });
+    setPropertiesDraft(
+      universe?.propertiesConfig ?? createStarterPropertiesConfig(initialPropertiesMode),
+    );
+    setProfileDirty(false);
+    setPropertiesDirty(false);
+    setDraftSaveError("");
   };
   const saveDrafts = async () => {
     setDraftSaveError("");
     if (profileDirty) {
-      if (!onSaveUniverseProfile) throw new Error(interfaceLocale === "es" ? "No se puede guardar el perfil." : "Profile saving is unavailable.");
-      const snapshot = profileDraftRef.current; setProfileSaving(true);
-      try { await onSaveUniverseProfile(snapshot); setProfileDirty(JSON.stringify(profileDraftRef.current) !== JSON.stringify(snapshot)); }
-      finally { setProfileSaving(false); }
+      if (!onSaveUniverseProfile)
+        throw new Error(
+          interfaceLocale === "es"
+            ? "No se puede guardar el perfil."
+            : "Profile saving is unavailable.",
+        );
+      const snapshot = profileDraftRef.current;
+      setProfileSaving(true);
+      try {
+        await onSaveUniverseProfile(snapshot);
+        setProfileDirty(JSON.stringify(profileDraftRef.current) !== JSON.stringify(snapshot));
+      } finally {
+        setProfileSaving(false);
+      }
     }
     if (propertiesDirty) {
-      const save = universe?.hasEverendWorkspace ? onSavePropertiesConfig : onInitializePropertiesWorkspace;
-      if (!save) throw new Error(interfaceLocale === "es" ? "No se pueden guardar las propiedades." : "Property saving is unavailable.");
-      const snapshot = propertiesDraftRef.current; setPropertiesSaving(true);
-      try { await save(snapshot); setPropertiesDirty(JSON.stringify(propertiesDraftRef.current) !== JSON.stringify(snapshot)); }
-      finally { setPropertiesSaving(false); }
+      const save = universe?.hasEverendWorkspace
+        ? onSavePropertiesConfig
+        : onInitializePropertiesWorkspace;
+      if (!save)
+        throw new Error(
+          interfaceLocale === "es"
+            ? "No se pueden guardar las propiedades."
+            : "Property saving is unavailable.",
+        );
+      const snapshot = propertiesDraftRef.current;
+      setPropertiesSaving(true);
+      try {
+        await save(snapshot);
+        setPropertiesDirty(JSON.stringify(propertiesDraftRef.current) !== JSON.stringify(snapshot));
+      } finally {
+        setPropertiesSaving(false);
+      }
     }
   };
-  const draft: SettingsDraft = { dirty: profileDirty || propertiesDirty, busy: profileSaving || propertiesSaving, save: saveDrafts, discard: discardDrafts };
-  return <AppInteractionContext.Provider value={settingsHost ? settingsHost.visible && page.startsWith("worldnotion.") : !hidden}><SettingsFrame title={interfaceLocale === "es" ? "Ajustes de WorldNotion" : "WorldNotion settings"} locale={interfaceLocale} pages={settingsHost ? integratedSettingsPages : suiteSettings ? legacyHostPages : worldnotionSettingsPages} page={page} onPage={setLocalPage} visible={!hidden} onClose={onClose} host={settingsHost} hasUniverse={Boolean(universe)} draft={draft} helpPage="worldnotion.help" onHelp={() => {}} contentClassName="worldnotion-settings-content">
-{section === "general" ? <div className="settings-grid">{!suiteSettings && <label><span>{interfaceLocale === "es" ? "Fuente de interfaz" : "Interface typeface"}</span><WorldNotionDropdown value={settings.interfaceFont ?? "sans"} onChange={event => onChange({...settings, interfaceFont: event.target.value as NonNullable<AppSettingsV4["interfaceFont"]>})}><option value="sans">Sans serif</option><option value="serif">Serif</option><option value="humanist">Humanist</option></WorldNotionDropdown></label>}
-                    {!suiteSettings ? (
-                      <label>
-                        <span>{interfaceCopy.interfaceLanguage}</span>
-                        <WorldNotionDropdown
-                          value={settings.localePreference ?? "system"}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              localePreference: event.target.value as "system" | "en" | "es",
-                            })
-                          }
-                        >
-                          <option value="system">{interfaceCopy.system}</option>
-                          <option value="en">English</option>
-                          <option value="es">Español</option>
-                        </WorldNotionDropdown>
-                      </label>
-                    ) : null}
-                    <label>
-                      <span>{settingsText.activeStyle}</span>
-                      {suiteSettings ? (
-                        <input
-                          value={themeById(normalizeThemeId(suiteSettings.style)).label}
-                          readOnly
-                        />
-                      ) : (
-                        <WorldNotionDropdown
-                          value={settings.theme}
-                          onChange={(event) =>
-                            onChange({ ...settings, theme: normalizeThemeId(event.target.value) })
-                          }
-                        >
-                          {THEMES.map((theme) => (
-                            <option key={theme.id} value={theme.id}>
-                              {theme.label}
-                            </option>
-                          ))}
-                        </WorldNotionDropdown>
-                      )}
-                    </label>
-<label><span>{interfaceLocale === "es" ? "Modo del tema" : "Theme mode"}</span><button type="button" onClick={() => onChange({...settings, theme: toggledThemeMode(settings.theme)})}>{interfaceLocale === "es" ? "Cambiar claro / oscuro" : "Toggle light / dark"}</button></label>
-                    <label className="settings-checkbox">
-                      <span>{interfaceLocale === "es" ? "Fondo difuminado" : "Soft background"}</span>
-                      <input type="checkbox" checked={suiteSettings?.ambientBackground ?? settings.ambientBackground !== false}
-                        onChange={event => suiteSettings?.onAmbientBackgroundChange
-                          ? suiteSettings.onAmbientBackgroundChange(event.target.checked)
-                          : onChange({ ...settings, ambientBackground: event.target.checked })} />
-                    </label>
-                    <SceneChoices locale={interfaceLocale} scene={suiteSettings?.backgroundScene ?? settings.backgroundScene} onScene={backgroundScene => suiteSettings?.onBackgroundSceneChange ? suiteSettings.onBackgroundSceneChange(backgroundScene) : onChange({ ...settings, backgroundScene })} />
-</div> : null}
-            {activeSection === "suite" && suiteSettings ? (
-              <div className="settings-panel">
-                <div className="settings-page-title">
-                  <h3>{settingsText.suiteTitle}</h3>
-                  <p>{settingsText.suiteDescription}</p>
+  const draft: SettingsDraft = {
+    dirty: profileDirty || propertiesDirty,
+    busy: profileSaving || propertiesSaving,
+    save: saveDrafts,
+    discard: discardDrafts,
+  };
+  return (
+    <AppInteractionContext.Provider
+      value={settingsHost ? settingsHost.visible && page.startsWith("worldnotion.") : !hidden}
+    >
+      <SettingsFrame
+        title={interfaceLocale === "es" ? "Ajustes de WorldNotion" : "WorldNotion settings"}
+        locale={interfaceLocale}
+        pages={
+          settingsHost
+            ? integratedSettingsPages
+            : suiteSettings
+              ? legacyHostPages
+              : worldnotionSettingsPages
+        }
+        page={page}
+        onPage={setLocalPage}
+        visible={!hidden}
+        onClose={onClose}
+        host={settingsHost}
+        hasUniverse={Boolean(universe)}
+        draft={draft}
+        helpPage="worldnotion.help"
+        onHelp={() => {}}
+        contentClassName="worldnotion-settings-content"
+      >
+        {section === "general" ? (
+          <div className="settings-grid">
+            {!suiteSettings && (
+              <label>
+                <span>
+                  {interfaceLocale === "es" ? "Fuente de interfaz" : "Interface typeface"}
+                </span>
+                <WorldNotionDropdown
+                  value={settings.interfaceFont ?? "sans"}
+                  onChange={(event) =>
+                    onChange({
+                      ...settings,
+                      interfaceFont: event.target.value as NonNullable<
+                        AppSettingsV4["interfaceFont"]
+                      >,
+                    })
+                  }
+                >
+                  <option value="sans">Sans serif</option>
+                  <option value="serif">Serif</option>
+                  <option value="humanist">Humanist</option>
+                </WorldNotionDropdown>
+              </label>
+            )}
+            {!suiteSettings ? (
+              <label>
+                <span>{interfaceCopy.interfaceLanguage}</span>
+                <WorldNotionDropdown
+                  value={settings.localePreference ?? "system"}
+                  onChange={(event) =>
+                    onChange({
+                      ...settings,
+                      localePreference: event.target.value as "system" | "en" | "es",
+                    })
+                  }
+                >
+                  <option value="system">{interfaceCopy.system}</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </WorldNotionDropdown>
+              </label>
+            ) : null}
+            <label>
+              <span>{settingsText.activeStyle}</span>
+              {suiteSettings ? (
+                <input value={themeById(normalizeThemeId(suiteSettings.style)).label} readOnly />
+              ) : (
+                <WorldNotionDropdown
+                  value={settings.theme}
+                  onChange={(event) =>
+                    onChange({ ...settings, theme: normalizeThemeId(event.target.value) })
+                  }
+                >
+                  {THEMES.map((theme) => (
+                    <option key={theme.id} value={theme.id}>
+                      {theme.label}
+                    </option>
+                  ))}
+                </WorldNotionDropdown>
+              )}
+            </label>
+            <label>
+              <span>{interfaceLocale === "es" ? "Modo del tema" : "Theme mode"}</span>
+              <button
+                type="button"
+                onClick={() => onChange({ ...settings, theme: toggledThemeMode(settings.theme) })}
+              >
+                {interfaceLocale === "es" ? "Cambiar claro / oscuro" : "Toggle light / dark"}
+              </button>
+            </label>
+            <label className="settings-checkbox">
+              <span>{interfaceLocale === "es" ? "Fondo difuminado" : "Soft background"}</span>
+              <input
+                type="checkbox"
+                checked={suiteSettings?.ambientBackground ?? settings.ambientBackground !== false}
+                onChange={(event) =>
+                  suiteSettings?.onAmbientBackgroundChange
+                    ? suiteSettings.onAmbientBackgroundChange(event.target.checked)
+                    : onChange({ ...settings, ambientBackground: event.target.checked })
+                }
+              />
+            </label>
+            <SceneChoices
+              locale={interfaceLocale}
+              scene={suiteSettings?.backgroundScene ?? settings.backgroundScene}
+              onScene={(backgroundScene) =>
+                suiteSettings?.onBackgroundSceneChange
+                  ? suiteSettings.onBackgroundSceneChange(backgroundScene)
+                  : onChange({ ...settings, backgroundScene })
+              }
+            />
+          </div>
+        ) : null}
+        {activeSection === "suite" && suiteSettings ? (
+          <div className="settings-panel">
+            <div className="settings-page-title">
+              <h3>{settingsText.suiteTitle}</h3>
+              <p>{settingsText.suiteDescription}</p>
+            </div>
+            <div className="settings-grid">
+              <label>
+                <span>{interfaceCopy.interfaceLanguage}</span>
+                <WorldNotionDropdown
+                  value={suiteSettings.localePreference}
+                  onChange={(event) =>
+                    suiteSettings.onLocalePreferenceChange(
+                      event.target.value as "system" | "en" | "es",
+                    )
+                  }
+                >
+                  <option value="system">{interfaceCopy.system}</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </WorldNotionDropdown>
+              </label>
+              <label>
+                <span>{settingsText.style}</span>
+                <WorldNotionDropdown
+                  value={suiteSettings.style}
+                  onChange={(event) => suiteSettings.onStyleChange(event.target.value)}
+                >
+                  {THEMES.map((theme) => (
+                    <option key={theme.id} value={theme.id}>
+                      {theme.label}
+                    </option>
+                  ))}
+                </WorldNotionDropdown>
+              </label>
+              <label>
+                <span>{settingsText.typeface}</span>
+                <WorldNotionDropdown
+                  value={suiteSettings.primaryFont}
+                  onChange={(event) => suiteSettings.onPrimaryFontChange(event.target.value)}
+                >
+                  {primaryFontOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </WorldNotionDropdown>
+              </label>
+            </div>
+          </div>
+        ) : null}
+        {activeSection === "update" && suiteSettings?.update ? (
+          <div className="settings-panel forge-update-panel">
+            <div className="settings-page-title">
+              <h3>{settingsText.updateTitle}</h3>
+              <p>{settingsText.updateDescription}</p>
+            </div>
+
+            <div className="forge-update-details">
+              <div>
+                <span>{settingsText.installedVersion}</span>
+                <strong>{suiteSettings.update.currentVersion}</strong>
+              </div>
+              <div>
+                <span>{settingsText.platform}</span>
+                <strong>{suiteSettings.update.platform}</strong>
+              </div>
+              <div>
+                <span>{settingsText.applicationId}</span>
+                <code>{suiteSettings.update.identifier}</code>
+              </div>
+              <div>
+                <span>{settingsText.channel}</span>
+                <strong>{settingsText.releases}</strong>
+              </div>
+            </div>
+
+            <div className={`forge-update-status ${suiteSettings.update.status}`} role="status">
+              <RefreshCw
+                size={18}
+                className={
+                  suiteSettings.update.status === "checking" ||
+                  suiteSettings.update.status === "downloading"
+                    ? "spinning"
+                    : ""
+                }
+              />
+              <div>
+                <strong>
+                  {suiteSettings.update.status === "checking"
+                    ? "Checking for updates..."
+                    : suiteSettings.update.status === "available"
+                      ? `Version ${suiteSettings.update.availableVersion} is ready`
+                      : suiteSettings.update.status === "downloading"
+                        ? `Installing Everend Forge ${suiteSettings.update.availableVersion}...`
+                        : suiteSettings.update.status === "up-to-date"
+                          ? "You are up to date"
+                          : suiteSettings.update.status === "error"
+                            ? "Update check failed"
+                            : "Ready to check for updates"}
+                </strong>
+                <p>
+                  {suiteSettings.update.status === "available"
+                    ? "Download the signed package when you are ready. The Suite will relaunch after installation."
+                    : suiteSettings.update.status === "downloading"
+                      ? "Keep the Suite open while the update is downloaded and verified."
+                      : suiteSettings.update.status === "up-to-date"
+                        ? "No newer signed release is available for this installation."
+                        : (suiteSettings.update.error ??
+                          "The updater is ready to contact the release server.")}
+                </p>
+              </div>
+            </div>
+
+            {suiteSettings.update.status === "downloading" ? (
+              <div className="forge-update-progress" aria-label="Update download progress">
+                <div className="forge-update-progress-header">
+                  <span>Download progress</span>
+                  <strong>
+                    {suiteSettings.update.progress === undefined
+                      ? "Preparing..."
+                      : `${suiteSettings.update.progress}%`}
+                  </strong>
                 </div>
-                <div className="settings-grid">
-                  <label>
-                    <span>{interfaceCopy.interfaceLanguage}</span>
-                    <WorldNotionDropdown
-                      value={suiteSettings.localePreference}
-                      onChange={(event) =>
-                        suiteSettings.onLocalePreferenceChange(
-                          event.target.value as "system" | "en" | "es",
-                        )
-                      }
-                    >
-                      <option value="system">{interfaceCopy.system}</option>
-                      <option value="en">English</option>
-                      <option value="es">Español</option>
-                    </WorldNotionDropdown>
-                  </label>
-                  <label>
-                    <span>{settingsText.style}</span>
-                    <WorldNotionDropdown
-                      value={suiteSettings.style}
-                      onChange={(event) => suiteSettings.onStyleChange(event.target.value)}
-                    >
-                      {THEMES.map((theme) => (
-                        <option key={theme.id} value={theme.id}>
-                          {theme.label}
-                        </option>
-                      ))}
-                    </WorldNotionDropdown>
-                  </label>
-                  <label>
-                    <span>{settingsText.typeface}</span>
-                    <WorldNotionDropdown
-                      value={suiteSettings.primaryFont}
-                      onChange={(event) => suiteSettings.onPrimaryFontChange(event.target.value)}
-                    >
-                      {primaryFontOptions.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </WorldNotionDropdown>
-                  </label>
+                <div
+                  className="forge-update-progress-track"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={suiteSettings.update.progress}
+                >
+                  <span style={{ width: `${suiteSettings.update.progress ?? 8}%` }} />
                 </div>
+                {suiteSettings.update.contentLength ? (
+                  <small>
+                    {(suiteSettings.update.downloadedBytes ?? 0) / 1024 / 1024 >= 0.1
+                      ? `${((suiteSettings.update.downloadedBytes ?? 0) / 1024 / 1024).toFixed(1)} MB of ${(suiteSettings.update.contentLength / 1024 / 1024).toFixed(1)} MB`
+                      : "Starting download..."}
+                  </small>
+                ) : null}
               </div>
             ) : null}
-            {activeSection === "update" && suiteSettings?.update ? (
-              <div className="settings-panel forge-update-panel">
-                <div className="settings-page-title">
-                  <h3>{settingsText.updateTitle}</h3>
-                  <p>{settingsText.updateDescription}</p>
-                </div>
 
-                <div className="forge-update-details">
-                  <div>
-                    <span>{settingsText.installedVersion}</span>
-                    <strong>{suiteSettings.update.currentVersion}</strong>
-                  </div>
-                  <div>
-                    <span>{settingsText.platform}</span>
-                    <strong>{suiteSettings.update.platform}</strong>
-                  </div>
-                  <div>
-                    <span>{settingsText.applicationId}</span>
-                    <code>{suiteSettings.update.identifier}</code>
-                  </div>
-                  <div>
-                    <span>{settingsText.channel}</span>
-                    <strong>{settingsText.releases}</strong>
-                  </div>
-                </div>
+            {suiteSettings.update.releaseNotes ? (
+              <div className="forge-update-notes">
+                <span>Release notes</span>
+                <p>{suiteSettings.update.releaseNotes}</p>
+              </div>
+            ) : null}
 
-                <div className={`forge-update-status ${suiteSettings.update.status}`} role="status">
-                  <RefreshCw
-                    size={18}
-                    className={
-                      suiteSettings.update.status === "checking" ||
-                      suiteSettings.update.status === "downloading"
-                        ? "spinning"
-                        : ""
+            <div className="forge-update-actions">
+              <button
+                type="button"
+                onClick={suiteSettings.update.onCheck}
+                disabled={
+                  suiteSettings.update.status === "checking" ||
+                  suiteSettings.update.status === "downloading"
+                }
+              >
+                <RefreshCw size={14} />
+                Check for updates
+              </button>
+              {suiteSettings.update.status === "available" ? (
+                <button
+                  type="button"
+                  className="primary-action"
+                  onClick={suiteSettings.update.onInstall}
+                >
+                  Download and install
+                </button>
+              ) : null}
+            </div>
+
+            {suiteSettings.update.lastCheckedAt ? (
+              <p className="forge-update-last-checked">
+                Last checked {new Date(suiteSettings.update.lastCheckedAt).toLocaleString()}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {activeSection === "license" && suiteSettings?.license ? (
+          <SuiteLicenseSettings license={suiteSettings.license} />
+        ) : null}
+        {activeSection === "overview" && universe ? (
+          <div className="settings-panel">
+            <div className="universe-profile-editor">
+              <UniverseIconPreview profile={profileDraft} />
+              <div className="universe-profile-fields">
+                <label>
+                  <span>Universe name</span>
+                  <input
+                    value={profileDraft.name ?? ""}
+                    onChange={(event) =>
+                      editProfile((current) => ({ ...current, name: event.target.value }))
                     }
+                    placeholder={universe.name}
                   />
-                  <div>
-                    <strong>
-                      {suiteSettings.update.status === "checking"
-                        ? "Checking for updates..."
-                        : suiteSettings.update.status === "available"
-                          ? `Version ${suiteSettings.update.availableVersion} is ready`
-                          : suiteSettings.update.status === "downloading"
-                            ? `Installing Everend Forge ${suiteSettings.update.availableVersion}...`
-                            : suiteSettings.update.status === "up-to-date"
-                              ? "You are up to date"
-                              : suiteSettings.update.status === "error"
-                                ? "Update check failed"
-                                : "Ready to check for updates"}
-                    </strong>
-                    <p>
-                      {suiteSettings.update.status === "available"
-                        ? "Download the signed package when you are ready. The Suite will relaunch after installation."
-                        : suiteSettings.update.status === "downloading"
-                          ? "Keep the Suite open while the update is downloaded and verified."
-                          : suiteSettings.update.status === "up-to-date"
-                            ? "No newer signed release is available for this installation."
-                            : (suiteSettings.update.error ??
-                              "The updater is ready to contact the release server.")}
-                    </p>
-                  </div>
-                </div>
-
-                {suiteSettings.update.status === "downloading" ? (
-                  <div className="forge-update-progress" aria-label="Update download progress">
-                    <div className="forge-update-progress-header">
-                      <span>Download progress</span>
-                      <strong>
-                        {suiteSettings.update.progress === undefined
-                          ? "Preparing..."
-                          : `${suiteSettings.update.progress}%`}
-                      </strong>
-                    </div>
-                    <div
-                      className="forge-update-progress-track"
-                      role="progressbar"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={suiteSettings.update.progress}
-                    >
-                      <span style={{ width: `${suiteSettings.update.progress ?? 8}%` }} />
-                    </div>
-                    {suiteSettings.update.contentLength ? (
-                      <small>
-                        {(suiteSettings.update.downloadedBytes ?? 0) / 1024 / 1024 >= 0.1
-                          ? `${((suiteSettings.update.downloadedBytes ?? 0) / 1024 / 1024).toFixed(1)} MB of ${(suiteSettings.update.contentLength / 1024 / 1024).toFixed(1)} MB`
-                          : "Starting download..."}
-                      </small>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {suiteSettings.update.releaseNotes ? (
-                  <div className="forge-update-notes">
-                    <span>Release notes</span>
-                    <p>{suiteSettings.update.releaseNotes}</p>
-                  </div>
-                ) : null}
-
-                <div className="forge-update-actions">
-                  <button
-                    type="button"
-                    onClick={suiteSettings.update.onCheck}
-                    disabled={
-                      suiteSettings.update.status === "checking" ||
-                      suiteSettings.update.status === "downloading"
-                    }
-                  >
-                    <RefreshCw size={14} />
-                    Check for updates
-                  </button>
-                  {suiteSettings.update.status === "available" ? (
+                </label>
+                <UniverseLanguageSettings
+                  locale={interfaceLocale}
+                  value={profileDraft.localization}
+                  onChange={(localization) =>
+                    editProfile((current) => ({ ...current, localization }))
+                  }
+                />
+                <div className="icon-preset-row">
+                  {[
+                    ["book", BookOpen],
+                    ["globe", Globe2],
+                    ["castle", Castle],
+                    ["sparkles", Sparkles],
+                  ].map(([value, Icon]) => (
                     <button
+                      key={value as string}
                       type="button"
-                      className="primary-action"
-                      onClick={suiteSettings.update.onInstall}
-                    >
-                      Download and install
-                    </button>
-                  ) : null}
-                </div>
-
-                {suiteSettings.update.lastCheckedAt ? (
-                  <p className="forge-update-last-checked">
-                    Last checked {new Date(suiteSettings.update.lastCheckedAt).toLocaleString()}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-            {activeSection === "license" && suiteSettings?.license ? (
-              <SuiteLicenseSettings license={suiteSettings.license} />
-            ) : null}
-            {activeSection === "overview" && universe ? (
-              <div className="settings-panel">
-                <div className="universe-profile-editor">
-                  <UniverseIconPreview profile={profileDraft} />
-                  <div className="universe-profile-fields">
-                    <label>
-                      <span>Universe name</span>
-                      <input
-                        value={profileDraft.name ?? ""}
-                        onChange={(event) =>
-                          editProfile((current) => ({ ...current, name: event.target.value }))
-                        }
-                        placeholder={universe.name}
-                      />
-                    </label>
-                    <UniverseLanguageSettings
-                      locale={interfaceLocale}
-                      value={profileDraft.localization}
-                      onChange={(localization) =>
-                        editProfile((current) => ({ ...current, localization }))
+                      className={
+                        profileDraft.icon?.type === "preset" && profileDraft.icon.value === value
+                          ? "active"
+                          : ""
                       }
-                    />
-                    <div className="icon-preset-row">
-                      {[
-                        ["book", BookOpen],
-                        ["globe", Globe2],
-                        ["castle", Castle],
-                        ["sparkles", Sparkles],
-                      ].map(([value, Icon]) => (
-                        <button
-                          key={value as string}
-                          type="button"
-                          className={
-                            profileDraft.icon?.type === "preset" &&
-                            profileDraft.icon.value === value
-                              ? "active"
-                              : ""
-                          }
-                          onClick={() =>
-                            editProfile((current) => ({
-                              ...current,
-                              icon: { type: "preset", value: value as string },
-                            }))
-                          }
-                          title={`Use ${value} icon`}
-                        >
-                          <Icon size={16} />
-                        </button>
-                      ))}
-                      <label className="image-upload-button" title="Use PNG or JPG">
-                        <Upload size={16} />
-                        <input
-                          type="file" aria-label="Universe icon"
-                          accept="image/png,image/jpeg"
-                          onChange={async (event) => {
-                            const file = event.target.files?.[0];
-                            if (!file) return;
-                            const value = await readImageFile(file);
-                            editProfile((current) => ({
-                              ...current,
-                              icon: { type: "image", value },
-                            }));
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
-                  </div>
-                </div>
-
-                <div className="settings-page-title">
-                  <h3>Universe</h3>
-                  <p>{universe.rootPath}</p>
-                </div>
-
-                <div className="universe-stats">
-                  <div>
-                    <strong>{universe.entityCount}</strong>
-                    <span>Entities</span>
-                  </div>
-                  <div>
-                    <strong>{universe.fileCount}</strong>
-                    <span>Files</span>
-                  </div>
-                  <div>
-                    <strong>{universe.templateCount}</strong>
-                    <span>Templates</span>
-                  </div>
-                  <div>
-                    <strong>{universe.propertiesConfig ? "On" : "Off"}</strong>
-                    <span>Properties</span>
-                  </div>
-                </div>
-
-                {!universe.propertiesConfig ? (
-                  <div className="universe-onboarding-card">
-                    <div>
-                      <h3>Personalize this universe</h3>
-                      <p>
-                        WorldNotion can create `.everend/universe.json` and
-                        `.everend/properties.json` to start organizing this space with editable
-                        properties. Your Markdown files stay untouched.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!onInitializePropertiesWorkspace) return;
-                        setPropertiesSaving(true);
-                        try {
-                          await onInitializePropertiesWorkspace(propertiesDraft);
-                        } finally {
-                          setPropertiesSaving(false);
-                        }
-                      }}
-                      disabled={propertiesSaving}
+                      onClick={() =>
+                        editProfile((current) => ({
+                          ...current,
+                          icon: { type: "preset", value: value as string },
+                        }))
+                      }
+                      title={`Use ${value} icon`}
                     >
-                      {propertiesSaving ? "Creating..." : "Create properties setup"}
+                      <Icon size={16} />
                     </button>
-                  </div>
-                ) : null}
-
-                <div className="settings-action-list">
-                  <button type="button" onClick={onOpenUniverseNote}>
-                    <FileText size={15} />
-                    Open universe note
-                  </button>
-                  <button type="button" onClick={onRevealUniverse}>
-                    <ExternalLink size={15} />
-                    {revealUniverseLabel}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {activeSection === "appearance-behavior" ? (
-              <div className="appearance-behavior-section">
-                {appearanceBehaviorTab === "appearance" ? (
-                  <div className="settings-grid">
-                    <h3
-                      style={{
-                        gridColumn: "1 / -1",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        margin: "12px 0 8px 0",
-                        color: "var(--wn-muted)",
+                  ))}
+                  <label className="image-upload-button" title="Use PNG or JPG">
+                    <Upload size={16} />
+                    <input
+                      type="file"
+                      aria-label="Universe icon"
+                      accept="image/png,image/jpeg"
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        const value = await readImageFile(file);
+                        editProfile((current) => ({
+                          ...current,
+                          icon: { type: "image", value },
+                        }));
                       }}
-                    >
-                      {t("Page Style")}
-                    </h3>
-                    <label>
-                      <span>{settingsText.pageStyle}</span>
-                      <WorldNotionDropdown
-                        value={settings.editor.pageStyle}
-                        onChange={(event) =>
-                          updateEditor({
-                            pageStyle: event.target.value as EditorSettings["pageStyle"],
-                          })
-                        }
-                      >
-                        <option value="theme">{settingsText.theme}</option>
-                        <option value="white">{settingsText.whitePage}</option>
-                        <option value="warm-paper">{settingsText.warmPaper}</option>
-                        <option value="system">{settingsText.systemSurface}</option>
-                        <option value="custom">{settingsText.customColor}</option>
-                      </WorldNotionDropdown>
-                    </label>
-                    <label>
-                      <span>{settingsText.customPageColor}</span>
-                      <input
-                        type="color"
-                        value={settings.editor.customPageColor}
-                        onChange={(event) => updateEditor({ customPageColor: event.target.value })}
-                        disabled={settings.editor.pageStyle !== "custom"}
-                      />
-                    </label>
-                    <label>
-                      <span>{settingsText.paperShadow}</span>
-                      <input
-                        type="checkbox"
-                        checked={settings.editor.showPaperShadow}
-                        onChange={(event) =>
-                          updateEditor({ showPaperShadow: event.target.checked })
-                        }
-                      />
-                    </label>
-                    <h3
-                      style={{
-                        gridColumn: "1 / -1",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        margin: "12px 0 8px 0",
-                        color: "var(--wn-muted)",
-                      }}
-                    >
-                      {t("Typography")}
-                    </h3>
-                    <label>
-                      <span>{settingsText.writeFont}</span>
-                      <input
-                        value={settings.editor.writeFontFamily}
-                        onChange={(event) => updateEditor({ writeFontFamily: event.target.value })}
-                      />
-                    </label>
-                    <label>
-                      <span>{settingsText.sourceFont}</span>
-                      <input
-                        value={settings.editor.sourceFontFamily}
-                        onChange={(event) => updateEditor({ sourceFontFamily: event.target.value })}
-                      />
-                    </label>
-                    <label>
-                      <span>{settingsText.fontSize}</span>
-                      <input
-                        type="number"
-                        min={11}
-                        max={22}
-                        value={settings.editor.fontSize}
-                        onChange={(event) => updateEditor({ fontSize: Number(event.target.value) })}
-                      />
-                    </label>
-                  </div>
-                ) : null}
-
-                {appearanceBehaviorTab === "editor" ? (
-                  <div>
-                    <div className="settings-grid">
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "0 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Editing Behavior
-                      </h3>
-                      <label>
-                        <span>{settingsText.lineWrap}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.lineWrap}
-                          onChange={(event) => updateEditor({ lineWrap: event.target.checked })}
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.tabSize}</span>
-                        <input
-                          type="number"
-                          min={2}
-                          max={8}
-                          value={settings.editor.tabSize}
-                          onChange={(event) =>
-                            updateEditor({ tabSize: Number(event.target.value) })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.lineNumbers}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.lineNumbers}
-                          onChange={(event) => updateEditor({ lineNumbers: event.target.checked })}
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.activeLine}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.activeLine}
-                          onChange={(event) => updateEditor({ activeLine: event.target.checked })}
-                        />
-                      </label>
-                      <label>
-                        <span>
-                          {settingsText.defaultMode}
-                          <small>{settingsText.editorModeDescription}</small>
-                        </span>
-                        <WorldNotionDropdown
-                          value={settings.editor.defaultMode}
-                          onChange={(event) =>
-                            updateEditor({
-                              defaultMode: event.target.value as EditorSettings["defaultMode"],
-                            })
-                          }
-                        >
-                          <option value="processed">{editorModeText.processed}</option>
-                          <option value="semi">{editorModeText.semi}</option>
-                          <option value="source">{editorModeText.source}</option>
-                        </WorldNotionDropdown>
-                      </label>
-                      <label>
-                        <span>
-                          {settingsText.modeTabs}
-                          <small>{settingsText.modeTabsDescription}</small>
-                        </span>
-                        <input
-                          type="checkbox"
-                          aria-label={settingsText.modeTabs}
-                          checked={settings.editor.showModeTabs}
-                          onChange={(event) => updateEditor({ showModeTabs: event.target.checked })}
-                        />
-                      </label>
-
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "16px 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Display Options
-                      </h3>
-                      <label>
-                        <span>{settingsText.breadcrumbs}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.breadcrumbsEnabled}
-                          onChange={(event) =>
-                            updateEditor({ breadcrumbsEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.codeFolding}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.codeFoldingEnabled}
-                          onChange={(event) =>
-                            updateEditor({ codeFoldingEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.floatingToolbar}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.floatingToolbarEnabled}
-                          onChange={(event) =>
-                            updateEditor({ floatingToolbarEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.outlineGuide}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.outlineGuideEnabled}
-                          onChange={(event) =>
-                            updateEditor({ outlineGuideEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      {settings.editor.outlineGuideEnabled && (
-                        <label>
-                          <span>{settingsText.outlinePosition}</span>
-                          <WorldNotionDropdown
-                            value={settings.editor.outlinePosition}
-                            onChange={(event) =>
-                              updateEditor({
-                                outlinePosition: event.target.value as "left" | "right",
-                              })
-                            }
-                          >
-                            <option value="left">{settingsText.left}</option>
-                            <option value="right">{settingsText.right}</option>
-                          </WorldNotionDropdown>
-                        </label>
-                      )}
-                      <label>
-                        <span>{settingsText.documentHeader}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.documentHeaderEnabled}
-                          onChange={(event) =>
-                            updateEditorWithPluginMirror({
-                              documentHeaderEnabled: event.target.checked,
-                            })
-                          }
-                        />
-                      </label>
-                      {(
-                        <label data-setting-id="worldnotion.editor.showProjectName">
-                          <span>{settingsText.showProjectName}{!settings.editor.documentHeaderEnabled && <small style={{display:"block"}}>{interfaceLocale === "es" ? "Activa el encabezado del documento para usar este ajuste." : "Enable the document header to use this setting."}</small>}</span>
-                          <input
-                            type="checkbox"
-                            disabled={!settings.editor.documentHeaderEnabled}
-                            checked={settings.editor.showProjectNameInHeader}
-                            onChange={(event) =>
-                              updateEditor({ showProjectNameInHeader: event.target.checked })
-                            }
-                          />
-                        </label>
-                      )}
-
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "16px 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Navigation Tools
-                      </h3>
-                      <label>
-                        <span>{settingsText.commandPalette}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.commandPaletteEnabled}
-                          onChange={(event) =>
-                            updateEditor({ commandPaletteEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.quickSwitcher}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.quickSwitcherEnabled}
-                          onChange={(event) =>
-                            updateEditor({ quickSwitcherEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.findReplace}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.searchPanelEnabled}
-                          onChange={(event) =>
-                            updateEditor({ searchPanelEnabled: event.target.checked })
-                          }
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : null}
-
-                {section === "workspace" ? <><div className="settings-grid">
-                      <label>
-                        <span>Dock tab size</span>
-                        <input
-                          type="range"
-                          min={0.75}
-                          max={1.75}
-                          step={0.05}
-                          value={settings.editor.dockTabScale}
-                          onChange={(event) =>
-                            updateEditor({
-                              dockTabScale: dockTabScaleFromInput(event.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Dock tab scale</span>
-                        <input
-                          type="number"
-                          min={75}
-                          max={175}
-                          step={5}
-                          value={Math.round(settings.editor.dockTabScale * 100)}
-                          onChange={(event) =>
-                            updateEditor({
-                              dockTabScale: dockTabScaleFromInput(
-                                String(Number(event.target.value) / 100),
-                              ),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Persist tabs</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.persistTabs}
-                          onChange={(event) => updateEditor({ persistTabs: event.target.checked })}
-                        />
-                      </label>
-                      <label>
-                        <span>Reuse open tabs</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.reuseOpenTabs}
-                          onChange={(event) =>
-                            updateEditor({ reuseOpenTabs: event.target.checked })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Confirm dirty close</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.editor.confirmCloseDirtyTab}
-                          onChange={(event) =>
-                            updateEditor({ confirmCloseDirtyTab: event.target.checked })
-                          }
-                        />
-                      </label>
-
-</div>
-                    <div className="settings-grid">
-                      <h3
-                        style={{
-                          gridColumn: "1 / -1",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          margin: "16px 0 8px 0",
-                          color: "var(--wn-muted)",
-                        }}
-                      >
-                        Explorer
-                      </h3>
-                      <label>
-                        <span>{settingsText.confirmMoves}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.explorer.confirmDragMove}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              explorer: {
-                                ...settings.explorer,
-                                confirmDragMove: event.target.checked,
-                              },
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.showHidden}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.explorer.showHiddenEverend}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              explorer: {
-                                ...settings.explorer,
-                                showHiddenEverend: event.target.checked,
-                              },
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.folderNotes}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.explorer.folderNotesEnabled}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              explorer: {
-                                ...settings.explorer,
-                                folderNotesEnabled: event.target.checked,
-                              },
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>{settingsText.showImages}</span>
-                        <input
-                          type="checkbox"
-                          checked={settings.explorer.showImagesInAllFiles}
-                          onChange={(event) =>
-                            onChange({
-                              ...settings,
-                              explorer: {
-                                ...settings.explorer,
-                                showImagesInAllFiles: event.target.checked,
-                              },
-                            })
-                          }
-                        />
-                      </label>
-                    </div></> : null}
-                {section === "shortcuts" ? <>
-                    <div className="settings-inline">
-                      <p className="muted">Focus a shortcut field and press the desired keys.</p>
-                      <button
-                        type="button"
-                        onClick={() => onChange({ ...settings, keybindings: DEFAULT_KEYBINDINGS })}
-                      >
-                        Reset defaults
-                      </button>
-                    </div>
-                    {conflictMessage ? (
-                      <div className="error-banner settings-error">{conflictMessage}</div>
-                    ) : null}
-                    <div className="shortcut-list">
-                      {EDITOR_COMMANDS.map((command) => (
-                        <label key={command.id} className="shortcut-row">
-                          <span>{command.label}</span>
-                          <input
-                            value={keybindingMap.get(command.id) ?? ""}
-                            onChange={(event) => updateShortcut(command.id, event.target.value)}
-                            onKeyDown={(event) => {
-                              event.preventDefault();
-                              updateShortcut(command.id, eventToShortcut(event));
-                            }}
-                            placeholder="Unassigned"
-                          />
-                        </label>
-                      ))}
-                    </div>
-
-</> : null}
-
-              </div>
-            ) : null}
-
-            {universe ? (
-              <div className="settings-panel" hidden={activeSection !== "properties"} data-onboarding-target="worldnotion.properties-settings">
-                <DialogProvider><PropertiesManager locale={interfaceLocale}
-                  config={propertiesDraft}
-                  onChange={(config) => {
-                    setPropertiesDirty(true);
-                    setPropertiesDraft(config);
-                  }}
-                /></DialogProvider>
-                <div className="settings-actions">
-
-                  {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
+                    />
+                  </label>
                 </div>
-              </div>
-            ) : null}
 
-            {activeSection === "utils" && universe ? (
-              <div className="settings-panel">
-                <div className="settings-page-title">
-                  <h3>Frontmatter utilities</h3>
+                {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
+              </div>
+            </div>
+
+            <div className="settings-page-title">
+              <h3>Universe</h3>
+              <p>{universe.rootPath}</p>
+            </div>
+
+            <div className="universe-stats">
+              <div>
+                <strong>{universe.entityCount}</strong>
+                <span>Entities</span>
+              </div>
+              <div>
+                <strong>{universe.fileCount}</strong>
+                <span>Files</span>
+              </div>
+              <div>
+                <strong>{universe.templateCount}</strong>
+                <span>Templates</span>
+              </div>
+              <div>
+                <strong>{universe.propertiesConfig ? "On" : "Off"}</strong>
+                <span>Properties</span>
+              </div>
+            </div>
+
+            {!universe.propertiesConfig ? (
+              <div className="universe-onboarding-card">
+                <div>
+                  <h3>Personalize this universe</h3>
                   <p>
-                    Universe-wide tools to keep every note's YAML frontmatter valid, complete, and
-                    consistently ordered. Changes are previewed first and applied only to the files
-                    you choose.
+                    WorldNotion can create `.everend/universe.json` and `.everend/properties.json`
+                    to start organizing this space with editable properties. Your Markdown files
+                    stay untouched.
                   </p>
                 </div>
-                {universe.propertiesConfig && universe.propertiesConfig.version !== "3.0" ? (
-                  <>
-                    <div className="universe-onboarding-card">
-                      <div>
-                        <h3>Upgrade property structure</h3>
-                        <p>
-                          Preview the move from flat 2.0 keys to nested 3.0 group objects. Nothing
-                          changes until you confirm the preview.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={scanStructureMigration}
-                        disabled={structureMigrationBusy}
-                      >
-                        {structureMigrationBusy ? "Scanning..." : "Preview upgrade"}
-                      </button>
-                    </div>
-
-                    {structureMigration ? (
-                      <div className="normalization-preview">
-                        <div className="normalization-actions">
-                          <span>
-                            {structureMigration.items.length} affected note
-                            {structureMigration.items.length === 1 ? "" : "s"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={applyStructureMigration}
-                            disabled={
-                              structureMigrationBusy ||
-                              structureMigration.items.some((item) => item.status !== "ready")
-                            }
-                          >
-                            Confirm upgrade to 3.0
-                          </button>
-                        </div>
-                        {structureMigration.items.length ? (
-                          structureMigration.items.map((item) => (
-                            <div key={item.path} className="normalization-row">
-                              <span className="normalization-row-main">
-                                <strong>{item.path}</strong>
-                                <small>
-                                  {item.moves.length
-                                    ? item.moves
-                                        .map(
-                                          (move) =>
-                                            `${move.fromPath.join(".")} → ${move.toPath.join(".")}`,
-                                        )
-                                        .join(" · ")
-                                    : item.conflicts.join(" · ")}
-                                </small>
-                              </span>
-                              <span className={`normalization-kind ${item.status}`}>
-                                {item.status.replace("-", " ")}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="muted">
-                            No note values need moving; only the schema will be upgraded.
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
-
-                    {structureMigrationErrors.length ? (
-                      <div className="settings-error-list">
-                        {structureMigrationErrors.map((error, index) => (
-                          <p key={`${error}-${index}`}>{error}</p>
-                        ))}
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-                <div className="universe-onboarding-card">
-                  <div>
-                    <h3>Add missing frontmatter</h3>
-                    <p>
-                      Scans this universe for Markdown files without valid frontmatter, detects
-                      normal notes and folder notes, and previews the metadata it will add.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={scanNormalizationItems}
-                    disabled={normalizationBusy}
-                  >
-                    {normalizationBusy ? "Scanning..." : "Scan notes"}
-                  </button>
-                </div>
-
-                {normalizationItems.length > 0 ? (
-                  <>
-                    <div className="normalization-actions">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedNormalizationPaths(
-                            new Set(normalizationItems.map((item) => item.path)),
-                          )
-                        }
-                        disabled={normalizationBusy}
-                      >
-                        Select all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedNormalizationPaths(new Set())}
-                        disabled={normalizationBusy}
-                      >
-                        Clear
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          applyNormalizationItems(
-                            normalizationItems.filter((item) =>
-                              selectedNormalizationPaths.has(item.path),
-                            ),
-                          )
-                        }
-                        disabled={normalizationBusy || selectedNormalizationPaths.size === 0}
-                      >
-                        Apply selected
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyNormalizationItems(normalizationItems)}
-                        disabled={normalizationBusy}
-                      >
-                        Apply all
-                      </button>
-                    </div>
-                    <div className="normalization-preview">
-                      {normalizationItems.map((item) => (
-                        <label key={item.path} className="normalization-row">
-                          <input
-                            type="checkbox"
-                            checked={selectedNormalizationPaths.has(item.path)}
-                            onChange={(event) =>
-                              setSelectedNormalizationPaths((current) => {
-                                const next = new Set(current);
-                                if (event.target.checked) next.add(item.path);
-                                else next.delete(item.path);
-                                return next;
-                              })
-                            }
-                          />
-                          <span className="normalization-row-main">
-                            <strong>{item.path}</strong>
-                            <small>{item.reason.replace(/_/g, " ")}</small>
-                          </span>
-                          <span className={`normalization-kind ${item.kind}`}>{item.kind}</span>
-                          <span className="normalization-meta">
-                            <code>{item.type}</code>
-                            {item.folder ? <code>folder: {item.folder}</code> : null}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="muted">Run a scan to preview files that need frontmatter.</p>
-                )}
-
-                {normalizationErrors.length > 0 ? (
-                  <div className="settings-error-list">
-                    {normalizationErrors.map((error, index) => (
-                      <p key={`${error}-${index}`}>{error}</p>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="universe-onboarding-card">
-                  <div>
-                    <h3>Normalize properties</h3>
-                    <p>
-                      Checks every note against the universe schema: fills missing core and required
-                      fields with defaults and reorders frontmatter keys to the schema order. The
-                      note body is never touched.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={scanPropertyNormItems}
-                    disabled={propertyNormBusy || !universe.propertiesConfig}
-                    title={
-                      universe.propertiesConfig
-                        ? undefined
-                        : "This universe has no properties schema yet"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!onInitializePropertiesWorkspace) return;
+                    setPropertiesSaving(true);
+                    try {
+                      await onInitializePropertiesWorkspace(propertiesDraft);
+                    } finally {
+                      setPropertiesSaving(false);
                     }
-                  >
-                    {propertyNormBusy ? "Scanning..." : "Scan properties"}
-                  </button>
-                </div>
-
-                {propertyNormItems.length > 0 ? (
-                  <>
-                    <div className="normalization-actions">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPropertyNormPaths(
-                            new Set(propertyNormItems.map((item) => item.path)),
-                          )
-                        }
-                        disabled={propertyNormBusy}
-                      >
-                        Select all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPropertyNormPaths(new Set())}
-                        disabled={propertyNormBusy}
-                      >
-                        Clear
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          applyPropertyNormItems(
-                            propertyNormItems.filter((item) =>
-                              selectedPropertyNormPaths.has(item.path),
-                            ),
-                          )
-                        }
-                        disabled={propertyNormBusy || selectedPropertyNormPaths.size === 0}
-                      >
-                        Apply selected
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyPropertyNormItems(propertyNormItems)}
-                        disabled={propertyNormBusy}
-                      >
-                        Apply all
-                      </button>
-                    </div>
-                    <div className="normalization-preview">
-                      {propertyNormItems.map((item) => (
-                        <label key={item.path} className="normalization-row">
-                          <input
-                            type="checkbox"
-                            checked={selectedPropertyNormPaths.has(item.path)}
-                            onChange={(event) =>
-                              setSelectedPropertyNormPaths((current) => {
-                                const next = new Set(current);
-                                if (event.target.checked) next.add(item.path);
-                                else next.delete(item.path);
-                                return next;
-                              })
-                            }
-                          />
-                          <span className="normalization-row-main">
-                            <strong>{item.path}</strong>
-                            <small>{propertyNormSummary(item)}</small>
-                          </span>
-                          <span className="normalization-meta">
-                            <code>{item.type}</code>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                ) : propertyNormScanned && !propertyNormBusy ? (
-                  <p className="muted">Every note already matches the universe schema. ✓</p>
-                ) : (
-                  <p className="muted">
-                    Run a scan to preview notes whose properties drift from the schema.
-                  </p>
-                )}
-
-                {propertyNormErrors.length > 0 ? (
-                  <div className="settings-error-list">
-                    {propertyNormErrors.map((error, index) => (
-                      <p key={`${error}-${index}`}>{error}</p>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {activeSection === "help" ? (
-              <div className="settings-panel">
-                <div className="settings-page-title">
-                  <h3>Help & Documentation</h3>
-                  <p>Get started with WorldNotion or reset the onboarding guide.</p>
-                </div>
-                <button type="button" onClick={onResetOnboarding} disabled={!onResetOnboarding}>
-                  <RefreshCw size={15} />
-                  Restart Onboarding
+                  }}
+                  disabled={propertiesSaving}
+                >
+                  {propertiesSaving ? "Creating..." : "Create properties setup"}
                 </button>
               </div>
             ) : null}
 
-            {activeSection === "plugins" ? (
-              <div className="settings-panel">
-                <div className="settings-page-title">
-                  <h3>Plugins</h3>
-                  <p>
-                    Manage WorldNotion editor plugins and preview planned Everend runtime adapters.
-                  </p>
-                </div>
-                <label className="plugin-search" data-setting-id="worldnotion.plugins.plugin-search">
-                  <span>Filter plugins</span>
+            <div className="settings-action-list">
+              <button type="button" onClick={onOpenUniverseNote}>
+                <FileText size={15} />
+                Open universe note
+              </button>
+              <button type="button" onClick={onRevealUniverse}>
+                <ExternalLink size={15} />
+                {revealUniverseLabel}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {activeSection === "appearance-behavior" ? (
+          <div className="appearance-behavior-section">
+            {appearanceBehaviorTab === "appearance" ? (
+              <div className="settings-grid">
+                <h3
+                  style={{
+                    gridColumn: "1 / -1",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    margin: "12px 0 8px 0",
+                    color: "var(--wn-muted)",
+                  }}
+                >
+                  {t("Page Style")}
+                </h3>
+                <label>
+                  <span>{settingsText.pageStyle}</span>
+                  <WorldNotionDropdown
+                    value={settings.editor.pageStyle}
+                    onChange={(event) =>
+                      updateEditor({
+                        pageStyle: event.target.value as EditorSettings["pageStyle"],
+                      })
+                    }
+                  >
+                    <option value="theme">{settingsText.theme}</option>
+                    <option value="white">{settingsText.whitePage}</option>
+                    <option value="warm-paper">{settingsText.warmPaper}</option>
+                    <option value="system">{settingsText.systemSurface}</option>
+                    <option value="custom">{settingsText.customColor}</option>
+                  </WorldNotionDropdown>
+                </label>
+                <label>
+                  <span>{settingsText.customPageColor}</span>
                   <input
-                    value={pluginQuery}
-                    onChange={(event) => setPluginQuery(event.target.value)}
-                    placeholder="Search plugins"
+                    type="color"
+                    value={settings.editor.customPageColor}
+                    onChange={(event) => updateEditor({ customPageColor: event.target.value })}
+                    disabled={settings.editor.pageStyle !== "custom"}
                   />
                 </label>
-                <div className="plugin-manager-list">
-                  {(
-                    [
-                      "navigation",
-                      "editor",
-                      "visual",
-                      "integration",
-                      "runtime-adapter",
-                    ] as PluginCategory[]
-                  ).map((category) => {
-                    const normalizedQuery = pluginQuery.trim().toLowerCase();
-                    const plugins = getPluginDefinitions()
-                      .filter((plugin) => {
-                        const matchesCategory = plugin.category === category;
-                        const matchesQuery =
-                          !normalizedQuery ||
-                          plugin.name.toLowerCase().includes(normalizedQuery) ||
-                          plugin.description.toLowerCase().includes(normalizedQuery);
-                        return matchesCategory && matchesQuery;
-                      })
-                      .sort((first, second) => first.name.localeCompare(second.name, "en"));
-                    if (!plugins.length) return null;
-                    return (
-                      <section key={category} className="plugin-category">
-                        <h4>{pluginCategoryLabel(category)}</h4>
-                        {plugins.map((plugin) => {
-                          const enabled = isPluginEnabled(
-                            settings.plugins,
-                            plugin.id,
-                            legacyPluginEnabled(settings.editor, plugin.id),
-                          );
-                          const badge =
-                            plugin.status === "planned"
-                              ? "Planned"
-                              : plugin.status === "core"
-                                ? "Core"
-                                : "Optional";
-                          return (
-                            <article key={plugin.id} data-setting-id={"worldnotion.plugins."+plugin.id} className={`plugin-card ${plugin.status}`}>
-                              <div className="plugin-card-main">
-                                <div className="plugin-card-title">
-                                  <strong>{t(plugin.name)}</strong>
-                                  <span className={`plugin-badge ${plugin.status}`}>{badge}</span>
-                                </div>
-                                <p>{t(plugin.description)}</p>
-                                {plugin.status === "planned" ? (
-                                  <small>
-                                    Documentation only for now. Engine adapters are not installed or
-                                    executed in v1.
-                                  </small>
-                                ) : plugin.status === "core" ? (
-                                  <small>
-                                    Core plugin. Protected to keep editing and navigation behavior
-                                    stable.
-                                  </small>
-                                ) : null}
-                              </div>
-                              {plugin.status === "planned" ? <span className="plugin-toggle-state">Unavailable</span> : <label className="plugin-toggle">
-                                <input
-                                  type="checkbox"
-                                  checked={enabled}
-                                  disabled={!plugin.configurable}
-                                  onChange={(event) =>
-                                    onChange(
-                                      updatePluginEnabled(
-                                        settings,
-                                        plugin.id,
-                                        event.target.checked,
-                                      ),
-                                    )
-                                  }
-                                />
-                                <span>{plugin.configurable ? enabled ? "Active" : "Disabled" : "Always active"}</span>
-                              </label>}
-                            </article>
-                          );
-                        })}
-                      </section>
-                    );
-                  })}
+                <label>
+                  <span>{settingsText.paperShadow}</span>
+                  <input
+                    type="checkbox"
+                    checked={settings.editor.showPaperShadow}
+                    onChange={(event) => updateEditor({ showPaperShadow: event.target.checked })}
+                  />
+                </label>
+                <h3
+                  style={{
+                    gridColumn: "1 / -1",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    margin: "12px 0 8px 0",
+                    color: "var(--wn-muted)",
+                  }}
+                >
+                  {t("Typography")}
+                </h3>
+                <label>
+                  <span>{settingsText.writeFont}</span>
+                  <input
+                    value={settings.editor.writeFontFamily}
+                    onChange={(event) => updateEditor({ writeFontFamily: event.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>{settingsText.sourceFont}</span>
+                  <input
+                    value={settings.editor.sourceFontFamily}
+                    onChange={(event) => updateEditor({ sourceFontFamily: event.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>{settingsText.fontSize}</span>
+                  <input
+                    type="number"
+                    min={11}
+                    max={22}
+                    value={settings.editor.fontSize}
+                    onChange={(event) => updateEditor({ fontSize: Number(event.target.value) })}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            {appearanceBehaviorTab === "editor" ? (
+              <div>
+                <div className="settings-grid">
+                  <h3
+                    style={{
+                      gridColumn: "1 / -1",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      margin: "0 0 8px 0",
+                      color: "var(--wn-muted)",
+                    }}
+                  >
+                    Editing Behavior
+                  </h3>
+                  <label>
+                    <span>{settingsText.lineWrap}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.lineWrap}
+                      onChange={(event) => updateEditor({ lineWrap: event.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.tabSize}</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={8}
+                      value={settings.editor.tabSize}
+                      onChange={(event) => updateEditor({ tabSize: Number(event.target.value) })}
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.lineNumbers}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.lineNumbers}
+                      onChange={(event) => updateEditor({ lineNumbers: event.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.activeLine}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.activeLine}
+                      onChange={(event) => updateEditor({ activeLine: event.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    <span>
+                      {settingsText.defaultMode}
+                      <small>{settingsText.editorModeDescription}</small>
+                    </span>
+                    <WorldNotionDropdown
+                      value={settings.editor.defaultMode}
+                      onChange={(event) =>
+                        updateEditor({
+                          defaultMode: event.target.value as EditorSettings["defaultMode"],
+                        })
+                      }
+                    >
+                      <option value="processed">{editorModeText.processed}</option>
+                      <option value="semi">{editorModeText.semi}</option>
+                      <option value="source">{editorModeText.source}</option>
+                    </WorldNotionDropdown>
+                  </label>
+                  <label>
+                    <span>
+                      {settingsText.modeTabs}
+                      <small>{settingsText.modeTabsDescription}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      aria-label={settingsText.modeTabs}
+                      checked={settings.editor.showModeTabs}
+                      onChange={(event) => updateEditor({ showModeTabs: event.target.checked })}
+                    />
+                  </label>
+
+                  <h3
+                    style={{
+                      gridColumn: "1 / -1",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      margin: "16px 0 8px 0",
+                      color: "var(--wn-muted)",
+                    }}
+                  >
+                    Display Options
+                  </h3>
+                  <label>
+                    <span>{settingsText.breadcrumbs}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.breadcrumbsEnabled}
+                      onChange={(event) =>
+                        updateEditor({ breadcrumbsEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.codeFolding}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.codeFoldingEnabled}
+                      onChange={(event) =>
+                        updateEditor({ codeFoldingEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.floatingToolbar}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.floatingToolbarEnabled}
+                      onChange={(event) =>
+                        updateEditor({ floatingToolbarEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.outlineGuide}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.outlineGuideEnabled}
+                      onChange={(event) =>
+                        updateEditor({ outlineGuideEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  {settings.editor.outlineGuideEnabled && (
+                    <label>
+                      <span>{settingsText.outlinePosition}</span>
+                      <WorldNotionDropdown
+                        value={settings.editor.outlinePosition}
+                        onChange={(event) =>
+                          updateEditor({
+                            outlinePosition: event.target.value as "left" | "right",
+                          })
+                        }
+                      >
+                        <option value="left">{settingsText.left}</option>
+                        <option value="right">{settingsText.right}</option>
+                      </WorldNotionDropdown>
+                    </label>
+                  )}
+                  <label>
+                    <span>{settingsText.documentHeader}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.documentHeaderEnabled}
+                      onChange={(event) =>
+                        updateEditorWithPluginMirror({
+                          documentHeaderEnabled: event.target.checked,
+                        })
+                      }
+                    />
+                  </label>
+                  {
+                    <label data-setting-id="worldnotion.editor.showProjectName">
+                      <span>
+                        {settingsText.showProjectName}
+                        {!settings.editor.documentHeaderEnabled && (
+                          <small style={{ display: "block" }}>
+                            {interfaceLocale === "es"
+                              ? "Activa el encabezado del documento para usar este ajuste."
+                              : "Enable the document header to use this setting."}
+                          </small>
+                        )}
+                      </span>
+                      <input
+                        type="checkbox"
+                        disabled={!settings.editor.documentHeaderEnabled}
+                        checked={settings.editor.showProjectNameInHeader}
+                        onChange={(event) =>
+                          updateEditor({ showProjectNameInHeader: event.target.checked })
+                        }
+                      />
+                    </label>
+                  }
+
+                  <h3
+                    style={{
+                      gridColumn: "1 / -1",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      margin: "16px 0 8px 0",
+                      color: "var(--wn-muted)",
+                    }}
+                  >
+                    Navigation Tools
+                  </h3>
+                  <label>
+                    <span>{settingsText.commandPalette}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.commandPaletteEnabled}
+                      onChange={(event) =>
+                        updateEditor({ commandPaletteEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.quickSwitcher}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.quickSwitcherEnabled}
+                      onChange={(event) =>
+                        updateEditor({ quickSwitcherEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.findReplace}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.searchPanelEnabled}
+                      onChange={(event) =>
+                        updateEditor({ searchPanelEnabled: event.target.checked })
+                      }
+                    />
+                  </label>
                 </div>
               </div>
             ) : null}
 
-            {activeSection === "ai-advisor" ? (
-              <div className="settings-panel ai-advisor-settings-panel">
-                <div className="settings-page-title">
-                  <h3>AI Advisor providers</h3>
-                  <p>Choose which web providers appear in the Advisor tab.</p>
+            {section === "workspace" ? (
+              <>
+                <div className="settings-grid">
+                  <label>
+                    <span>Dock tab size</span>
+                    <input
+                      type="range"
+                      min={0.75}
+                      max={1.75}
+                      step={0.05}
+                      value={settings.editor.dockTabScale}
+                      onChange={(event) =>
+                        updateEditor({
+                          dockTabScale: dockTabScaleFromInput(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Dock tab scale</span>
+                    <input
+                      type="number"
+                      min={75}
+                      max={175}
+                      step={5}
+                      value={Math.round(settings.editor.dockTabScale * 100)}
+                      onChange={(event) =>
+                        updateEditor({
+                          dockTabScale: dockTabScaleFromInput(
+                            String(Number(event.target.value) / 100),
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Persist tabs</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.persistTabs}
+                      onChange={(event) => updateEditor({ persistTabs: event.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    <span>Reuse open tabs</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.reuseOpenTabs}
+                      onChange={(event) => updateEditor({ reuseOpenTabs: event.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    <span>Confirm dirty close</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.editor.confirmCloseDirtyTab}
+                      onChange={(event) =>
+                        updateEditor({ confirmCloseDirtyTab: event.target.checked })
+                      }
+                    />
+                  </label>
                 </div>
-                <div className="settings-security-note">
-                  <Sparkles size={16} />
-                  <p>
-                    WorldNotion stores only provider names, links, enabled state, and your selected
-                    provider. It does not store passwords, cookies, API keys, or chat content.
-                  </p>
+                <div className="settings-grid">
+                  <h3
+                    style={{
+                      gridColumn: "1 / -1",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      margin: "16px 0 8px 0",
+                      color: "var(--wn-muted)",
+                    }}
+                  >
+                    Explorer
+                  </h3>
+                  <label>
+                    <span>{settingsText.confirmMoves}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.explorer.confirmDragMove}
+                      onChange={(event) =>
+                        onChange({
+                          ...settings,
+                          explorer: {
+                            ...settings.explorer,
+                            confirmDragMove: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.showHidden}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.explorer.showHiddenEverend}
+                      onChange={(event) =>
+                        onChange({
+                          ...settings,
+                          explorer: {
+                            ...settings.explorer,
+                            showHiddenEverend: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.folderNotes}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.explorer.folderNotesEnabled}
+                      onChange={(event) =>
+                        onChange({
+                          ...settings,
+                          explorer: {
+                            ...settings.explorer,
+                            folderNotesEnabled: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{settingsText.showImages}</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.explorer.showImagesInAllFiles}
+                      onChange={(event) =>
+                        onChange({
+                          ...settings,
+                          explorer: {
+                            ...settings.explorer,
+                            showImagesInAllFiles: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                  </label>
                 </div>
-                <div className="ai-provider-config-list" data-setting-id="worldnotion.ai-advisor.providers">
-                  {settings.aiAdvisor.providers.map((provider) => (
-                    <article key={provider.id} className="ai-provider-config-card">
-                      <div className="ai-provider-config-fields">
-                        <label>
-                          <span>Name</span>
-                          <input
-                            value={provider.name}
-                            onChange={(event) =>
-                              updateAiProvider(provider.id, { name: event.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          <span>Web link</span>
-                          <input
-                            value={provider.url}
-                            type="url"
-                            spellCheck={false}
-                            onChange={(event) =>
-                              updateAiProvider(provider.id, { url: event.target.value })
-                            }
-                          />
-                        </label>
-                        {!normalizeAiProviderUrl(provider.url) ? (
-                          <small className="settings-inline-error">
-                            Use a valid http(s) link before opening this provider.
-                          </small>
-                        ) : null}
-                        {provider.url.startsWith("http://") ? (
-                          <small className="settings-inline-warning">
-                            HTTP is unencrypted; use HTTPS except for local services.
-                          </small>
-                        ) : null}
-                      </div>
-                      <div className="ai-provider-config-actions">
-                        <label className="ai-provider-enabled-toggle">
-                          <input
-                            type="checkbox"
-                            checked={provider.enabled}
-                            onChange={(event) =>
-                              updateAiProvider(provider.id, { enabled: event.target.checked })
-                            }
-                          />
-                          Enabled
-                        </label>
-                        <button
-                          type="button"
-                          className="icon-button danger"
-                          title={`Remove ${provider.name || "provider"}`}
-                          aria-label={`Remove ${provider.name || "provider"}`}
-                          onClick={() => removeAiProvider(provider.id)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </article>
+              </>
+            ) : null}
+            {section === "shortcuts" ? (
+              <>
+                <div className="settings-inline">
+                  <p className="muted">Focus a shortcut field and press the desired keys.</p>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...settings, keybindings: DEFAULT_KEYBINDINGS })}
+                  >
+                    Reset defaults
+                  </button>
+                </div>
+                {conflictMessage ? (
+                  <div className="error-banner settings-error">{conflictMessage}</div>
+                ) : null}
+                <div className="shortcut-list">
+                  {EDITOR_COMMANDS.map((command) => (
+                    <label key={command.id} className="shortcut-row">
+                      <span>{command.label}</span>
+                      <input
+                        value={keybindingMap.get(command.id) ?? ""}
+                        onChange={(event) => updateShortcut(command.id, event.target.value)}
+                        onKeyDown={(event) => {
+                          event.preventDefault();
+                          updateShortcut(command.id, eventToShortcut(event));
+                        }}
+                        placeholder="Unassigned"
+                      />
+                    </label>
                   ))}
                 </div>
-                <div className="ai-provider-add-card">
+              </>
+            ) : null}
+          </div>
+        ) : null}
+
+        {universe ? (
+          <div
+            className="settings-panel"
+            hidden={activeSection !== "properties"}
+            data-onboarding-target="worldnotion.properties-settings"
+          >
+            <DialogProvider>
+              <PropertiesManager
+                locale={interfaceLocale}
+                config={propertiesDraft}
+                onChange={(config) => {
+                  setPropertiesDirty(true);
+                  setPropertiesDraft(config);
+                }}
+              />
+            </DialogProvider>
+            <div className="settings-actions">
+              {draftSaveError ? <p role="alert">{draftSaveError}</p> : null}
+            </div>
+          </div>
+        ) : null}
+
+        {activeSection === "utils" && universe ? (
+          <div className="settings-panel">
+            <div className="settings-page-title">
+              <h3>Frontmatter utilities</h3>
+              <p>
+                Universe-wide tools to keep every note's YAML frontmatter valid, complete, and
+                consistently ordered. Changes are previewed first and applied only to the files you
+                choose.
+              </p>
+            </div>
+            {universe.propertiesConfig && universe.propertiesConfig.version !== "3.0" ? (
+              <>
+                <div className="universe-onboarding-card">
                   <div>
-                    <strong>Add provider</strong>
-                    <p>Any http(s) chat, research, or local web service can be added.</p>
+                    <h3>Upgrade property structure</h3>
+                    <p>
+                      Preview the move from flat 2.0 keys to nested 3.0 group objects. Nothing
+                      changes until you confirm the preview.
+                    </p>
                   </div>
-                  <div className="ai-provider-add-fields">
-                    <input
-                      value={newAiProviderName}
-                      onChange={(event) => setNewAiProviderName(event.target.value)}
-                      placeholder="Provider name"
-                      aria-label="New provider name"
-                    />
-                    <input
-                      value={newAiProviderUrl}
-                      onChange={(event) => setNewAiProviderUrl(event.target.value)}
-                      placeholder="https://example.com/chat"
-                      type="url"
-                      spellCheck={false}
-                      aria-label="New provider URL"
-                    />
-                    <button type="button" onClick={addAiProvider}>
-                      <Plus size={15} />
-                      Add
-                    </button>
-                  </div>
-                  {aiProviderError ? (
-                    <small className="settings-inline-error">{aiProviderError}</small>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={scanStructureMigration}
+                    disabled={structureMigrationBusy}
+                  >
+                    {structureMigrationBusy ? "Scanning..." : "Preview upgrade"}
+                  </button>
                 </div>
+
+                {structureMigration ? (
+                  <div className="normalization-preview">
+                    <div className="normalization-actions">
+                      <span>
+                        {structureMigration.items.length} affected note
+                        {structureMigration.items.length === 1 ? "" : "s"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={applyStructureMigration}
+                        disabled={
+                          structureMigrationBusy ||
+                          structureMigration.items.some((item) => item.status !== "ready")
+                        }
+                      >
+                        Confirm upgrade to 3.0
+                      </button>
+                    </div>
+                    {structureMigration.items.length ? (
+                      structureMigration.items.map((item) => (
+                        <div key={item.path} className="normalization-row">
+                          <span className="normalization-row-main">
+                            <strong>{item.path}</strong>
+                            <small>
+                              {item.moves.length
+                                ? item.moves
+                                    .map(
+                                      (move) =>
+                                        `${move.fromPath.join(".")} → ${move.toPath.join(".")}`,
+                                    )
+                                    .join(" · ")
+                                : item.conflicts.join(" · ")}
+                            </small>
+                          </span>
+                          <span className={`normalization-kind ${item.status}`}>
+                            {item.status.replace("-", " ")}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="muted">
+                        No note values need moving; only the schema will be upgraded.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                {structureMigrationErrors.length ? (
+                  <div className="settings-error-list">
+                    {structureMigrationErrors.map((error, index) => (
+                      <p key={`${error}-${index}`}>{error}</p>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+            <div className="universe-onboarding-card">
+              <div>
+                <h3>Add missing frontmatter</h3>
+                <p>
+                  Scans this universe for Markdown files without valid frontmatter, detects normal
+                  notes and folder notes, and previews the metadata it will add.
+                </p>
+              </div>
+              <button type="button" onClick={scanNormalizationItems} disabled={normalizationBusy}>
+                {normalizationBusy ? "Scanning..." : "Scan notes"}
+              </button>
+            </div>
+
+            {normalizationItems.length > 0 ? (
+              <>
+                <div className="normalization-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedNormalizationPaths(
+                        new Set(normalizationItems.map((item) => item.path)),
+                      )
+                    }
+                    disabled={normalizationBusy}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNormalizationPaths(new Set())}
+                    disabled={normalizationBusy}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyNormalizationItems(
+                        normalizationItems.filter((item) =>
+                          selectedNormalizationPaths.has(item.path),
+                        ),
+                      )
+                    }
+                    disabled={normalizationBusy || selectedNormalizationPaths.size === 0}
+                  >
+                    Apply selected
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyNormalizationItems(normalizationItems)}
+                    disabled={normalizationBusy}
+                  >
+                    Apply all
+                  </button>
+                </div>
+                <div className="normalization-preview">
+                  {normalizationItems.map((item) => (
+                    <label key={item.path} className="normalization-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedNormalizationPaths.has(item.path)}
+                        onChange={(event) =>
+                          setSelectedNormalizationPaths((current) => {
+                            const next = new Set(current);
+                            if (event.target.checked) next.add(item.path);
+                            else next.delete(item.path);
+                            return next;
+                          })
+                        }
+                      />
+                      <span className="normalization-row-main">
+                        <strong>{item.path}</strong>
+                        <small>{item.reason.replace(/_/g, " ")}</small>
+                      </span>
+                      <span className={`normalization-kind ${item.kind}`}>{item.kind}</span>
+                      <span className="normalization-meta">
+                        <code>{item.type}</code>
+                        {item.folder ? <code>folder: {item.folder}</code> : null}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="muted">Run a scan to preview files that need frontmatter.</p>
+            )}
+
+            {normalizationErrors.length > 0 ? (
+              <div className="settings-error-list">
+                {normalizationErrors.map((error, index) => (
+                  <p key={`${error}-${index}`}>{error}</p>
+                ))}
               </div>
             ) : null}
 
-</SettingsFrame></AppInteractionContext.Provider>;
+            <div className="universe-onboarding-card">
+              <div>
+                <h3>Normalize properties</h3>
+                <p>
+                  Checks every note against the universe schema: fills missing core and required
+                  fields with defaults and reorders frontmatter keys to the schema order. The note
+                  body is never touched.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={scanPropertyNormItems}
+                disabled={propertyNormBusy || !universe.propertiesConfig}
+                title={
+                  universe.propertiesConfig
+                    ? undefined
+                    : "This universe has no properties schema yet"
+                }
+              >
+                {propertyNormBusy ? "Scanning..." : "Scan properties"}
+              </button>
+            </div>
+
+            {propertyNormItems.length > 0 ? (
+              <>
+                <div className="normalization-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedPropertyNormPaths(
+                        new Set(propertyNormItems.map((item) => item.path)),
+                      )
+                    }
+                    disabled={propertyNormBusy}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPropertyNormPaths(new Set())}
+                    disabled={propertyNormBusy}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyPropertyNormItems(
+                        propertyNormItems.filter((item) =>
+                          selectedPropertyNormPaths.has(item.path),
+                        ),
+                      )
+                    }
+                    disabled={propertyNormBusy || selectedPropertyNormPaths.size === 0}
+                  >
+                    Apply selected
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPropertyNormItems(propertyNormItems)}
+                    disabled={propertyNormBusy}
+                  >
+                    Apply all
+                  </button>
+                </div>
+                <div className="normalization-preview">
+                  {propertyNormItems.map((item) => (
+                    <label key={item.path} className="normalization-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedPropertyNormPaths.has(item.path)}
+                        onChange={(event) =>
+                          setSelectedPropertyNormPaths((current) => {
+                            const next = new Set(current);
+                            if (event.target.checked) next.add(item.path);
+                            else next.delete(item.path);
+                            return next;
+                          })
+                        }
+                      />
+                      <span className="normalization-row-main">
+                        <strong>{item.path}</strong>
+                        <small>{propertyNormSummary(item)}</small>
+                      </span>
+                      <span className="normalization-meta">
+                        <code>{item.type}</code>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : propertyNormScanned && !propertyNormBusy ? (
+              <p className="muted">Every note already matches the universe schema. ✓</p>
+            ) : (
+              <p className="muted">
+                Run a scan to preview notes whose properties drift from the schema.
+              </p>
+            )}
+
+            {propertyNormErrors.length > 0 ? (
+              <div className="settings-error-list">
+                {propertyNormErrors.map((error, index) => (
+                  <p key={`${error}-${index}`}>{error}</p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {activeSection === "help" ? (
+          <div className="settings-panel">
+            <div className="settings-page-title">
+              <h3>Help & Documentation</h3>
+              <p>Get started with WorldNotion or reset the onboarding guide.</p>
+            </div>
+            <button type="button" onClick={onResetOnboarding} disabled={!onResetOnboarding}>
+              <RefreshCw size={15} />
+              Restart Onboarding
+            </button>
+          </div>
+        ) : null}
+
+        {activeSection === "plugins" ? (
+          <div className="settings-panel">
+            <div className="settings-page-title">
+              <h3>Plugins</h3>
+              <p>Manage WorldNotion editor plugins and preview planned Everend runtime adapters.</p>
+            </div>
+            <label className="plugin-search" data-setting-id="worldnotion.plugins.plugin-search">
+              <span>Filter plugins</span>
+              <input
+                value={pluginQuery}
+                onChange={(event) => setPluginQuery(event.target.value)}
+                placeholder="Search plugins"
+              />
+            </label>
+            <div className="plugin-manager-list">
+              {(
+                [
+                  "navigation",
+                  "editor",
+                  "visual",
+                  "integration",
+                  "runtime-adapter",
+                ] as PluginCategory[]
+              ).map((category) => {
+                const normalizedQuery = pluginQuery.trim().toLowerCase();
+                const plugins = getPluginDefinitions()
+                  .filter((plugin) => {
+                    const matchesCategory = plugin.category === category;
+                    const matchesQuery =
+                      !normalizedQuery ||
+                      plugin.name.toLowerCase().includes(normalizedQuery) ||
+                      plugin.description.toLowerCase().includes(normalizedQuery);
+                    return matchesCategory && matchesQuery;
+                  })
+                  .sort((first, second) => first.name.localeCompare(second.name, "en"));
+                if (!plugins.length) return null;
+                return (
+                  <section key={category} className="plugin-category">
+                    <h4>{pluginCategoryLabel(category)}</h4>
+                    {plugins.map((plugin) => {
+                      const enabled = isPluginEnabled(
+                        settings.plugins,
+                        plugin.id,
+                        legacyPluginEnabled(settings.editor, plugin.id),
+                      );
+                      const badge =
+                        plugin.status === "planned"
+                          ? "Planned"
+                          : plugin.status === "core"
+                            ? "Core"
+                            : "Optional";
+                      return (
+                        <article
+                          key={plugin.id}
+                          data-setting-id={"worldnotion.plugins." + plugin.id}
+                          className={`plugin-card ${plugin.status}`}
+                        >
+                          <div className="plugin-card-main">
+                            <div className="plugin-card-title">
+                              <strong>{t(plugin.name)}</strong>
+                              <span className={`plugin-badge ${plugin.status}`}>{badge}</span>
+                            </div>
+                            <p>{t(plugin.description)}</p>
+                            {plugin.status === "planned" ? (
+                              <small>
+                                Documentation only for now. Engine adapters are not installed or
+                                executed in v1.
+                              </small>
+                            ) : plugin.status === "core" ? (
+                              <small>
+                                Core plugin. Protected to keep editing and navigation behavior
+                                stable.
+                              </small>
+                            ) : null}
+                          </div>
+                          {plugin.status === "planned" ? (
+                            <span className="plugin-toggle-state">Unavailable</span>
+                          ) : (
+                            <label className="plugin-toggle">
+                              <input
+                                type="checkbox"
+                                checked={enabled}
+                                disabled={!plugin.configurable}
+                                onChange={(event) =>
+                                  onChange(
+                                    updatePluginEnabled(settings, plugin.id, event.target.checked),
+                                  )
+                                }
+                              />
+                              <span>
+                                {plugin.configurable
+                                  ? enabled
+                                    ? "Active"
+                                    : "Disabled"
+                                  : "Always active"}
+                              </span>
+                            </label>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {activeSection === "ai-advisor" ? (
+          <div className="settings-panel ai-advisor-settings-panel">
+            <div className="settings-page-title">
+              <h3>AI Advisor providers</h3>
+              <p>Choose which web providers appear in the Advisor tab.</p>
+            </div>
+            <div className="settings-security-note">
+              <Sparkles size={16} />
+              <p>
+                WorldNotion stores only provider names, links, enabled state, and your selected
+                provider. It does not store passwords, cookies, API keys, or chat content.
+              </p>
+            </div>
+            <div
+              className="ai-provider-config-list"
+              data-setting-id="worldnotion.ai-advisor.providers"
+            >
+              {settings.aiAdvisor.providers.map((provider) => (
+                <article key={provider.id} className="ai-provider-config-card">
+                  <div className="ai-provider-config-fields">
+                    <label>
+                      <span>Name</span>
+                      <input
+                        value={provider.name}
+                        onChange={(event) =>
+                          updateAiProvider(provider.id, { name: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Web link</span>
+                      <input
+                        value={provider.url}
+                        type="url"
+                        spellCheck={false}
+                        onChange={(event) =>
+                          updateAiProvider(provider.id, { url: event.target.value })
+                        }
+                      />
+                    </label>
+                    {!normalizeAiProviderUrl(provider.url) ? (
+                      <small className="settings-inline-error">
+                        Use a valid http(s) link before opening this provider.
+                      </small>
+                    ) : null}
+                    {provider.url.startsWith("http://") ? (
+                      <small className="settings-inline-warning">
+                        HTTP is unencrypted; use HTTPS except for local services.
+                      </small>
+                    ) : null}
+                  </div>
+                  <div className="ai-provider-config-actions">
+                    <label className="ai-provider-enabled-toggle">
+                      <input
+                        type="checkbox"
+                        checked={provider.enabled}
+                        onChange={(event) =>
+                          updateAiProvider(provider.id, { enabled: event.target.checked })
+                        }
+                      />
+                      Enabled
+                    </label>
+                    <button
+                      type="button"
+                      className="icon-button danger"
+                      title={`Remove ${provider.name || "provider"}`}
+                      aria-label={`Remove ${provider.name || "provider"}`}
+                      onClick={() => removeAiProvider(provider.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="ai-provider-add-card">
+              <div>
+                <strong>Add provider</strong>
+                <p>Any http(s) chat, research, or local web service can be added.</p>
+              </div>
+              <div className="ai-provider-add-fields">
+                <input
+                  value={newAiProviderName}
+                  onChange={(event) => setNewAiProviderName(event.target.value)}
+                  placeholder="Provider name"
+                  aria-label="New provider name"
+                />
+                <input
+                  value={newAiProviderUrl}
+                  onChange={(event) => setNewAiProviderUrl(event.target.value)}
+                  placeholder="https://example.com/chat"
+                  type="url"
+                  spellCheck={false}
+                  aria-label="New provider URL"
+                />
+                <button type="button" onClick={addAiProvider}>
+                  <Plus size={15} />
+                  Add
+                </button>
+              </div>
+              {aiProviderError ? (
+                <small className="settings-inline-error">{aiProviderError}</small>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </SettingsFrame>
+    </AppInteractionContext.Provider>
+  );
 }

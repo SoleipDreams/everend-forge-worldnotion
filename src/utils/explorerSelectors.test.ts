@@ -177,7 +177,14 @@ describe("explorer selectors", () => {
         { relativePath: ".everend/assets/image/hero.png", content: "", binary: true },
         { relativePath: "Art/maps/world.webp", content: "", binary: true },
       ],
-      directories: ["World", ".everend", ".everend/assets", ".everend/assets/image", "Art", "Art/maps"],
+      directories: [
+        "World",
+        ".everend",
+        ".everend/assets",
+        ".everend/assets/image",
+        "Art",
+        "Art/maps",
+      ],
     });
 
     expect(
@@ -185,7 +192,10 @@ describe("explorer selectors", () => {
     ).toEqual(["World"]);
     const imageTree = selectImageTree(withImages, "");
     expect(imageTree.map((item) => item.path)).toEqual([".everend", "Art"]);
-    expect(imageTree[0].children?.[0]).toMatchObject({ path: ".everend/assets", children: [expect.objectContaining({ path: ".everend/assets/image" })] });
+    expect(imageTree[0].children?.[0]).toMatchObject({
+      path: ".everend/assets",
+      children: [expect.objectContaining({ path: ".everend/assets/image" })],
+    });
     expect(imageTree[1].children?.[0]).toMatchObject({ path: "Art/maps" });
     expect(selectImageTree(withImages, "hero").map((item) => item.path)).toEqual([
       ".everend/assets/image/hero.png",

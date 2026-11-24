@@ -30,15 +30,17 @@ export function buildCommandResults(
   keybindings: Array<{ commandId: EditorCommandId; shortcut: string }>,
   showModeTabs = true,
 ): CommandResult[] {
-  return EDITOR_COMMANDS.filter((command) => showModeTabs || command.id !== "switchMode").map((command) => ({
-    type: "command",
-    id: command.id,
-    commandId: command.id,
-    title: command.label,
-    subtitle: command.group,
-    group: command.group,
-    shortcut: shortcutFor(command.id, keybindings),
-  }));
+  return EDITOR_COMMANDS.filter((command) => showModeTabs || command.id !== "switchMode").map(
+    (command) => ({
+      type: "command",
+      id: command.id,
+      commandId: command.id,
+      title: command.label,
+      subtitle: command.group,
+      group: command.group,
+      shortcut: shortcutFor(command.id, keybindings),
+    }),
+  );
 }
 
 export function buildHeaderResults(markdown: string): HeaderResult[] {

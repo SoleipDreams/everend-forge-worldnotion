@@ -82,7 +82,9 @@ function entityFromMarkdown(file: VaultFile, parsed: ParsedMarkdown): Entity {
   const name = asString(parsed.data.name) || basenameWithoutExtension(file.relativePath);
   const status = asString(parsed.data.status) || "unknown";
   const customProperties = Object.fromEntries(
-    Object.entries(parsed.data).filter(([key]) => !BASE_ENTITY_FIELDS.has(key) && key !== "variants"),
+    Object.entries(parsed.data).filter(
+      ([key]) => !BASE_ENTITY_FIELDS.has(key) && key !== "variants",
+    ),
   );
 
   return {

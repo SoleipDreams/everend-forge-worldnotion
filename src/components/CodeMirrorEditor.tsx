@@ -41,9 +41,7 @@ import { tableInsertion } from "../utils/markdownEditing";
 import { useWorldnotionSurfaceText } from "../i18n";
 import type { StructuredElement } from "../utils/structuredMarkdown";
 import { buildStructuredRangeIndex, type StructuredRange } from "../utils/structuredRangeIndex";
-import {
-  paragraphSpacingExtension,
-} from "../utils/paragraphSpacing";
+import { paragraphSpacingExtension } from "../utils/paragraphSpacing";
 import { exitEmptyBlockLine, toggleInlineFormat } from "../utils/formatCommands";
 import { linkHoverTooltip } from "./linkHoverTooltip";
 
@@ -772,7 +770,9 @@ export function CodeMirrorEditor({
           ...(mode === "write" && activeVariantId
             ? [createVariantContentPlugin(activeVariantId, activeVariantLabel)]
             : []),
-          ...(mode === "write" && (presentationHasPortrait || presentationPortraitPath) && resolveImage
+          ...(mode === "write" &&
+          (presentationHasPortrait || presentationPortraitPath) &&
+          resolveImage
             ? [
                 presentationPortraitPlugin({
                   path: presentationPortraitPath,
@@ -797,8 +797,8 @@ export function CodeMirrorEditor({
                   presentationTitle: Boolean(presentationTitle),
                   hasPortrait: Boolean(
                     presentationTitle &&
-                      presentationHasPortrait &&
-                      (presentationPortraitPath || onChoosePresentationPortrait),
+                    presentationHasPortrait &&
+                    (presentationPortraitPath || onChoosePresentationPortrait),
                   ),
                   onDocumentNameChange,
                 }),

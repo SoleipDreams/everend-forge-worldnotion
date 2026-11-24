@@ -98,13 +98,28 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             onKeyDown={handleKeyDown}
           />
           <div className="search-panel-options">
-            <button type="button" className="search-option-btn" disabled title={t("Match case (Aa)")}>
+            <button
+              type="button"
+              className="search-option-btn"
+              disabled
+              title={t("Match case (Aa)")}
+            >
               Aa
             </button>
-            <button type="button" className="search-option-btn" disabled title={t("Match whole word (Ab)")}>
+            <button
+              type="button"
+              className="search-option-btn"
+              disabled
+              title={t("Match whole word (Ab)")}
+            >
               Ab
             </button>
-            <button type="button" className="search-option-btn" disabled title={t("Use regex (.*)")}>
+            <button
+              type="button"
+              className="search-option-btn"
+              disabled
+              title={t("Use regex (.*)")}
+            >
               .*
             </button>
           </div>
@@ -132,14 +147,16 @@ export function SearchPanel({ editorView, onClose }: SearchPanelProps) {
             <div className="search-panel-replace-actions">
               <button
                 type="button"
-                className="search-action-btn" disabled
+                className="search-action-btn"
+                disabled
                 title={t("Replace next (implementation pending)")}
               >
                 {t("Replace")}
               </button>
               <button
                 type="button"
-                className="search-action-btn" disabled
+                className="search-action-btn"
+                disabled
                 title={t("Replace all (implementation pending)")}
               >
                 {t("All")}

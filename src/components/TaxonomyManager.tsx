@@ -16,7 +16,7 @@ export function PropertiesManager({ config, onChange, locale = "es" }: Propertie
       <h3>{es ? "Etiquetas" : "Tags"}</h3>
       <div className="ecosystem-content">
         <div className="ecosystem-panel">
-          {(
+          {
             <div className="panel-settings">
               <label className="setting-toggle" data-setting-id="worldnotion.properties.customTags">
                 <input
@@ -30,9 +30,13 @@ export function PropertiesManager({ config, onChange, locale = "es" }: Propertie
                   }
                 />
                 <div className="setting-info">
-                  <span className="setting-label">{es ? "Permitir etiquetas personalizadas" : "Allow custom tags"}</span>
+                  <span className="setting-label">
+                    {es ? "Permitir etiquetas personalizadas" : "Allow custom tags"}
+                  </span>
                   <span className="setting-description">
-                    {es ? "Acepta etiquetas que no estén en la jerarquía" : "Accept tags outside the hierarchy"}
+                    {es
+                      ? "Acepta etiquetas que no estén en la jerarquía"
+                      : "Accept tags outside the hierarchy"}
                   </span>
                 </div>
               </label>
@@ -48,15 +52,20 @@ export function PropertiesManager({ config, onChange, locale = "es" }: Propertie
                   }
                 />
                 <div className="setting-info">
-                  <span className="setting-label">{es ? "Auto-detectar notación de barras" : "Detect slash notation"}</span>
+                  <span className="setting-label">
+                    {es ? "Auto-detectar notación de barras" : "Detect slash notation"}
+                  </span>
                   <span className="setting-description">
-                    {es ? "Reconoce automáticamente la estructura jerárquica" : "Recognize the hierarchy automatically"}
+                    {es
+                      ? "Reconoce automáticamente la estructura jerárquica"
+                      : "Recognize the hierarchy automatically"}
                   </span>
                 </div>
               </label>
             </div>
-          )}
-          <TagHierarchyEditor locale={locale}
+          }
+          <TagHierarchyEditor
+            locale={locale}
             nodes={config.tags.rootNodes}
             onChange={(rootNodes) =>
               onChange({

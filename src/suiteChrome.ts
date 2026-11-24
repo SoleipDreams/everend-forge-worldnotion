@@ -70,7 +70,13 @@ export type SuiteUpdateControls = {
 };
 
 export type SuiteChrome = {
-  registerCanonEntityOpener?: (open: (target: { entityId: string; variantId?: string; propertyId?: string }) => Promise<boolean>) => () => void;
+  registerCanonEntityOpener?: (
+    open: (target: {
+      entityId: string;
+      variantId?: string;
+      propertyId?: string;
+    }) => Promise<boolean>,
+  ) => () => void;
   registerCanonPropertiesOpener?: (open: () => void) => () => void;
   onCanonSaved?: (rootPath: string) => void;
   /** Optional embedded settings center. Older hosts keep the local dialog. */

@@ -7,7 +7,13 @@ export type WorldNotionOnboardingStep = {
   complete: boolean;
 };
 
-export function UniverseBasicsCard({ onCreate, onOpen }: { onCreate: () => void; onOpen: () => void }) {
+export function UniverseBasicsCard({
+  onCreate,
+  onOpen,
+}: {
+  onCreate: () => void;
+  onOpen: () => void;
+}) {
   return (
     <section className="universe-basics-card" aria-labelledby="universe-basics-title">
       <div className="universe-basics-card-icon" aria-hidden="true">
@@ -55,7 +61,12 @@ export function OnboardingGuide({
           <p className="eyebrow">Guía de WorldNotion</p>
           <strong>{completed ? "Fundamentos completados" : current.title}</strong>
         </div>
-        <button type="button" className="onboarding-guide-close" onClick={onDismiss} aria-label="Cerrar guía">
+        <button
+          type="button"
+          className="onboarding-guide-close"
+          onClick={onDismiss}
+          aria-label="Cerrar guía"
+        >
           <X size={15} />
         </button>
       </header>
@@ -64,7 +75,10 @@ export function OnboardingGuide({
       </p>
       <ol className="onboarding-guide-steps">
         {steps.map((step, index) => (
-          <li key={step.id} className={`${step.complete ? "complete" : ""} ${index === activeIndex ? "active" : ""}`}>
+          <li
+            key={step.id}
+            className={`${step.complete ? "complete" : ""} ${index === activeIndex ? "active" : ""}`}
+          >
             <span className="onboarding-guide-step-icon" aria-hidden="true">
               {step.complete ? <Check size={12} /> : index + 1}
             </span>

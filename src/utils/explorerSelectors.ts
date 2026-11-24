@@ -58,7 +58,7 @@ export function selectVisibleTree(
         if (directory === DEFAULT_ATTACHMENTS_FOLDER && showHiddenEverend) return true;
         // Exclude image attachment folder when hiding metadata
         if (directory === DEFAULT_ATTACHMENTS_FOLDER && !showHiddenEverend) return false;
-        
+
         const descendants = index.files.filter((file) =>
           file.relativePath.startsWith(`${directory}/`),
         );

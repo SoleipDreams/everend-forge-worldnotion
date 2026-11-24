@@ -460,9 +460,7 @@ export function GraphView({
     context.globalCompositeOperation = "source-over";
     context.setLineDash([]);
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle =
-      palette.getPropertyValue("--wn-editor-bg").trim() ||
-      "#ffffff";
+    context.fillStyle = palette.getPropertyValue("--wn-editor-bg").trim() || "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     const transform = transformRef.current;
@@ -510,8 +508,7 @@ export function GraphView({
 
       if (isHovered || isActive || isHighlighted) {
         context.strokeStyle = isActive
-          ? palette.getPropertyValue("--wn-accent").trim() ||
-            "#3f7f64"
+          ? palette.getPropertyValue("--wn-accent").trim() || "#3f7f64"
           : forgeThread
             ? palette.getPropertyValue("--wn-text").trim()
             : "#ffffff";
@@ -550,8 +547,7 @@ export function GraphView({
     const owner = containerRef.current?.closest(".forge-worldnotion") ?? document.documentElement;
     const palette = getComputedStyle(owner);
     context.font = `${fontSize}px Inter, system-ui, sans-serif`;
-    context.fillStyle =
-      palette.getPropertyValue("--wn-text").trim() || "#111827";
+    context.fillStyle = palette.getPropertyValue("--wn-text").trim() || "#111827";
     context.globalAlpha = dimmed ? 0.35 : 0.88;
     context.textAlign = "center";
     context.textBaseline = "top";

@@ -80,7 +80,9 @@ describe("ExplorerPanel virtualization", () => {
     const onOpenCreateMenu = vi.fn();
     const { container } = renderPanel([], "", { onOpenCreateMenu });
 
-    const surfaceCreateButton = container.querySelector<HTMLButtonElement>(".explorer-create-item-button");
+    const surfaceCreateButton = container.querySelector<HTMLButtonElement>(
+      ".explorer-create-item-button",
+    );
     expect(surfaceCreateButton).not.toBeNull();
     fireEvent.click(surfaceCreateButton!);
 

@@ -160,7 +160,11 @@ export function ContextMenu({
                 <Eye size={16} />
                 <span>{ui.preview}</span>
               </button>
-              <button type="button" onClick={() => run("relinkImage")} className="context-menu-item">
+              <button
+                type="button"
+                onClick={() => run("relinkImage")}
+                className="context-menu-item"
+              >
                 <Link2 size={16} />
                 <span>{ui.relinkImage}</span>
               </button>
@@ -178,12 +182,27 @@ export function ContextMenu({
         </>
       ) : null}
 
-      <button type="button" data-onboarding-target="worldnotion.create-note" onClick={() => run("newBlankPage")} className="context-menu-item">
+      <button
+        type="button"
+        data-onboarding-target="worldnotion.create-note"
+        onClick={() => run("newBlankPage")}
+        className="context-menu-item"
+      >
         <FileText size={16} />
         <span>{ui.newBlankPage}</span>
       </button>
-      <button type="button" onClick={() => run("newTimeline")} className="context-menu-item"><FilePlus size={16} /><span>Timeline</span></button>
-      <button type="button" onClick={() => run("newRelationshipTree")} className="context-menu-item"><FilePlus size={16} /><span>Relation tree</span></button>
+      <button type="button" onClick={() => run("newTimeline")} className="context-menu-item">
+        <FilePlus size={16} />
+        <span>Timeline</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => run("newRelationshipTree")}
+        className="context-menu-item"
+      >
+        <FilePlus size={16} />
+        <span>Relation tree</span>
+      </button>
 
       {templates.length > 0 ? (
         <>
@@ -229,7 +248,12 @@ export function ContextMenu({
 
       <div className="context-menu-separator" />
 
-      <button type="button" data-onboarding-target="worldnotion.create-folder" onClick={() => run("newFolder")} className="context-menu-item">
+      <button
+        type="button"
+        data-onboarding-target="worldnotion.create-folder"
+        onClick={() => run("newFolder")}
+        className="context-menu-item"
+      >
         <FolderPlus size={16} />
         <span>{ui.newFolder}</span>
       </button>
@@ -253,7 +277,9 @@ export function ContextMenu({
             <>
               <button
                 type="button"
-                data-onboarding-target={!hasFolderDescription ? "worldnotion.create-folder-note" : undefined}
+                data-onboarding-target={
+                  !hasFolderDescription ? "worldnotion.create-folder-note" : undefined
+                }
                 onClick={() => run("editFolderDescription")}
                 className="context-menu-item"
               >

@@ -938,546 +938,179 @@ export function RelationshipTreeEditor({
             aria-label={text("Inspector del árbol", "Tree inspector")}
             inert={!active}
           >
-          <h3>
-            {selectedNode
-              ? text("Persona", "Person")
-              : selectedEdge
-                ? text("Relación", "Relationship")
-                : selectedAnnotation
-                  ? text("Anotación", "Annotation")
-                  : selectedGroup
-                    ? text("Grupo", "Group")
-                    : selectedDrawing
-                      ? text("Dibujo", "Drawing")
-                      : text("Árbol", "Tree")}
-          </h3>
-          {selectedNode && (
-            <>
-              <label>
-                {text("Nombre", "Name")}
-                <input
-                  value={selectedNode.name}
-                  onChange={(event) => changeNode({ name: event.target.value })}
-                />
-              </label>
-              <label>
-                {text("Vincular ficha", "Link card")}
-                <WorldNotionDropdown
-                  value={selectedNode.reference || ""}
-                  onChange={(event) =>
-                    changeNode({
-                      reference: event.target.value || undefined,
-                      name:
-                        selectedNode.name === text("Persona", "Person")
-                          ? vaultIndex?.entities.find((entity) => entity.id === event.target.value)
-                              ?.name || selectedNode.name
-                          : selectedNode.name,
-                    })
-                  }
-                >
-                  <option value="">{text("Persona independiente", "Independent person")}</option>
-                  {selectedNode.reference &&
-                    !vaultIndex?.entities.some(
-                      (entity) => entity.id === selectedNode.reference,
-                    ) && <option value={selectedNode.reference}>{selectedNode.reference}</option>}
-                  {vaultIndex?.entities.map((entity) => (
-                    <option key={entity.path} value={entity.id}>
-                      {entity.name} · {entity.path}
-                    </option>
-                  ))}
-                </WorldNotionDropdown>
-              </label>
-              <label>
-                {text("Referencia / variante", "Reference / variant")}
-                <input
-                  value={selectedNode.reference || ""}
-                  placeholder="id@variant"
-                  onChange={(event) => changeNode({ reference: event.target.value || undefined })}
-                />
-              </label>
-              {referenceResolution?.diagnostic && (
-                <p role="status" className="ef-visual-diagnostic">
-                  {text("Referencia", "Reference")}:{" "}
-                  {referenceResolution.diagnostic === "ambiguous"
-                    ? text("ambigua; usa la ruta de la ficha.", "ambiguous; use the card path.")
-                    : referenceResolution.diagnostic === "missing-variant"
-                      ? text("variante inexistente.", "missing variant.")
-                      : text("no encontrada.", "not found.")}
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={!selectedNode.reference || Boolean(referenceResolution?.diagnostic)}
-                onClick={() => onOpenReference?.(selectedNode.reference!)}
-              >
-                <ExternalLink size={14} />
-                {text("Abrir ficha al lado", "Open card alongside")}
-              </button>
-              <label>
-                {text("Retrato (ruta o URL)", "Portrait (path or URL)")}
-                <input
-                  value={selectedNode.portrait || ""}
-                  onChange={(event) => changeNode({ portrait: event.target.value || undefined })}
-                />
-              </label>
-              <label className="ef-visual-check">
-                <input
-                  type="checkbox"
-                  checked={Boolean(selectedNode.deceased)}
-                  onChange={(event) => changeNode({ deceased: event.target.checked })}
-                />
-                {text("Fallecido", "Deceased")}
-              </label>
-              <p className="ef-visual-hint">
-                {text(
-                  "Doble clic en un puerto añade una persona conectada.",
-                  "Double-click a port to add a connected person.",
-                )}
-              </p>
-            </>
-          )}
-          {selectedEdge && (
-            <>
-              <label>
-                {text("Tipo", "Type")}
-                <WorldNotionDropdown
-                  value={selectedEdge.typeId}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        edges: canvas.edges.map((edge) =>
-                          edge.id === selectedEdge.id
-                            ? { ...edge, typeId: event.target.value }
-                            : edge,
-                        ),
-                      },
-                      text("Editar relación", "Edit relationship"),
-                    )
-                  }
-                >
-                  {document.relationshipTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {(es && RELATION_ES[type.id]) || type.name}
-                    </option>
-                  ))}
-                </WorldNotionDropdown>
-              </label>
-              {(["label", "icon", "color"] as const).map((key) => (
-                <label key={key}>
-                  {key === "label"
-                    ? text("Etiqueta", "Label")
-                    : key === "icon"
-                      ? text("Icono", "Icon")
-                      : "Color"}
+            <h3>
+              {selectedNode
+                ? text("Persona", "Person")
+                : selectedEdge
+                  ? text("Relación", "Relationship")
+                  : selectedAnnotation
+                    ? text("Anotación", "Annotation")
+                    : selectedGroup
+                      ? text("Grupo", "Group")
+                      : selectedDrawing
+                        ? text("Dibujo", "Drawing")
+                        : text("Árbol", "Tree")}
+            </h3>
+            {selectedNode && (
+              <>
+                <label>
+                  {text("Nombre", "Name")}
                   <input
-                    type={key === "color" ? "color" : "text"}
-                    value={
-                      selectedEdge[key] ||
-                      (key === "color" ? selectedEdgeType?.color || "#8890a2" : "")
+                    value={selectedNode.name}
+                    onChange={(event) => changeNode({ name: event.target.value })}
+                  />
+                </label>
+                <label>
+                  {text("Vincular ficha", "Link card")}
+                  <WorldNotionDropdown
+                    value={selectedNode.reference || ""}
+                    onChange={(event) =>
+                      changeNode({
+                        reference: event.target.value || undefined,
+                        name:
+                          selectedNode.name === text("Persona", "Person")
+                            ? vaultIndex?.entities.find(
+                                (entity) => entity.id === event.target.value,
+                              )?.name || selectedNode.name
+                            : selectedNode.name,
+                      })
                     }
+                  >
+                    <option value="">{text("Persona independiente", "Independent person")}</option>
+                    {selectedNode.reference &&
+                      !vaultIndex?.entities.some(
+                        (entity) => entity.id === selectedNode.reference,
+                      ) && <option value={selectedNode.reference}>{selectedNode.reference}</option>}
+                    {vaultIndex?.entities.map((entity) => (
+                      <option key={entity.path} value={entity.id}>
+                        {entity.name} · {entity.path}
+                      </option>
+                    ))}
+                  </WorldNotionDropdown>
+                </label>
+                <label>
+                  {text("Referencia / variante", "Reference / variant")}
+                  <input
+                    value={selectedNode.reference || ""}
+                    placeholder="id@variant"
+                    onChange={(event) => changeNode({ reference: event.target.value || undefined })}
+                  />
+                </label>
+                {referenceResolution?.diagnostic && (
+                  <p role="status" className="ef-visual-diagnostic">
+                    {text("Referencia", "Reference")}:{" "}
+                    {referenceResolution.diagnostic === "ambiguous"
+                      ? text("ambigua; usa la ruta de la ficha.", "ambiguous; use the card path.")
+                      : referenceResolution.diagnostic === "missing-variant"
+                        ? text("variante inexistente.", "missing variant.")
+                        : text("no encontrada.", "not found.")}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={!selectedNode.reference || Boolean(referenceResolution?.diagnostic)}
+                  onClick={() => onOpenReference?.(selectedNode.reference!)}
+                >
+                  <ExternalLink size={14} />
+                  {text("Abrir ficha al lado", "Open card alongside")}
+                </button>
+                <label>
+                  {text("Retrato (ruta o URL)", "Portrait (path or URL)")}
+                  <input
+                    value={selectedNode.portrait || ""}
+                    onChange={(event) => changeNode({ portrait: event.target.value || undefined })}
+                  />
+                </label>
+                <label className="ef-visual-check">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedNode.deceased)}
+                    onChange={(event) => changeNode({ deceased: event.target.checked })}
+                  />
+                  {text("Fallecido", "Deceased")}
+                </label>
+                <p className="ef-visual-hint">
+                  {text(
+                    "Doble clic en un puerto añade una persona conectada.",
+                    "Double-click a port to add a connected person.",
+                  )}
+                </p>
+              </>
+            )}
+            {selectedEdge && (
+              <>
+                <label>
+                  {text("Tipo", "Type")}
+                  <WorldNotionDropdown
+                    value={selectedEdge.typeId}
                     onChange={(event) =>
                       commit(
                         {
                           ...canvas,
                           edges: canvas.edges.map((edge) =>
                             edge.id === selectedEdge.id
-                              ? { ...edge, [key]: event.target.value }
+                              ? { ...edge, typeId: event.target.value }
                               : edge,
                           ),
                         },
                         text("Editar relación", "Edit relationship"),
                       )
                     }
-                  />
+                  >
+                    {document.relationshipTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {(es && RELATION_ES[type.id]) || type.name}
+                      </option>
+                    ))}
+                  </WorldNotionDropdown>
                 </label>
-              ))}
-              <label>
-                {text("Línea", "Line")}
-                <WorldNotionDropdown
-                  value={selectedEdge.style || selectedEdgeType?.style || "solid"}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        edges: canvas.edges.map((edge) =>
-                          edge.id === selectedEdge.id
-                            ? {
-                                ...edge,
-                                style: event.target.value as "solid" | "dashed" | "dotted",
-                              }
-                            : edge,
-                        ),
-                      },
-                      text("Editar relación", "Edit relationship"),
-                    )
-                  }
-                >
-                  <option value="solid">{text("Sólida", "Solid")}</option>
-                  <option value="dashed">{text("Discontinua", "Dashed")}</option>
-                  <option value="dotted">{text("Punteada", "Dotted")}</option>
-                </WorldNotionDropdown>
-              </label>
-              <p className="ef-visual-hint">
-                {text(
-                  "Arrastra los extremos a otro puerto o a una conexión para crear una unión.",
-                  "Drag endpoints to another port or onto a connection to create a junction.",
-                )}
-              </p>
-            </>
-          )}
-          {selectedAnnotation && (
-            <>
-              <label>
-                {text("Texto", "Text")}
-                <textarea
-                  value={selectedAnnotation.text}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        annotations: canvas.annotations.map((note) =>
-                          note.id === selectedAnnotation.id
-                            ? { ...note, text: event.target.value }
-                            : note,
-                        ),
-                      },
-                      text("Editar anotación", "Edit annotation"),
-                    )
-                  }
-                />
-              </label>
-              <label>
-                Color
-                <input
-                  type="color"
-                  value={selectedAnnotation.color || "#e7d898"}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        annotations: canvas.annotations.map((note) =>
-                          note.id === selectedAnnotation.id
-                            ? { ...note, color: event.target.value }
-                            : note,
-                        ),
-                      },
-                      text("Editar anotación", "Edit annotation"),
-                    )
-                  }
-                />
-              </label>
-            </>
-          )}
-          {selectedGroup && (
-            <>
-              <label>
-                {text("Nombre del grupo", "Group name")}
-                <input
-                  value={selectedGroup.name}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        groups: canvas.groups.map((group) =>
-                          group.id === selectedGroup.id
-                            ? { ...group, name: event.target.value }
-                            : group,
-                        ),
-                      },
-                      text("Editar grupo", "Edit group"),
-                    )
-                  }
-                />
-              </label>
-              <label>
-                Color
-                <input
-                  type="color"
-                  value={selectedGroup.color || "#7d84db"}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        groups: canvas.groups.map((group) =>
-                          group.id === selectedGroup.id
-                            ? { ...group, color: event.target.value }
-                            : group,
-                        ),
-                      },
-                      text("Editar grupo", "Edit group"),
-                    )
-                  }
-                />
-              </label>
-              {(["width", "height"] as const).map((key) => (
-                <label key={key}>
-                  {key === "width" ? text("Ancho", "Width") : text("Alto", "Height")}
-                  <input
-                    type="number"
-                    min={50}
-                    value={selectedGroup[key]}
+                {(["label", "icon", "color"] as const).map((key) => (
+                  <label key={key}>
+                    {key === "label"
+                      ? text("Etiqueta", "Label")
+                      : key === "icon"
+                        ? text("Icono", "Icon")
+                        : "Color"}
+                    <input
+                      type={key === "color" ? "color" : "text"}
+                      value={
+                        selectedEdge[key] ||
+                        (key === "color" ? selectedEdgeType?.color || "#8890a2" : "")
+                      }
+                      onChange={(event) =>
+                        commit(
+                          {
+                            ...canvas,
+                            edges: canvas.edges.map((edge) =>
+                              edge.id === selectedEdge.id
+                                ? { ...edge, [key]: event.target.value }
+                                : edge,
+                            ),
+                          },
+                          text("Editar relación", "Edit relationship"),
+                        )
+                      }
+                    />
+                  </label>
+                ))}
+                <label>
+                  {text("Línea", "Line")}
+                  <WorldNotionDropdown
+                    value={selectedEdge.style || selectedEdgeType?.style || "solid"}
                     onChange={(event) =>
                       commit(
                         {
                           ...canvas,
-                          groups: canvas.groups.map((group) =>
-                            group.id === selectedGroup.id
-                              ? { ...group, [key]: Math.max(50, Number(event.target.value) || 50) }
-                              : group,
-                          ),
-                        },
-                        text("Redimensionar grupo", "Resize group"),
-                      )
-                    }
-                  />
-                </label>
-              ))}
-            </>
-          )}
-          {selectedDrawing && (
-            <>
-              <label>
-                Color
-                <input
-                  type="color"
-                  value={selectedDrawing.color}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        drawings: canvas.drawings.map((drawing) =>
-                          drawing.id === selectedDrawing.id
-                            ? { ...drawing, color: event.target.value }
-                            : drawing,
-                        ),
-                      },
-                      text("Editar dibujo", "Edit drawing"),
-                    )
-                  }
-                />
-              </label>
-              <label>
-                {text("Grosor", "Width")}
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={selectedDrawing.width}
-                  onChange={(event) =>
-                    commit(
-                      {
-                        ...canvas,
-                        drawings: canvas.drawings.map((drawing) =>
-                          drawing.id === selectedDrawing.id
-                            ? {
-                                ...drawing,
-                                width: Math.min(30, Math.max(1, Number(event.target.value) || 1)),
-                              }
-                            : drawing,
-                        ),
-                      },
-                      text("Editar dibujo", "Edit drawing"),
-                    )
-                  }
-                />
-              </label>
-            </>
-          )}
-          {selected.length > 0 && (
-            <button type="button" onClick={remove}>
-              <Trash2 size={14} />
-              {text("Eliminar selección", "Delete selection")}
-            </button>
-          )}
-          <label>
-            {text("Etiquetas", "Labels")}
-            <WorldNotionDropdown
-              value={labelMode}
-              onChange={(event) => setLabelMode(event.target.value as "always" | "hover")}
-            >
-              <option value="always">{text("Siempre", "Always")}</option>
-              <option value="hover">{text("Al pasar el cursor", "On hover")}</option>
-            </WorldNotionDropdown>
-          </label>
-          <details>
-            <summary>{text("Variantes completas", "Complete variants")}</summary>
-            <label>
-              {text("Nombre de esta variante", "This variant's name")}
-              <input
-                value={canvas.name}
-                onChange={(event) =>
-                  commit(
-                    { ...canvas, name: event.target.value },
-                    text("Renombrar variante", "Rename variant"),
-                  )
-                }
-              />
-            </label>
-            <label>
-              {text("Nueva variante", "New variant")}
-              <input
-                value={variantName}
-                onChange={(event) => {
-                  setVariantName(event.target.value);
-                  updateSession({
-                    drafts: composerDrafts(
-                      "tree-variant",
-                      event.target.value,
-                      text("Nueva variante del árbol", "New tree variant"),
-                    ),
-                  });
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={!variantName.trim()}
-              onClick={() => {
-                const id = treeId();
-                onChange(
-                  cloneTreeVariant(document, variantId, id, variantName.trim()),
-                  text("Duplicar variante", "Duplicate variant"),
-                );
-                updateSession({
-                  variantId: id,
-                  selectedIds: [],
-                  drafts: composerDrafts("tree-variant", "", ""),
-                });
-                setVariantName("");
-              }}
-            >
-              {text("Duplicar canvas actual", "Duplicate current canvas")}
-            </button>
-            <button
-              type="button"
-              disabled={!variantName.trim()}
-              onClick={() => {
-                const id = treeId();
-                onChange(
-                  {
-                    ...document,
-                    variants: {
-                      ...document.variants,
-                      [id]: createRelationshipCanvas(id, variantName.trim()),
-                    },
-                  },
-                  text("Crear variante", "Create variant"),
-                );
-                updateSession({
-                  variantId: id,
-                  selectedIds: [],
-                  drafts: composerDrafts("tree-variant", "", ""),
-                });
-                setVariantName("");
-              }}
-            >
-              {text("Crear canvas vacío", "Create empty canvas")}
-            </button>
-            <button
-              type="button"
-              disabled={Object.keys(document.variants).length < 2}
-              onClick={() => {
-                const variants = { ...document.variants };
-                delete variants[variantId];
-                onChange({ ...document, variants }, text("Eliminar variante", "Delete variant"));
-                updateSession({ variantId: Object.keys(variants)[0], selectedIds: [] });
-              }}
-            >
-              {text("Eliminar variante actual", "Delete current variant")}
-            </button>
-          </details>
-          <details>
-            <summary>{text("Relaciones personalizadas", "Custom relationships")}</summary>
-            <label>
-              {text("Nombre de relación", "Relationship name")}
-              <input
-                value={newTypeName}
-                onChange={(event) => {
-                  setNewTypeName(event.target.value);
-                  updateSession({
-                    drafts: composerDrafts(
-                      "tree-relationship-type",
-                      event.target.value,
-                      text("Nueva relación personalizada", "New custom relationship"),
-                    ),
-                  });
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={!newTypeName.trim()}
-              onClick={() => {
-                const id = treeId();
-                onChange(
-                  {
-                    ...document,
-                    relationshipTypes: [
-                      ...document.relationshipTypes,
-                      { id, name: newTypeName.trim() },
-                    ],
-                  },
-                  text("Crear tipo de relación", "Create relationship type"),
-                );
-                setRelationshipType(id);
-                updateSession({ drafts: composerDrafts("tree-relationship-type", "", "") });
-                setNewTypeName("");
-              }}
-            >
-              {text("Crear relación", "Create relationship")}
-            </button>
-            {document.relationshipTypes
-              .filter((type) => !RELATION_ES[type.id])
-              .map((type) => (
-                <div className="ef-visual-custom-type" key={type.id}>
-                  <input
-                    aria-label={text("Nombre de relación", "Relationship name")}
-                    value={type.name}
-                    onChange={(event) =>
-                      onChange(
-                        {
-                          ...document,
-                          relationshipTypes: document.relationshipTypes.map((item) =>
-                            item.id === type.id ? { ...item, name: event.target.value } : item,
-                          ),
-                        },
-                        text("Editar tipo", "Edit type"),
-                      )
-                    }
-                  />
-                  <input
-                    aria-label={text("Icono de relación", "Relationship icon")}
-                    value={type.icon || ""}
-                    onChange={(event) =>
-                      onChange(
-                        {
-                          ...document,
-                          relationshipTypes: document.relationshipTypes.map((item) =>
-                            item.id === type.id ? { ...item, icon: event.target.value } : item,
-                          ),
-                        },
-                        text("Editar tipo", "Edit type"),
-                      )
-                    }
-                  />
-                  <WorldNotionDropdown
-                    aria-label={text("Estilo de relación", "Relationship style")}
-                    value={type.style || "solid"}
-                    onChange={(event) =>
-                      onChange(
-                        {
-                          ...document,
-                          relationshipTypes: document.relationshipTypes.map((item) =>
-                            item.id === type.id
+                          edges: canvas.edges.map((edge) =>
+                            edge.id === selectedEdge.id
                               ? {
-                                  ...item,
+                                  ...edge,
                                   style: event.target.value as "solid" | "dashed" | "dotted",
                                 }
-                              : item,
+                              : edge,
                           ),
                         },
-                        text("Editar tipo", "Edit type"),
+                        text("Editar relación", "Edit relationship"),
                       )
                     }
                   >
@@ -1485,25 +1118,396 @@ export function RelationshipTreeEditor({
                     <option value="dashed">{text("Discontinua", "Dashed")}</option>
                     <option value="dotted">{text("Punteada", "Dotted")}</option>
                   </WorldNotionDropdown>
-                  <input
-                    aria-label={text("Color de relación", "Relationship color")}
-                    type="color"
-                    value={type.color || "#8890a2"}
+                </label>
+                <p className="ef-visual-hint">
+                  {text(
+                    "Arrastra los extremos a otro puerto o a una conexión para crear una unión.",
+                    "Drag endpoints to another port or onto a connection to create a junction.",
+                  )}
+                </p>
+              </>
+            )}
+            {selectedAnnotation && (
+              <>
+                <label>
+                  {text("Texto", "Text")}
+                  <textarea
+                    value={selectedAnnotation.text}
                     onChange={(event) =>
-                      onChange(
+                      commit(
                         {
-                          ...document,
-                          relationshipTypes: document.relationshipTypes.map((item) =>
-                            item.id === type.id ? { ...item, color: event.target.value } : item,
+                          ...canvas,
+                          annotations: canvas.annotations.map((note) =>
+                            note.id === selectedAnnotation.id
+                              ? { ...note, text: event.target.value }
+                              : note,
                           ),
                         },
-                        text("Editar tipo", "Edit type"),
+                        text("Editar anotación", "Edit annotation"),
                       )
                     }
                   />
-                </div>
-              ))}
-          </details>
+                </label>
+                <label>
+                  Color
+                  <input
+                    type="color"
+                    value={selectedAnnotation.color || "#e7d898"}
+                    onChange={(event) =>
+                      commit(
+                        {
+                          ...canvas,
+                          annotations: canvas.annotations.map((note) =>
+                            note.id === selectedAnnotation.id
+                              ? { ...note, color: event.target.value }
+                              : note,
+                          ),
+                        },
+                        text("Editar anotación", "Edit annotation"),
+                      )
+                    }
+                  />
+                </label>
+              </>
+            )}
+            {selectedGroup && (
+              <>
+                <label>
+                  {text("Nombre del grupo", "Group name")}
+                  <input
+                    value={selectedGroup.name}
+                    onChange={(event) =>
+                      commit(
+                        {
+                          ...canvas,
+                          groups: canvas.groups.map((group) =>
+                            group.id === selectedGroup.id
+                              ? { ...group, name: event.target.value }
+                              : group,
+                          ),
+                        },
+                        text("Editar grupo", "Edit group"),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Color
+                  <input
+                    type="color"
+                    value={selectedGroup.color || "#7d84db"}
+                    onChange={(event) =>
+                      commit(
+                        {
+                          ...canvas,
+                          groups: canvas.groups.map((group) =>
+                            group.id === selectedGroup.id
+                              ? { ...group, color: event.target.value }
+                              : group,
+                          ),
+                        },
+                        text("Editar grupo", "Edit group"),
+                      )
+                    }
+                  />
+                </label>
+                {(["width", "height"] as const).map((key) => (
+                  <label key={key}>
+                    {key === "width" ? text("Ancho", "Width") : text("Alto", "Height")}
+                    <input
+                      type="number"
+                      min={50}
+                      value={selectedGroup[key]}
+                      onChange={(event) =>
+                        commit(
+                          {
+                            ...canvas,
+                            groups: canvas.groups.map((group) =>
+                              group.id === selectedGroup.id
+                                ? {
+                                    ...group,
+                                    [key]: Math.max(50, Number(event.target.value) || 50),
+                                  }
+                                : group,
+                            ),
+                          },
+                          text("Redimensionar grupo", "Resize group"),
+                        )
+                      }
+                    />
+                  </label>
+                ))}
+              </>
+            )}
+            {selectedDrawing && (
+              <>
+                <label>
+                  Color
+                  <input
+                    type="color"
+                    value={selectedDrawing.color}
+                    onChange={(event) =>
+                      commit(
+                        {
+                          ...canvas,
+                          drawings: canvas.drawings.map((drawing) =>
+                            drawing.id === selectedDrawing.id
+                              ? { ...drawing, color: event.target.value }
+                              : drawing,
+                          ),
+                        },
+                        text("Editar dibujo", "Edit drawing"),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  {text("Grosor", "Width")}
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={selectedDrawing.width}
+                    onChange={(event) =>
+                      commit(
+                        {
+                          ...canvas,
+                          drawings: canvas.drawings.map((drawing) =>
+                            drawing.id === selectedDrawing.id
+                              ? {
+                                  ...drawing,
+                                  width: Math.min(30, Math.max(1, Number(event.target.value) || 1)),
+                                }
+                              : drawing,
+                          ),
+                        },
+                        text("Editar dibujo", "Edit drawing"),
+                      )
+                    }
+                  />
+                </label>
+              </>
+            )}
+            {selected.length > 0 && (
+              <button type="button" onClick={remove}>
+                <Trash2 size={14} />
+                {text("Eliminar selección", "Delete selection")}
+              </button>
+            )}
+            <label>
+              {text("Etiquetas", "Labels")}
+              <WorldNotionDropdown
+                value={labelMode}
+                onChange={(event) => setLabelMode(event.target.value as "always" | "hover")}
+              >
+                <option value="always">{text("Siempre", "Always")}</option>
+                <option value="hover">{text("Al pasar el cursor", "On hover")}</option>
+              </WorldNotionDropdown>
+            </label>
+            <details>
+              <summary>{text("Variantes completas", "Complete variants")}</summary>
+              <label>
+                {text("Nombre de esta variante", "This variant's name")}
+                <input
+                  value={canvas.name}
+                  onChange={(event) =>
+                    commit(
+                      { ...canvas, name: event.target.value },
+                      text("Renombrar variante", "Rename variant"),
+                    )
+                  }
+                />
+              </label>
+              <label>
+                {text("Nueva variante", "New variant")}
+                <input
+                  value={variantName}
+                  onChange={(event) => {
+                    setVariantName(event.target.value);
+                    updateSession({
+                      drafts: composerDrafts(
+                        "tree-variant",
+                        event.target.value,
+                        text("Nueva variante del árbol", "New tree variant"),
+                      ),
+                    });
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={!variantName.trim()}
+                onClick={() => {
+                  const id = treeId();
+                  onChange(
+                    cloneTreeVariant(document, variantId, id, variantName.trim()),
+                    text("Duplicar variante", "Duplicate variant"),
+                  );
+                  updateSession({
+                    variantId: id,
+                    selectedIds: [],
+                    drafts: composerDrafts("tree-variant", "", ""),
+                  });
+                  setVariantName("");
+                }}
+              >
+                {text("Duplicar canvas actual", "Duplicate current canvas")}
+              </button>
+              <button
+                type="button"
+                disabled={!variantName.trim()}
+                onClick={() => {
+                  const id = treeId();
+                  onChange(
+                    {
+                      ...document,
+                      variants: {
+                        ...document.variants,
+                        [id]: createRelationshipCanvas(id, variantName.trim()),
+                      },
+                    },
+                    text("Crear variante", "Create variant"),
+                  );
+                  updateSession({
+                    variantId: id,
+                    selectedIds: [],
+                    drafts: composerDrafts("tree-variant", "", ""),
+                  });
+                  setVariantName("");
+                }}
+              >
+                {text("Crear canvas vacío", "Create empty canvas")}
+              </button>
+              <button
+                type="button"
+                disabled={Object.keys(document.variants).length < 2}
+                onClick={() => {
+                  const variants = { ...document.variants };
+                  delete variants[variantId];
+                  onChange({ ...document, variants }, text("Eliminar variante", "Delete variant"));
+                  updateSession({ variantId: Object.keys(variants)[0], selectedIds: [] });
+                }}
+              >
+                {text("Eliminar variante actual", "Delete current variant")}
+              </button>
+            </details>
+            <details>
+              <summary>{text("Relaciones personalizadas", "Custom relationships")}</summary>
+              <label>
+                {text("Nombre de relación", "Relationship name")}
+                <input
+                  value={newTypeName}
+                  onChange={(event) => {
+                    setNewTypeName(event.target.value);
+                    updateSession({
+                      drafts: composerDrafts(
+                        "tree-relationship-type",
+                        event.target.value,
+                        text("Nueva relación personalizada", "New custom relationship"),
+                      ),
+                    });
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={!newTypeName.trim()}
+                onClick={() => {
+                  const id = treeId();
+                  onChange(
+                    {
+                      ...document,
+                      relationshipTypes: [
+                        ...document.relationshipTypes,
+                        { id, name: newTypeName.trim() },
+                      ],
+                    },
+                    text("Crear tipo de relación", "Create relationship type"),
+                  );
+                  setRelationshipType(id);
+                  updateSession({ drafts: composerDrafts("tree-relationship-type", "", "") });
+                  setNewTypeName("");
+                }}
+              >
+                {text("Crear relación", "Create relationship")}
+              </button>
+              {document.relationshipTypes
+                .filter((type) => !RELATION_ES[type.id])
+                .map((type) => (
+                  <div className="ef-visual-custom-type" key={type.id}>
+                    <input
+                      aria-label={text("Nombre de relación", "Relationship name")}
+                      value={type.name}
+                      onChange={(event) =>
+                        onChange(
+                          {
+                            ...document,
+                            relationshipTypes: document.relationshipTypes.map((item) =>
+                              item.id === type.id ? { ...item, name: event.target.value } : item,
+                            ),
+                          },
+                          text("Editar tipo", "Edit type"),
+                        )
+                      }
+                    />
+                    <input
+                      aria-label={text("Icono de relación", "Relationship icon")}
+                      value={type.icon || ""}
+                      onChange={(event) =>
+                        onChange(
+                          {
+                            ...document,
+                            relationshipTypes: document.relationshipTypes.map((item) =>
+                              item.id === type.id ? { ...item, icon: event.target.value } : item,
+                            ),
+                          },
+                          text("Editar tipo", "Edit type"),
+                        )
+                      }
+                    />
+                    <WorldNotionDropdown
+                      aria-label={text("Estilo de relación", "Relationship style")}
+                      value={type.style || "solid"}
+                      onChange={(event) =>
+                        onChange(
+                          {
+                            ...document,
+                            relationshipTypes: document.relationshipTypes.map((item) =>
+                              item.id === type.id
+                                ? {
+                                    ...item,
+                                    style: event.target.value as "solid" | "dashed" | "dotted",
+                                  }
+                                : item,
+                            ),
+                          },
+                          text("Editar tipo", "Edit type"),
+                        )
+                      }
+                    >
+                      <option value="solid">{text("Sólida", "Solid")}</option>
+                      <option value="dashed">{text("Discontinua", "Dashed")}</option>
+                      <option value="dotted">{text("Punteada", "Dotted")}</option>
+                    </WorldNotionDropdown>
+                    <input
+                      aria-label={text("Color de relación", "Relationship color")}
+                      type="color"
+                      value={type.color || "#8890a2"}
+                      onChange={(event) =>
+                        onChange(
+                          {
+                            ...document,
+                            relationshipTypes: document.relationshipTypes.map((item) =>
+                              item.id === type.id ? { ...item, color: event.target.value } : item,
+                            ),
+                          },
+                          text("Editar tipo", "Edit type"),
+                        )
+                      }
+                    />
+                  </div>
+                ))}
+            </details>
           </aside>
         </VisualInspectorPortal>
       </div>

@@ -33,7 +33,10 @@ function group(id: string, tabPaths: string[]): DocumentTabGroup {
 
 describe("document tab groups", () => {
   it("creates a group from multiple tabs and removes their previous memberships", () => {
-    const groups = [group("old", ["A.md", "B.md"]), group("other", ["C.md", "D.md"])] as DocumentTabGroup[];
+    const groups = [
+      group("old", ["A.md", "B.md"]),
+      group("other", ["C.md", "D.md"]),
+    ] as DocumentTabGroup[];
     const next = groupDocumentTabs(groups, ["B.md", "C.md"]);
 
     expect(next.map((item) => item.tabPaths)).toEqual([["A.md"], ["D.md"], ["B.md", "C.md"]]);

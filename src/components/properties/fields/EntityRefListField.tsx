@@ -77,12 +77,7 @@ function EntityRefItem({
         </button>
       ) : null}
       {!readOnly ? (
-        <button
-          type="button"
-          className="entity-ref-chip-remove"
-          onClick={onRemove}
-          title="Remove"
-        >
+        <button type="button" className="entity-ref-chip-remove" onClick={onRemove} title="Remove">
           <X size={11} />
         </button>
       ) : null}
@@ -142,7 +137,10 @@ export function EntityRefListField({
     [value],
   );
 
-  const entityIds = useMemo(() => refs.map((ref) => parseEntityRef(ref).entityId).filter(Boolean), [refs]);
+  const entityIds = useMemo(
+    () => refs.map((ref) => parseEntityRef(ref).entityId).filter(Boolean),
+    [refs],
+  );
 
   const items = useMemo(
     () => entityPickerItems(vaultIndex, property.targetTypes, new Set(entityIds)),
