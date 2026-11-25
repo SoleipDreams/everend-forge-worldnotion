@@ -44,11 +44,11 @@ export const worldnotionIntroduction = [
     "temple",
   ),
   step(
-    "start",
-    ["Tu primera entidad", "Your first entity"],
+    "workspace",
+    ["Carpetas y páginas", "Folders and pages"],
     [
-      "En el explorador, abre el menú contextual y elige Nueva página en blanco. Asígnale un tipo para que WorldNotion la reconozca como entidad. Toda entidad creada aquí forma parte del canon. Puedes elegir un tutorial más adelante.",
-      "In the explorer, open the context menu and choose New blank page. Give it a type so WorldNotion recognizes it as an entity. Every entity created here belongs to the canon. Choose a tutorial whenever you like.",
+      "El explorador muestra las carpetas y páginas Markdown del universo. Desde aquí puedes organizar tus ideas y abrir una nota para trabajarla; la guía de primeros pasos te acompaña cuando quieras crear tu primera carpeta y nota.",
+      "The Explorer shows the universe's folders and Markdown pages. Use it to organize ideas and open a note to work on; the getting-started guide walks you through creating your first folder and note whenever you are ready.",
     ],
     "notes",
     "worldnotion.explorer",
@@ -56,6 +56,51 @@ export const worldnotionIntroduction = [
 ];
 
 export const worldnotionLessons: LearningLesson[] = [
+  {
+    id: "express-start",
+    title: t("Crear mi espacio en WorldNotion", "Create my WorldNotion space"),
+    summary: t(
+      "Crea una carpeta del explorador, una nota y conoce sus propiedades.",
+      "Create an Explorer folder and a note, then learn about their properties.",
+    ),
+    section: "notes",
+    steps: [
+      step(
+        "folder",
+        ["Una carpeta dentro del universo", "A folder inside your universe"],
+        [
+          "En el Explorador, crea una carpeta llamada «WorldNotion» o elige el nombre que prefieras. Esta carpeta está dentro de la carpeta local del universo (por ejemplo, «Mundo»); sirve para organizar sus notas.",
+          "In Explorer, create a folder named “WorldNotion” or choose any name you like. This folder lives inside your universe's local folder (for example, “World”); it organizes the notes in that universe.",
+        ],
+        "notes",
+        "worldnotion.create-folder",
+        "folder-created",
+      ),
+      step(
+        "note",
+        ["Tu primera nota", "Your first note"],
+        [
+          "Con esa carpeta seleccionada, crea una página en blanco y llámala «Primera nota» o ponle otro nombre. Las notas se guardan como archivos Markdown dentro de tu universo.",
+          "With that folder selected, create a blank page called “First note” or choose another name. Notes are saved as Markdown files inside your universe.",
+        ],
+        "notes",
+        "worldnotion.create-note",
+        "note-created",
+      ),
+      step(
+        "properties",
+        ["El panel de Propiedades", "The Properties panel"],
+        [
+          "El panel de Propiedades muestra datos estructurados de la nota. Los campos base incluyen ID, nombre, tipo, estado, etiquetas y alias; el inspector muestra los que corresponden al elemento seleccionado. Puedes personalizarlos desde Ajustes, pero no necesitas cambiar nada para continuar.",
+          "The Properties panel shows structured details for a note. Base fields include ID, name, type, status, tags and aliases; the inspector shows the fields that apply to the selected item. You can customize them in Settings, but you do not need to change anything to continue.",
+        ],
+        "properties",
+        "worldnotion.inspector",
+        undefined,
+        "temple",
+      ),
+    ],
+  },
   {
     id: "pathbranching-prep",
     title: t("Preparar el canon para PathBranching", "Prepare canon for PathBranching"),

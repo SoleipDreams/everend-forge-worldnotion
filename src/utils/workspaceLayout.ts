@@ -112,10 +112,14 @@ export function createDefaultWorkspaceLayout(
   const documentTabs = tabs.map((tab) => createDocumentDockTab(tab.path, tab.title));
   const activeDocumentId = options.activePath ? documentDockTabId(options.activePath) : undefined;
   const documentGroup = createDockGroup(DOCUMENT_GROUP_ID, documentTabs, activeDocumentId);
-  const explorerGroup = createDockGroup(EXPLORER_GROUP_ID, [createPanelDockTab("explorer")]);
+  const explorerTab = createPanelDockTab("explorer");
+  const explorerGroup = createDockGroup(
+    EXPLORER_GROUP_ID,
+    [explorerTab, ...(options.showAiAdvisor ? [createPanelDockTab("ai-advisor")] : [])],
+    explorerTab.id,
+  );
   const toolTabs = [
     ...(options.showInspector === false ? [] : [createPanelDockTab("inspector")]),
-    ...(options.showAiAdvisor ? [createPanelDockTab("ai-advisor")] : []),
     ...(options.showGraph ? [createPanelDockTab("graph")] : []),
   ];
 
@@ -263,6 +267,12 @@ export function addPanelToLayout(
 ): WorkspaceLayoutV1 {
   const tab = createPanelDockTab(kind);
   if (layoutHasTab(layout, tab.id)) {
+    if (kind === "ai-advisor") {
+      const groupId = findGroupIdForTab(layout.root, tab.id);
+      const group = groupId ? findGroup(layout.root, groupId) : undefined;
+      const explorer = group?.tabs.find((item) => item.kind === "explorer");
+      return explorer ? activateDockTab(layout, explorer.id) : layout;
+    }
     return activateDockTab(layout, tab.id);
   }
 
@@ -272,7 +282,14 @@ export function addPanelToLayout(
     root: updateGroup(layout.root, targetGroupId, (group) => ({
       ...group,
       tabs: [...group.tabs, tab],
-      activeTabId: tab.id,
+      // Enabling the optional AI panel should not steal the Explorer tab the
+      // user is working in. Other panels keep the existing activate-on-add UX.
+      activeTabId:
+        kind === "ai-advisor"
+          ? (group.tabs.find((item) => item.kind === "explorer")?.id ??
+            group.activeTabId ??
+            group.tabs[0]?.id)
+          : tab.id,
     })),
     activeGroupId: targetGroupId,
   };
@@ -297,6 +314,11 @@ export function setPanelInGroup(
     return layoutHasTab(layout, tab.id) ? closeDockTab(layout, tab.id) : layout;
   }
   if (layoutHasTab(layout, tab.id)) {
+    if (kind === "ai-advisor") {
+      const group = findGroup(layout.root, groupId);
+      const explorer = group?.tabs.find((item) => item.kind === "explorer");
+      return explorer ? activateDockTab(layout, explorer.id) : layout;
+    }
     return activateDockTab(layout, tab.id);
   }
   return {
@@ -304,7 +326,12 @@ export function setPanelInGroup(
     root: updateGroup(layout.root, groupId, (group) => ({
       ...group,
       tabs: [...group.tabs, tab],
-      activeTabId: tab.id,
+      activeTabId:
+        kind === "ai-advisor"
+          ? (group.tabs.find((item) => item.kind === "explorer")?.id ??
+            group.activeTabId ??
+            group.tabs[0]?.id)
+          : tab.id,
     })),
     activeGroupId: groupId,
   };

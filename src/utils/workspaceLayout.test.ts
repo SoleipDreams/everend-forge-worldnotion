@@ -18,6 +18,7 @@ import {
   orderOpenTabsByLayout,
   panelDockTabId,
   resizeDockSplit,
+  setPanelInGroup,
   syncLayoutWithOpenTabs,
   updateLayoutForPathChange,
 } from "./workspaceLayout";
@@ -59,8 +60,30 @@ describe("workspace layout utilities", () => {
 
   it("only includes AI Advisor when the layout explicitly requests it", () => {
     const layout = createDefaultWorkspaceLayout([], { showAiAdvisor: true });
+    const explorer = groups(layout.root).find((group) => group.id === "dock-explorer");
 
     expect(layoutHasPanel(layout, "ai-advisor")).toBe(true);
+    expect(explorer?.tabs.map((tab) => tab.kind)).toEqual(["explorer", "ai-advisor"]);
+    expect(explorer?.activeTabId).toBe(panelDockTabId("explorer"));
+  });
+
+  it("keeps Explorer selected when AI Advisor is added to its dock", () => {
+    const layout = createDefaultWorkspaceLayout();
+    const next = addPanelToLayout(layout, "ai-advisor");
+    const explorer = groups(next.root).find((group) => group.id === "dock-explorer");
+
+    expect(explorer?.tabs.map((tab) => tab.kind)).toEqual(["explorer", "ai-advisor"]);
+    expect(explorer?.activeTabId).toBe(panelDockTabId("explorer"));
+    expect(layoutHasPanel(next, "ai-advisor")).toBe(true);
+  });
+
+  it("keeps Explorer selected when AI Advisor is enabled from a dock menu", () => {
+    const layout = createDefaultWorkspaceLayout();
+    const next = setPanelInGroup(layout, "ai-advisor", "dock-explorer", true);
+    const explorer = groups(next.root).find((group) => group.id === "dock-explorer");
+
+    expect(explorer?.activeTabId).toBe(panelDockTabId("explorer"));
+    expect(layoutHasPanel(next, "ai-advisor")).toBe(true);
   });
 
   it("reorders document tabs inside a group", () => {
