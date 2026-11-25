@@ -4,6 +4,20 @@ All notable changes to Everend WorldNotion are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.2] - 2026-11-25
+
+### Added
+
+- Added an express-start tour for creating an Explorer folder and Markdown
+  note, then inspecting the note's base properties.
+
+### Changed
+
+- Clarified the relationship between the local universe folder, Explorer
+  folders, notes, and the Properties panel in the learning tours.
+- Kept Explorer active when the optional AI Advisor panel is added or selected,
+  and placed the two panels together in the default workspace layout.
+
 ## [0.2.0] - 2026-07-07
 
 ### Added
