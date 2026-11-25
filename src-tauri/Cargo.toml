@@ -1,6 +1,6 @@
 [package]
 name = "worldnotion"
-version = "0.5.1"
+version = "0.5.2"
 description = "Desktop worldbuilding vault app for the Everend Forge suite"
 authors = ["Everendforge"]
 edition = "2021"
